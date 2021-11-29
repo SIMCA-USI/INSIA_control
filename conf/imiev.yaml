@@ -1,0 +1,22 @@
+imiev:
+  CAN_6:
+    ros__parameters:
+      log_level: 10
+      local: True # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.6
+      port: 10001
+      extend: True
+  CAN_7:
+    ros__parameters:
+      log_level: 10
+      local: True # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.7
+      port: 10001
+      extend: True
+  EPOS_Volante:
+    ros__parameters:
+      cobid: 3
+      msgs: []
+      type: MCD60 #MCD60/EPOS4
