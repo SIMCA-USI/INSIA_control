@@ -20,3 +20,8 @@ imiev:
       cobid: 3
       msgs: []
       type: MCD60 #MCD60/EPOS4
+  CANADAC:
+    ros__parameters:
+      log_level: 10
+      cobid: 2
+      can: CAN_7

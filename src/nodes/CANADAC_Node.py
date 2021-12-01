@@ -1,22 +1,18 @@
+import os
+
 import rclpy
+import yaml
+from insia_msg.msg import CANGroup, StringStamped, FloatStamped, BoolStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
-
-import os
-import yaml
 from yaml.loader import SafeLoader
-import queue
-import threading
-import struct
-import time
 
-from src.utils.connection import Connection
-from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital
+from src.utils.utils import make_can_msg
 
 
-class EPOS_Node(Node):
+class CANADAC_Node(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -30,51 +26,47 @@ class EPOS_Node(Node):
         self.shutdown_flag = False
 
         self.cobid = self.get_parameter('cobid').value
-        self.msgs_list = self.get_parameter('msgs').value
-        self.EPOS_type = self.get_parameter('type').value
+        self.can_connected = self.get_parameter('can').value
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
-        self.create_subscription(msg_type=CAN,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
-                                 callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=EPOSConsigna,
+        self.pub_CAN = self.create_publisher(msg_type=CANGroup,
+                                             topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.can_connected,
+                                             qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=FloatStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Consigna',
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=EPOSDigital,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Digital',
-                                 callback=self.digital, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=EPOSDigital,
+        self.create_subscription(msg_type=BoolStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Enable',
                                  callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
-    def enable(self, msg):
-        # TODO: Mensaje para cambiar de estado al motor/EPOS
-        pass
-
-    def digital(self, msg):
-        # TODO: Habilitar salida digital comparando con las salidas existentes
-        pass
-
-    def consigna(self, msg):
-        # TODO: Enviar consigna de actuacion
-        if self.EPOS_type == 'MCD60:':
-            pass
-        elif self.EPOS_type == 'EPOS4':
-            pass
-
-    def msg_can(self, msg):
-        if len(self.msgs_list) != 0:
-            if msg.cobid in self.msgs_list:
-                pass  # decode
+    def enable(self, data):
+        if data.data:
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x01)
         else:
-            pass  # decode
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x00)
+
+        self.pub_CAN.publish(CANGroup(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            can_frames=[
+                msg
+            ]
+        ))
+
+    def consigna(self, data):
+        msg = make_can_msg(node=self.cobid, index=0x0001, data=data.data)
+        self.pub_CAN.publish(CANGroup(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            can_frames=[
+                msg
+            ]
+        ))
 
     def publish_heartbit(self):
         msg = StringStamped(
@@ -95,10 +87,10 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = EPOS_Node()
+        manager = CANADAC_Node()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('EPOS: Keyboard interrupt')
+        print('CANADAC: Keyboard interrupt')
     except Exception as e:
         print(e)
     finally:

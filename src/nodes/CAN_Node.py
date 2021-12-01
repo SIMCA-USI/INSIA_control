@@ -12,7 +12,7 @@ import threading
 import struct
 import time
 
-from src.devices.connection import Connection
+from src.utils.connection import Connection
 from insia_msg.msg import CAN, CANGroup, StringStamped
 
 
