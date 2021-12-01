@@ -27,7 +27,8 @@ import struct
 def decoder_can(msg, extended=False):
     cobid_1, cobid_2, specifier, index, sub_index, data = struct.unpack('<2xBBBHBi1x', msg)
     cobid = struct.unpack('>H', bytearray([6, 5]))[0]
-    return msg, cobid, specifier, index, sub_index, data
+    data_raw = bytearray(struct.pack('<i', data))
+    return msg, data_raw, cobid, specifier, index, sub_index, data
 
 
 def make_can_frame(node, index, sub_index=0, data=0, write=True):
@@ -37,16 +38,16 @@ def make_can_frame(node, index, sub_index=0, data=0, write=True):
         return bytearray(struct.pack('<2xBBBHBiB', 6, node, 0x40, index, sub_index, data, 0x08))
 
 
-def make_can_msg(node, index, sub_index=0, data=0, write=True):
+def make_can_msg(node, index, sub_index=0, data=0, write=True, clock=None):
     msg = make_can_frame(node, index, sub_index, data, write)
-    _, cobid, specifier, index, sub_index, data = decoder_can(msg)
+    _, data_raw, cobid, specifier, index, sub_index, data = decoder_can(msg)
     return CAN(
-        header=Header(stamp=Node.get_clock().now().to_msg()),
+        header=Header() if clock is None else Header(stamp=clock),#(stamp=Node('can_utils').get_clock().now().to_msg()),
         is_extended=False,
         cobid=cobid,
         specifier=specifier,
         index=index,
         sub_index=sub_index,
-        data=data,
-        data_raw=msg
+        data=data_raw,
+        msg_raw=msg
     )

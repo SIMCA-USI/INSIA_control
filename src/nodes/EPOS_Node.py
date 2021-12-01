@@ -41,15 +41,15 @@ class EPOS_Node(Node):
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=EPOSConsigna,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Consigna',
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Consigna',
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=EPOSDigital,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Digital',
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Digital',
                                  callback=self.digital, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=EPOSDigital,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Enable',
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
                                  callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)

@@ -25,6 +25,8 @@ setup(
     entry_points={
         'console_scripts': [
             'can = src.nodes.CAN_Node:main',
+            'epos = src.nodes.EPOS_Node:main',
+            'canadac = src.nodes.CANADAC_Node:main',
             'test_can = test.test_CAN_node:main',
         ],
     },

@@ -10,13 +10,14 @@ from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
 from src.utils.utils import make_can_msg
+from traceback import format_exc
 
 
 class CANADAC_Node(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
-        super().__init__(node_name='EPOS', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
+        super().__init__(node_name='CANADAC', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
                          allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
 
@@ -37,20 +38,20 @@ class CANADAC_Node(Node):
                                              qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=FloatStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Consigna',
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Consigna',
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name + '/Enable',
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
                                  callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def enable(self, data):
         if data.data:
-            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x01)
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x01, clock=self.get_clock().now().to_msg())
         else:
-            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x00)
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x00, clock=self.get_clock().now().to_msg())
 
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -60,7 +61,8 @@ class CANADAC_Node(Node):
         ))
 
     def consigna(self, data):
-        msg = make_can_msg(node=self.cobid, index=0x0001, data=data.data)
+        msg = make_can_msg(node=self.cobid, index=0x0001, data=int(data.data * 100),
+                           clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -92,6 +94,7 @@ def main(args=None):
     except KeyboardInterrupt:
         print('CANADAC: Keyboard interrupt')
     except Exception as e:
+        format_exc()
         print(e)
     finally:
         manager.shutdown()

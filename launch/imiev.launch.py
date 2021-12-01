@@ -23,10 +23,18 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
+        # Node(
+        #     package='INSIA_control',
+        #     executable='epos',
+        #     name='EPOS_Volante',
+        #     parameters=[parameters_file_path],
+        #     output='screen',
+        #     emulate_tty=True
+        # ),
         Node(
             package='INSIA_control',
-            executable='epos',
-            name='EPOS_Volante',
+            executable='canadac',
+            # name='EPOS_Volante',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

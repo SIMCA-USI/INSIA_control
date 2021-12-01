@@ -1,3 +1,4 @@
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -46,8 +47,9 @@ class CAN_Node(Node):
             self.connection = None
         else:
             self.logger.info(f'Init CAN with {self.ip}:{self.port} extended={self.extended}')
-            self.connection = Connection(name=f'Connection {self.ip}:{self.port}', mode=self.connection_mode, ip=self.ip,
-                                         port=self.port, deco_function=self.decode_can, log_level=self.log_level)
+            self.connection = Connection(name=f'Connection {self.ip}:{self.port}', mode=self.connection_mode,
+                                         ip=self.ip, port=self.port, deco_function=self.decode_can,
+                                         log_level=self.log_level)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_write = threading.Thread(target=self.write_th, daemon=False, name=f'Writer {self.get_name()}')
@@ -65,14 +67,19 @@ class CAN_Node(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbit.publish(msg)
 
-    def save_msg(self, data):
+    def save_msg(self, data: CANGroup):
         if not self.local:
             if self.is_connected():
                 if len(self.queue.queue) > 100:
                     for _ in data.can_frames:
                         self.queue.get()
-                [self.queue.put(frame.data_raw) for frame in data.can_frames]
+                [self.queue.put(frame.msg_raw) for frame in data.can_frames]
                 self.logger.debug(f'Q len: {len(self.queue.queue)}')
+        else:
+            [self.logger.debug(
+                f'Msg received: \n cobid: {hex(frame.cobid)}\n specifier: {hex(frame.specifier)}\n '
+                f'index: {hex(frame.index)}\n sub_index: {hex(frame.sub_index)}\n data: {" ".join(hex(x) for x in frame.data)}')
+                for frame in data.can_frames]
 
     def is_connected(self):
         return self.connection.connected
@@ -130,7 +137,7 @@ class CAN_Node(Node):
             index=index,
             sub_index=sub_index,
             data=data,
-            data_raw=can_frame
+            msg_raw=can_frame
         )
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_CAN.publish(msg)
