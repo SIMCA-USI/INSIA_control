@@ -51,3 +51,7 @@ def make_can_msg(node, index, sub_index=0, data=0, write=True, clock=None):
         data=data_raw,
         msg_raw=msg
     )
+
+
+def decode_msg(data, inicio, longitud, factor=1, offset=0):
+    pass

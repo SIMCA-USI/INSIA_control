@@ -15,13 +15,21 @@ imiev:
       ip: 192.168.0.7
       port: 10001
       extend: True
-  EPOS_Volante:
+  EPOS4_Volante:
     ros__parameters:
+      log_level: 10
       cobid: 3
-      msgs: []
-      type: MCD60 #MCD60/EPOS4
-  CANADAC:
+      mode: CST #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
+      dictionary: epos.yaml
+  MCD60_Freno:
     ros__parameters:
       log_level: 10
       cobid: 2
+      mode: PPM #PPM: Profile position mode, TODO:Por ahora solo funciona en profile position mode
+      fault_reset: True
+      dictionary: epos.yaml
+  CANADAC:
+    ros__parameters:
+      log_level: 10
+      cobid: 5
       can: CAN_7
