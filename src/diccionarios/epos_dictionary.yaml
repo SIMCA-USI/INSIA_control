@@ -15,4 +15,4 @@
     factor: 1
     offset: 0
     signed: True
-    type: intel #motorola/bigendian    intel/little endian
+    type: intel #motorola/big_endian    intel/little_endian
