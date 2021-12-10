@@ -1,0 +1,29 @@
+0x305:
+  0x00:
+    name: status
+    inicio: 0
+    longitud: 16
+    factor: 0.13
+    offset: 0
+    signed: True
+    type: motorola #motorola/big_endian    intel/little_endian
+
+0x306:
+  0x00:
+    name: position_actual_value
+    inicio: 0
+    longitud: 32
+    factor: 0.15
+    offset: 1
+    signed: True
+    type: intel #motorola/big_endian    intel/little_endian
+
+0x307:
+  0x00:
+    name: speed_actual_value
+    inicio: 0
+    longitud: 16
+    factor: 0.17
+    offset: 0
+    signed: False
+    type: intel #motorola/big_endian    intel/little_endian
