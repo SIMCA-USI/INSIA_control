@@ -42,7 +42,8 @@ def make_can_msg(node, index, sub_index=0, data=0, write=True, clock=None):
     msg = make_can_frame(node, index, sub_index, data, write)
     _, data_raw, cobid, specifier, index, sub_index, data = decoder_can(msg)
     return CAN(
-        header=Header() if clock is None else Header(stamp=clock),#(stamp=Node('can_utils').get_clock().now().to_msg()),
+        header=Header() if clock is None else Header(stamp=clock),
+        # (stamp=Node('can_utils').get_clock().now().to_msg()),
         is_extended=False,
         cobid=cobid,
         specifier=specifier,
@@ -55,3 +56,18 @@ def make_can_msg(node, index, sub_index=0, data=0, write=True, clock=None):
 
 def decode_msg(data, inicio, longitud, factor=1, offset=0):
     pass
+
+
+def convert_types(ros2_type, data):
+    function = ros2_types.get(ros2_type)
+    if function is not None:
+        return function(data)
+    else:
+        return data
+
+
+ros2_types = {
+    'string': str,
+    'int32': int,
+    'double': float
+}

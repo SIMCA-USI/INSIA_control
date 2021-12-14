@@ -1,7 +1,7 @@
 imiev:
   CAN_6:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       local: True # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
       connection_mode: tcp
       ip: 192.168.0.6
@@ -9,12 +9,12 @@ imiev:
       extend: True
   CAN_7:
     ros__parameters:
-      log_level: 10
-      local: True # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
       connection_mode: tcp
       ip: 192.168.0.7
       port: 10001
-      extend: True
+      extend: False
   EPOS4_Volante:
     ros__parameters:
       log_level: 10
@@ -33,3 +33,7 @@ imiev:
       log_level: 10
       cobid: 5
       can: CAN_7
+  ImievDecoder:
+    ros__parameters:
+      log_level: 0
+      dictionary: imiev_dictionary.yaml

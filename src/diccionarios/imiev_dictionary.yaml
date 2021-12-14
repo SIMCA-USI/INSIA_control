@@ -1,7 +1,7 @@
 0x305:
-  0x00:
-    name: status
-    inicio: 0
+  0xFFFF:
+    name: steering
+    inicio: -4
     longitud: 16
     factor: 0.13
     offset: 0

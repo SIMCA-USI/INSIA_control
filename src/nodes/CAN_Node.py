@@ -36,6 +36,7 @@ class CAN_Node(Node):
         self.extended = self.get_parameter('extend').value
         self.local = self.get_parameter('local').value
         self.queue = queue.Queue()
+        self.write_timer_period = 100
 
         self.pub_CAN = self.create_publisher(msg_type=CAN, topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                              qos_profile=HistoryPolicy.KEEP_LAST)
@@ -49,7 +50,7 @@ class CAN_Node(Node):
             self.logger.info(f'Init CAN with {self.ip}:{self.port} extended={self.extended}')
             self.connection = Connection(name=f'Connection {self.ip}:{self.port}', mode=self.connection_mode,
                                          ip=self.ip, port=self.port, deco_function=self.decode_can,
-                                         log_level=self.log_level)
+                                         log_level=self._log_level.value)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_write = threading.Thread(target=self.write_th, daemon=False, name=f'Writer {self.get_name()}')
@@ -122,14 +123,15 @@ class CAN_Node(Node):
             time.sleep(0.1)
 
     def decode_can(self, can_frame):
+        pass
         if self.extended:
-            decoder = '<IBHB'
+            decoder = '>IBHB'
             cobid, specifier, index, sub_index = struct.unpack(decoder, can_frame[0:8])
         else:
-            decoder = '<HBHB'
+            decoder = '>HBHB'
             cobid, specifier, index, sub_index = struct.unpack(decoder, can_frame[2:8])
 
-        data = can_frame[8:-1]
+        data = bytearray(can_frame[8:-1])
         msg = CAN(
             is_extended=self.extended,
             cobid=cobid,
@@ -137,7 +139,7 @@ class CAN_Node(Node):
             index=index,
             sub_index=sub_index,
             data=data,
-            msg_raw=can_frame
+            msg_raw=bytearray(can_frame)
         )
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_CAN.publish(msg)

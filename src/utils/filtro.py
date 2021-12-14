@@ -1,6 +1,6 @@
+import os
 import struct
 import yaml
-
 
 dic_byte_order = {
     'intel': '<',
@@ -10,26 +10,34 @@ dic_byte_order = {
 }
 
 dic_format = {
-    (True, 1): 'b',
-    (False, 1): 'B',
-    (True, 2): 'h',
-    (False, 2): 'H',
-    (True, 4): 'i',
-    (False, 4): 'I'
+    (True, 8): 'b',
+    (False, 8): 'B',
+    (True, 16): 'h',
+    (False, 16): 'H',
+    (True, 32): 'i',
+    (False, 32): 'I'
 }
 
 
 class Decoder:
-    def __init__(self):
-        dic_parameters = {}
-        data = b'\x00\x10\x10\x02'
-        with open('/home/victor/Escritorio/ASCOD/INSIA_control/src/diccionarios/imiev_dictionary.yaml') as f:
+    def __init__(self, dictionary):
+        self.dic_parameters = {}
+        with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
             imiev_parameters = yaml.load(f, Loader=yaml.FullLoader)
         for i in imiev_parameters.keys():
             for j in imiev_parameters[i].keys():
-                dic_parameters.update({f'{hex(i)}:{hex(j)}': Filter(imiev_parameters[i][j])})
+                if j == 0xFFFF:
+                    self.dic_parameters.update({f'{i}:': Filter(imiev_parameters[i][j])})
+                else:
+                    self.dic_parameters.update({f'{i}:{j}': Filter(imiev_parameters[i][j])})
 
-        dic_parameters.get('0x306:0x0').decoder(data)
+    def decode(self, msg):
+        if f'{msg.cobid}:{msg.index}' in self.dic_parameters.keys():
+            return self.dic_parameters.get(f'{msg.cobid}:{msg.index}').decoder(msg.data)
+        elif f'{msg.cobid}:' in self.dic_parameters.keys():
+            return self.dic_parameters.get(f'{msg.cobid}:').decoder(msg.msg_raw)
+        else:
+            raise ValueError(f'msg no declarado: {msg.cobid}:{msg.index}')
 
 
 class Filter:
@@ -37,16 +45,19 @@ class Filter:
         parameters = parameters
         self.name = parameters['name']
         self.inicio = parameters['inicio']
-        self.longitud = parameters['longitud'] / 8
+        if self.inicio < 0:
+            self.inicio = self.inicio + 8
+        self.longitud = parameters['longitud']
         self.factor = parameters['factor']
         self.offset = parameters['offset']
         self.signed = parameters['signed']
         self.type = parameters['type']
 
     def decoder(self, data):
-        deco = dic_byte_order[self.type]+dic_format[(self.signed, self.longitud)]
-        value = struct.unpack(deco, data)[0] * self.factor + self.offset
-        print(value)
+        deco = dic_byte_order[self.type] + dic_format[(self.signed, self.longitud)]
+        value = struct.unpack(deco, data[self.inicio:int(self.inicio + self.longitud / 8)])[
+                    0] * self.factor + self.offset
+        return self.name, value
 
 
 def main(args=None):
