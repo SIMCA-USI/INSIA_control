@@ -24,20 +24,26 @@ class Decoder:
         self.dic_parameters = {}
         with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
             imiev_parameters = yaml.load(f, Loader=yaml.FullLoader)
-        for i in imiev_parameters.keys():
-            for j in imiev_parameters[i].keys():
+        for i in imiev_parameters.keys(): #cobid
+            for j in imiev_parameters[i].keys():#index
                 if j == 0xFFFF:
                     self.dic_parameters.update({f'{i}:': Filter(imiev_parameters[i][j])})
                 else:
-                    self.dic_parameters.update({f'{i}:{j}': Filter(imiev_parameters[i][j])})
+                    for k in imiev_parameters[j].keys():
+                        if k == 0xFF:
+                            self.dic_parameters.update({f'{i}:{j}': Filter(imiev_parameters[i][j])})
+                        else:
+                            self.dic_parameters.update({f'{i}:{j}:{k}': Filter(imiev_parameters[i][j])})
 
     def decode(self, msg):
-        if f'{msg.cobid}:{msg.index}' in self.dic_parameters.keys():
+        if f'{msg.cobid}:{msg.index}:{msg.sub_index}' in self.dic_parameters.keys():
+            return self.dic_parameters.get(f'{msg.cobid}:{msg.index}:{msg.sub_index}').decoder(msg.data)
+        elif f'{msg.cobid}:{msg.index}' in self.dic_parameters.keys():
             return self.dic_parameters.get(f'{msg.cobid}:{msg.index}').decoder(msg.data)
         elif f'{msg.cobid}:' in self.dic_parameters.keys():
             return self.dic_parameters.get(f'{msg.cobid}:').decoder(msg.msg_raw)
         else:
-            raise ValueError(f'msg no declarado: {msg.cobid}:{msg.index}')
+            raise ValueError(f'msg no declarado: {msg.cobid}:{msg.index}:{msg.sub_index}')
 
 
 class Filter:

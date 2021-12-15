@@ -8,15 +8,16 @@
 #    signed: True
 #    type: motorola #motorola/big_endian    intel/little_endian
 #
-0x236:
-  0xFF:
-    name: status
-    inicio: 0
-    longitud: 16
-    factor: 0.5
-    offset: -2048
-    signed: True
-    type: motorola #motorola/big_endian    intel/little_endian
+0x236: #cobid
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: status
+      inicio: 0
+      longitud: 16
+      factor: 0.5
+      offset: -2048
+      signed: True
+      type: motorola #motorola/big_endian    intel/little_endian
 
 0x306:
   0x00:
