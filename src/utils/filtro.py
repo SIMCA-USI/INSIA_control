@@ -27,13 +27,13 @@ class Decoder:
         for i in imiev_parameters.keys(): #cobid
             for j in imiev_parameters[i].keys():#index
                 if j == 0xFFFF:
-                    self.dic_parameters.update({f'{i}:': Filter(imiev_parameters[i][j])})
+                    self.dic_parameters.update({f'{i}:': Filter(imiev_parameters[i][j][0xFF])})
                 else:
-                    for k in imiev_parameters[j].keys():
+                    for k in imiev_parameters[i][j].keys():
                         if k == 0xFF:
-                            self.dic_parameters.update({f'{i}:{j}': Filter(imiev_parameters[i][j])})
+                            self.dic_parameters.update({f'{i}:{j}': Filter(imiev_parameters[i][j][k])})
                         else:
-                            self.dic_parameters.update({f'{i}:{j}:{k}': Filter(imiev_parameters[i][j])})
+                            self.dic_parameters.update({f'{i}:{j}:{k}': Filter(imiev_parameters[i][j][k])})
 
     def decode(self, msg):
         if f'{msg.cobid}:{msg.index}:{msg.sub_index}' in self.dic_parameters.keys():
