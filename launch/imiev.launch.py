@@ -31,20 +31,19 @@ def generate_launch_description():
         #     output='screen',
         #     emulate_tty=True
         # ),
-        Node(
-            package='INSIA_control',
-            executable='canadac',
-            # name='EPOS_Volante',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
         # Node(
         #     package='INSIA_control',
-        #     executable='vehicledecoder',
-        #     name='ImievDecoder',
+        #     executable='canadac',
         #     parameters=[parameters_file_path],
         #     output='screen',
         #     emulate_tty=True
         # ),
+        Node(
+            package='INSIA_control',
+            executable='vehicledecoder',
+            name='ImievDecoder',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
     ])

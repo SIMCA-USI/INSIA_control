@@ -1,13 +1,14 @@
-#0x305:
-#  0xFFFF:
-#    0xFF:
-#      name: steering
-#      inicio: -4
-#      longitud: 16
-#      factor: 0.13
-#      offset: 0
-#      signed: True
-#      type: motorola #motorola/big_endian    intel/little_endian
+0x305:
+  0xFFFF:
+    0xFF:
+      name: steering
+      inicio: 0
+      longitud: 16
+      factor: 0.13
+      offset: 0
+      signed: True
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
 
 0x236: #cobid
   0xFFFF: #index
