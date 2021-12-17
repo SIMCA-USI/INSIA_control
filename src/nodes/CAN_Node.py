@@ -121,6 +121,7 @@ class CAN_Node(Node):
             self.logger.info(f'waiting to close q len:{len(self.queue.queue)}')
             self.write()
             time.sleep(0.1)
+        self.connection.shutdown()
 
     def decode_can(self, can_frame):
         pass

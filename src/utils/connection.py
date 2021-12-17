@@ -29,7 +29,7 @@ class Connection:
         self.t_frec = time.time()
         self.t_msgs_send = 0
         self.t_msgs_recv = 0
-        self.thread_frec = threading.Thread(target=self.frec, daemon=True, name=f'Frec {self.name}')
+        self.thread_frec = threading.Thread(target=self.frec, daemon=False, name=f'Frec {self.name}')
         self.thread_frec.start()
         if mode == 'tcp':
             self.socket = None
@@ -48,7 +48,7 @@ class Connection:
             self.shutdown = self.shutdown_udp
             self.create_sender_udp()
 
-        self.thread_read = threading.Thread(target=self.recv, daemon=True, name=f'Read {self.name}')
+        self.thread_read = threading.Thread(target=self.recv, daemon=False, name=f'Read {self.name}')
         self.thread_read.start()
         self.logger.info(f'Created connexion {self.name} in mode {mode} with ip {self.ip}:{self.port}')
 
