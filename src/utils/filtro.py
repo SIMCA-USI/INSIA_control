@@ -24,8 +24,8 @@ class Decoder:
         self.dic_parameters = {}
         with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
             imiev_parameters = yaml.load(f, Loader=yaml.FullLoader)
-        for i in imiev_parameters.keys(): #cobid
-            for j in imiev_parameters[i].keys():#index
+        for i in imiev_parameters.keys():  # cobid
+            for j in imiev_parameters[i].keys():  # index
                 if j == 0xFFFF:
                     self.dic_parameters.update({f'{i}:': Filter(imiev_parameters[i][j][0xFF])})
                 else:
@@ -37,11 +37,11 @@ class Decoder:
 
     def decode(self, msg):
         if f'{msg.cobid}:{msg.index}:{msg.sub_index}' in self.dic_parameters.keys():
-            return self.dic_parameters.get(f'{msg.cobid}:{msg.index}:{msg.sub_index}').decoder(msg.data)
+            return self.dic_parameters.get(f'{msg.cobid}:{msg.index}:{msg.sub_index}').decoder(msg)
         elif f'{msg.cobid}:{msg.index}' in self.dic_parameters.keys():
-            return self.dic_parameters.get(f'{msg.cobid}:{msg.index}').decoder(msg.data)
+            return self.dic_parameters.get(f'{msg.cobid}:{msg.index}').decoder(msg)
         elif f'{msg.cobid}:' in self.dic_parameters.keys():
-            return self.dic_parameters.get(f'{msg.cobid}:').decoder(msg.msg_raw)
+            return self.dic_parameters.get(f'{msg.cobid}:').decoder(msg)
         else:
             raise ValueError(f'msg no declarado: {msg.cobid}:{msg.index}:{msg.sub_index}')
 
@@ -51,15 +51,18 @@ class Filter:
         parameters = parameters
         self.name = parameters['name']
         self.inicio = parameters['inicio']
-        if self.inicio < 0:
-            self.inicio = self.inicio + 8
         self.longitud = parameters['longitud']
         self.factor = parameters['factor']
         self.offset = parameters['offset']
         self.signed = parameters['signed']
         self.type = parameters['type']
+        self.can_open = parameters['can_open']
 
     def decoder(self, data):
+        if self.can_open:
+            data = data.data
+        else:
+            data = data.msg_raw[4:]
         deco = dic_byte_order[self.type] + dic_format[(self.signed, self.longitud)]
         value = struct.unpack(deco, data[self.inicio:int(self.inicio + self.longitud / 8)])[
                     0] * self.factor + self.offset

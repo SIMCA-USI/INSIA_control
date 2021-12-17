@@ -13,12 +13,13 @@
   0xFFFF: #index
     0xFF: #sub-index
       name: steering
-      inicio: -4
+      inicio: 0
       longitud: 16
       factor: 0.5
       offset: -2048
       signed: True
       type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
 
 #0x306:
 #  0x00:
