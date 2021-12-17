@@ -49,9 +49,9 @@ class CANADAC_Node(Node):
 
     def enable(self, data):
         if data.data:
-            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0003, data=0x01, clock=self.get_clock().now().to_msg())
         else:
-            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0003, data=0x00, clock=self.get_clock().now().to_msg())
 
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),

@@ -3,6 +3,7 @@ import os
 import rclpy
 import yaml
 from insia_msg.msg import CAN, Telemetry
+from insia_msg.msg import StringStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -26,6 +27,9 @@ class Vehicle_Node(Node):
         self.shutdown_flag = False
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
         self.vehicle_state = {}
+        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
+                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
+                                                  qos_profile=HistoryPolicy.KEEP_LAST)
         self.pub_telemetry = self.create_publisher(msg_type=Telemetry,
                                                    topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
@@ -33,6 +37,7 @@ class Vehicle_Node(Node):
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
         self.timer_telemetry = self.create_timer(1/20, self.publish_telemetry)
+        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def create_msg(self):
         msg = Telemetry()
@@ -42,6 +47,13 @@ class Vehicle_Node(Node):
             if data is not None:
                 setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
         return msg
+
+    def publish_heartbit(self):
+        msg = StringStamped(
+            data=self.get_name()
+        )
+        msg.header.stamp = self.get_clock().now().to_msg()
+        self.pub_heartbit.publish(msg)
 
     def publish_telemetry(self):
         self.pub_telemetry.publish(msg=self.create_msg())
