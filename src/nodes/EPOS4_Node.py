@@ -33,6 +33,7 @@ class EPOS4_Node(Node):
         self.cobid = self.get_parameter('cobid').value
         self.msgs_list = self.get_parameter('msgs').value
         self.EPOS_type = self.get_parameter('type').value
+        self.can_connected = self.get_parameter('can').value
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,

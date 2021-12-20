@@ -36,7 +36,7 @@ class Vehicle_Node(Node):
         self.create_subscription(msg_type=CAN,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
-        self.timer_telemetry = self.create_timer(1/20, self.publish_telemetry)
+        self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def create_msg(self):

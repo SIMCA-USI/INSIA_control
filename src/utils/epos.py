@@ -1,8 +1,6 @@
-from src.utils.utils import make_can_msg
 from enum import IntEnum
-import struct
-from typing import Tuple
-from time import time
+
+from src.utils.utils import make_can_msg
 
 QC_FACTOR = 1  # 625000 / 360
 DIGITAL_OUTPUT_3 = False

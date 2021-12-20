@@ -1,21 +1,15 @@
+import os
+
 import rclpy
+import yaml
+from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
-
-import os
-import yaml
 from yaml.loader import SafeLoader
-import queue
-import threading
-import struct
-import time
 
-from src.utils.connection import Connection
 import src.utils.epos as epos
-from src.utils.utils import make_can_msg
-from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped
 
 
 class MCD60_Node(Node):
