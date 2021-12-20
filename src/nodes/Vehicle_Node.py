@@ -20,7 +20,7 @@ class Vehicle_Node(Node):
         super().__init__(node_name='VehicleDecoder', namespace=vehicle_parameters['id_vehicle'],
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
-
+        self.id_plataforma = vehicle_parameters['id_vehicle']
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
@@ -46,6 +46,7 @@ class Vehicle_Node(Node):
             data = self.vehicle_state.get(field)
             if data is not None:
                 setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
+        msg.id_plataforma = self.id_plataforma
         return msg
 
     def publish_heartbit(self):

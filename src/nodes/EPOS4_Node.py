@@ -14,6 +14,7 @@ import time
 
 from src.utils.connection import Connection
 from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital
+from src.utils.filtro import Decoder
 
 
 class EPOS4_Node(Node):
@@ -32,10 +33,16 @@ class EPOS4_Node(Node):
         self.cobid = self.get_parameter('cobid').value
         self.msgs_list = self.get_parameter('msgs').value
         self.EPOS_type = self.get_parameter('type').value
+        self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.pub_CAN = self.create_publisher(msg_type=CANGroup,
+                                             topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.can_connected,
+                                             qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=CAN,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)

@@ -1,4 +1,4 @@
-0x305:
+0x305: # Posicion de giro de volante del sensor de giro de volante
   0xFFFF:
     0xFF:
       name: steering
@@ -10,7 +10,7 @@
       type: motorola #motorola/big_endian    intel/little_endian
       can_open: False
 
-0x236: #cobid
+0x236: #cobid # Posicion de giro de volante del imiev
   0xFFFF: #index
     0xFF: #sub-index
       name: steering

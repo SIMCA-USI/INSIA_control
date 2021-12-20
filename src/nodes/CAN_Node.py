@@ -14,6 +14,7 @@ import struct
 import time
 
 from src.utils.connection import Connection
+from src.utils.utils import decoder_can
 from insia_msg.msg import CAN, CANGroup, StringStamped
 
 
@@ -124,13 +125,7 @@ class CAN_Node(Node):
         self.connection.shutdown()
 
     def decode_can(self, can_frame):
-        pass
-        if self.extended:
-            decoder = '>IBHB'
-            cobid, specifier, index, sub_index = struct.unpack(decoder, can_frame[0:8])
-        else:
-            decoder = '>HBHB'
-            cobid, specifier, index, sub_index = struct.unpack(decoder, can_frame[2:8])
+        _, data_raw, cobid, specifier, index, sub_index = decoder_can(msg=can_frame, extended=self.extended)
 
         data = bytearray(can_frame[8:-1])
         msg = CAN(

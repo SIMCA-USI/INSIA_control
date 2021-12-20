@@ -52,7 +52,6 @@ class CANADAC_Node(Node):
             msg = make_can_msg(node=self.cobid, index=0x0003, data=0x01, clock=self.get_clock().now().to_msg())
         else:
             msg = make_can_msg(node=self.cobid, index=0x0003, data=0x00, clock=self.get_clock().now().to_msg())
-
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
