@@ -22,6 +22,42 @@
       type: motorola #motorola/big_endian    intel/little_endian
       can_open: False
 
+0x215: #cobid # Velocidad
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: speed
+      inicio: 0
+      longitud: 16
+      factor: 0.0075
+      offset: 0
+      signed: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+
+0x208: #cobid # Brake value #Falta aplicar mascara 0x0FFF
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: brake
+      inicio: 2
+      longitud: 16
+      factor: 0.25
+      offset: 0
+      signed: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+
+0x418: #cobid # Gear
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: gear
+      inicio: 0
+      longitud: 8
+      factor: 1
+      offset: 0
+      signed: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+
 #0x306:
 #  0x00:
 #    name: position_actual_value

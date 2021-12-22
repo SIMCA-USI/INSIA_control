@@ -8,14 +8,14 @@ DIGITAL_OUTPUT_4 = False
 
 
 class EPOSCommand(IntEnum):
-    SHUTDOWN = 0b00000110
-    SWITCH_ON = 0b00000111
-    SWITCH_ON_AND_ENABLE = 0b00001111
-    DISABLE_VOLTAGE = 0b00000000
-    QUICK_STOP = 0b00000010
-    DISABLE_OPERATION = 0b00000111
-    ENABLE_OPERATION = 0b00001111
-    FAULT_RESET = 0b10000000
+    SHUTDOWN = 0x06
+    SWITCH_ON = 0x07
+    SWITCH_ON_AND_ENABLE = 0x0F
+    DISABLE_VOLTAGE = 0x00
+    QUICK_STOP = 0x02
+    DISABLE_OPERATION = 0x07
+    ENABLE_OPERATION = 0x0F
+    FAULT_RESET = 0x80
 
 
 status_epos = {
@@ -28,7 +28,14 @@ status_epos = {
     15: 'Fault reaction active',
     8: 'Fault'
 }
-
+mode_epos = {
+    'PPM': 1,
+    'PVM': 3,
+    'HMM': 6,
+    'CSP': 8,
+    'CSV': 9,
+    'CST': 10
+}
 
 def enable(node: int):
     return [
@@ -64,68 +71,29 @@ def fault_reset(node: int):
             make_can_msg(node, 0x6040, 0, EPOSCommand.SWITCH_ON_AND_ENABLE), ]
 
 
-def set_angle_value(node: int, angle: int, absolute=False, epos4=False):
+def set_angle_value(node: int, angle: int, absolute: bool = False, motor_type: str = 'MCD60'):
     qc_to_rotate = int(QC_FACTOR * angle)
     set_angle = []
     if absolute:
         set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
-        if epos4:
+        if motor_type == 'EPOS4':
             set_angle += [make_can_msg(node=node, index=0x6040, data=0x002F)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x003F)]
     else:
         set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
-        if epos4:
+        if motor_type == 'EPOS4':
             set_angle += [make_can_msg(node=node, index=0x6040, data=0x006F)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x007F)]
     return set_angle
 
 
-def enable_digital_4(node: int):
-    global DIGITAL_OUTPUT_4, DIGITAL_OUTPUT_3
-    DIGITAL_OUTPUT_4 = True
-
-    if DIGITAL_OUTPUT_3:
-        return [make_can_msg(node, 0x2078, 1, 0x3000)]
-    else:
-        return [make_can_msg(node, 0x2078, 1, 0x1000)]
-
-
-def disable_digital_4(node: int):
-    global DIGITAL_OUTPUT_4, DIGITAL_OUTPUT_3
-    DIGITAL_OUTPUT_4 = False
-
-    if DIGITAL_OUTPUT_3:
-        return [make_can_msg(node, 0x2078, 1, 0x2000)]
-    else:
-        return [make_can_msg(node, 0x2078, 1, 0x0000)]
-
-
-def enable_digital_3(node: int):
-    global DIGITAL_OUTPUT_4, DIGITAL_OUTPUT_3
-    DIGITAL_OUTPUT_3 = True
-
-    if DIGITAL_OUTPUT_4:
-        return [make_can_msg(node, 0x2078, 1, 0x3000)]
-    else:
-        return [make_can_msg(node, 0x2078, 1, 0x2000)]
-
-
-def disable_digital_3(node: int):
-    global DIGITAL_OUTPUT_4, DIGITAL_OUTPUT_3
-    DIGITAL_OUTPUT_3 = False
-
-    if DIGITAL_OUTPUT_4:
-        return [make_can_msg(node, 0x2078, 1, 0x1000)]
-    else:
-        return [make_can_msg(node, 0x2078, 1, 0x0000)]
-
-
-def init_device(node: int, rpm=0x1388):
+def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
+    if not 1 < rpm < 50000:
+        raise ValueError('RPM out of range')
     return [
         make_can_msg(node, 0x6040, 0, 0x0080),
-        # make_can_msg(node, 0x6060, 0, 0x08),  # operation mode=Cyclic Synchronous Position Mode
-        make_can_msg(node, 0x6060, 0, 0x01),  # operation mode=profile position
-        make_can_msg(node, 0x6081, 0, rpm),  # rpm speed 1-25000 = 10_000 rpm
+        make_can_msg(node, 0x6060, 0, mode_epos.get(mode)),  # operation mode=profile position
+        make_can_msg(node, 0x6081, 0, 1, rpm),  # rpm speed 1-25000 = 10_000 rpm
         make_can_msg(node, 0x6040, 0, EPOSCommand.SHUTDOWN),  # ????
         make_can_msg(node=node, index=0x6040, data=EPOSCommand.SWITCH_ON_AND_ENABLE),
         # make_can_msg(node, 0x6040, 0, EPOSCommand.SWITCH_ON_AND_ENABLE),

@@ -19,15 +19,20 @@ imiev:
     ros__parameters:
       log_level: 10
       cobid: 3
+      type: EPOS4
       mode: CST #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
+      auto_fault_reset: True
+      speed: 2000
       dictionary: epos.yaml
       can: CAN_7
   MCD60_Freno:
     ros__parameters:
       log_level: 10
       cobid: 2
+      type: MCD60
       mode: PPM #PPM: Profile position mode, TODO:Por ahora solo funciona en profile position mode
-      fault_reset: True
+      auto_fault_reset: True
+      speed: 2000
       dictionary: epos.yaml
       can: CAN_7
   CANADAC:

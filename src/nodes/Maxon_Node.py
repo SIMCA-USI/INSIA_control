@@ -8,6 +8,7 @@ from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
+from src.utils.filtro import Decoder
 
 import src.utils.epos as epos
 
@@ -26,15 +27,15 @@ class MCD60_Node(Node):
         self.shutdown_flag = False
 
         self.cobid = self.get_parameter('cobid').value
-        self.msgs_list = self.get_parameter('msgs').value
         self.op_mode = self.get_parameter('mode').value
         self.can_conected = self.get_parameter('can').value
+        self.motor_type = self.get_parameter('type').value
         self.motor_status = None
         self.digital_outputs = {1: False, 2: False, 3: False, 4: False}
         self.digital_outputs_target = self.digital_outputs
         self.current_position = None
 
-        self.object_dictionary = {}  # TODO: Implementar diccionario con los mensajes que puede recibir y su decodificación
+        self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
 
         self.status_freq: Parameter = self.get_parameter_or('status_freq', Parameter(name='status_freq', value=2)).value
 
@@ -136,17 +137,14 @@ class MCD60_Node(Node):
     def consigna(self, msg):
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
+            can_frames=epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode, )
         ))
 
     def msg_can(self, msg):
         if msg.cobid == (0x580 + self.cobid):
-
+            pass
         else:
             self.logger.debug(f'Msg CAN received with cobid: {msg.cobid}')
-
-    def load_msgs(self):
-
 
     def publish_heartbit(self):
         msg = StringStamped(
