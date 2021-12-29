@@ -1,4 +1,4 @@
-from enum import IntEnum, Enum, strEnum
+from enum import IntEnum, Enum
 
 from src.utils.utils import make_can_msg
 import networkx as nx
@@ -80,7 +80,7 @@ def set_state(node: int, target_state, graph: nx.classes.digraph = None, status_
         if graph is not None and status_word is not None:
             if get_status(status_word) != target_state:
                 msgs = []
-                for transition in get_transitions(graph=graph, start=get_status(status_word), end=target_state):
+                for transition in get_transitions(graph=graph, print(get_transitions(g, 'Fault', 'Switched on'))start=get_status(status_word), end=target_state):
                     msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
                 return msgs
             else:
@@ -116,7 +116,10 @@ def read_position(node: int):
 
 
 def get_status(status_word: int) -> str:
-    return status_epos.get(status_word & 0x006F)
+    if status_word is not None:
+        return status_epos.get(status_word & 0x006F)
+    else:
+        return None
 
 
 def get_status_from_dict(dictionary: dict) -> str:
@@ -177,7 +180,7 @@ def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
 
 
 def get_transitions(graph, start, end):
-    edge_labels = nx.get_edge_attributes(graph, 'transitions')
+    edge_labels = nx.get_edge_attributes(graph, 'transition')
     path = nx.shortest_path(graph)
     path_edges = [edge_labels.get(x, edge_labels.get((x[1], x[0]))) for x in
                   zip(path[start][end], path[start][end][1:])]
