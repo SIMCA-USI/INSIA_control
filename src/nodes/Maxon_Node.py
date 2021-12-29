@@ -9,8 +9,10 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 from src.utils.filtro import Decoder
+import networkx as nx
 
 import src.utils.epos as epos
+from src.utils.epos import EPOSStatus, EPOSCommand
 
 
 class MCD60_Node(Node):
@@ -30,12 +32,14 @@ class MCD60_Node(Node):
         self.op_mode = self.get_parameter('mode').value
         self.can_conected = self.get_parameter('can').value
         self.motor_type = self.get_parameter('type').value
-        self.motor_status = None
+        self.epos_dictionary = {}
         self.digital_outputs = {1: False, 2: False, 3: False, 4: False}
         self.digital_outputs_target = self.digital_outputs
         self.current_position = None
+        self.target_state = False
 
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
+        self.motor_graph = nx.read_graphml('src.utils.maxon.graphml')
 
         self.status_freq: Parameter = self.get_parameter_or('status_freq', Parameter(name='status_freq', value=2)).value
 
@@ -71,6 +75,13 @@ class MCD60_Node(Node):
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=epos.read_status(node=self.cobid)
         ))
+        msg = epos.set_state(node=self.cobid, target_state=self.target_state, graph=self.motor_graph,
+                             status_word=self.epos_dictionary.get('Statusword'))
+        if msg is not None:
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=msg
+            ))
 
     def read_io(self):
         self.pub_CAN.publish(CANGroup(
@@ -82,37 +93,17 @@ class MCD60_Node(Node):
 
     def enable(self, msg):
         if msg.data:
-            if self.motor_status is None:
-                pass
-                # TODO: Mandar mensaje para resetear hasta modo habilitado/deshabilitado
-            elif self.motor_status == 8:  # Fault_mode
-                pass
-                # TODO: Mandar mensaje para resetear hasta modo habilitado/deshabilitado
-            elif self.motor_status == 35:  # Modo Switched on
-                pass
-                # TODO: Mandar mensaje 4
-            elif self.motor_status == 39:  # Modo Operation enabled
-                pass
-                # No hacer nada
-            else:
-                pass
-                # TODO: Mandar mensaje para resetear hasta modo habilitado/deshabilitado
+            self.target_state = EPOSStatus.Operation_enabled
         else:
-            if self.motor_status is None:
-                pass
-                # TODO: Mandar mensaje para resetear hasta modo habilitado/deshabilitado
-            elif self.motor_status == 8:  # Fault_mode
-                pass
-                # TODO: Mandar mensaje para resetear hasta modo habilitado/deshabilitado
-            elif self.motor_status == 35:  # Modo Switched on
-                pass
-                # No hacer nada
-            elif self.motor_status == 39:  # Modo Operation enabled
-                pass
-                # Mandar mensaje 6
-            else:
-                pass
-                # TODO: Mandar mensaje para resetear hasta modo habilitado/deshabilitado
+            self.target_state = EPOSStatus.Switched_on
+
+        msg = epos.set_state(node=self.cobid, target_state=self.target_state, graph=self.motor_graph,
+                             status_word=self.epos_dictionary.get('Statusword'))
+        if msg is not None:
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=msg
+            ))
 
     def digital(self, msg):
         # TODO: Habilitar salida digital comparando con las salidas existentes
@@ -131,20 +122,27 @@ class MCD60_Node(Node):
 
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=[self.make_can_msg(node=self.cobid, index=0x2078, data=msg_data)()]
+            can_frames=[self.make_can_msg(node=self.cobid, index=0x2078, data=msg_data)]
         ))
 
     def consigna(self, msg):
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode, )
-        ))
+        status = epos.get_status_from_dict(self.epos_dictionary)
+        if status == EPOSStatus.Operation_enabled:
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode,
+                                                motor_type=self.motor_type)
+            ))
+        else:
+            self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
 
     def msg_can(self, msg):
-        if msg.cobid == (0x580 + self.cobid):
-            pass
-        else:
-            self.logger.debug(f'Msg CAN received with cobid: {msg.cobid}')
+        try:
+            name, value = self.decoder.decode(msg)
+            self.epos_dictionary.update({name: value})
+            # self.logger.debug(f'Decoded {name}: {value}')
+        except ValueError as e:
+            self.logger.debug(f'{e}')
 
     def publish_heartbit(self):
         msg = StringStamped(

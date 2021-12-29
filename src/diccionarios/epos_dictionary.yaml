@@ -1,7 +1,7 @@
 0x580: # se suma automaticamente el cobid
   0x6041:
     0x00:
-      name: statusword
+      name: Statusword
       inicio: 0
       longitud: 16
       factor: 1

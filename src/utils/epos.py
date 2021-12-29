@@ -1,6 +1,7 @@
-from enum import IntEnum
+from enum import IntEnum, Enum, strEnum
 
 from src.utils.utils import make_can_msg
+import networkx as nx
 
 QC_FACTOR = 1  # 625000 / 360
 DIGITAL_OUTPUT_3 = False
@@ -18,15 +19,26 @@ class EPOSCommand(IntEnum):
     FAULT_RESET = 0x80
 
 
+class EPOSStatus(str, Enum):
+    Not_ready_to_switch_on = 'Not ready to switch on'
+    Switch_on_disabled = 'Switch on disabled'
+    Ready_to_switch_on = 'Ready to switch on'
+    Switched_on = 'Switched on'
+    Operation_enabled = 'Operation enabled'
+    Quick_stop_active = 'Quick stop active'
+    Fault_reaction_active = 'Fault reaction active'
+    Fault = 'Fault'
+
+
 status_epos = {
-    0: 'Not ready to switch on',
-    64: 'Switch on disabled',
-    33: 'Ready to switch on',
-    35: 'Switched on',
-    39: 'Operation enabled',
-    7: 'Quick stop active',
-    15: 'Fault reaction active',
-    8: 'Fault'
+    0x00: EPOSStatus.Not_ready_to_switch_on,
+    0x40: EPOSStatus.Switch_on_disabled,
+    0x21: EPOSStatus.Ready_to_switch_on,
+    0x23: EPOSStatus.Switched_on,
+    0x27: EPOSStatus.Operation_enabled,
+    0x07: EPOSStatus.Quick_stop_active,
+    0x0F: EPOSStatus.Fault_reaction_active,
+    0x08: EPOSStatus.Fault
 }
 mode_epos = {
     'PPM': 1,
@@ -37,14 +49,58 @@ mode_epos = {
     'CST': 10
 }
 
-def enable(node: int):
-    return [
-        make_can_msg(node=node, index=0x6040, data=EPOSCommand.SWITCH_ON_AND_ENABLE)]
-    # return [
-    #     make_can_msg(node=node, index=0x6040, data=EPOSCommand.SHUTDOWN),
-    #     make_can_msg(node=node, index=0x6040, data=EPOSCommand.SWITCH_ON),
-    #     make_can_msg(node=node, index=0x6040, data=EPOSCommand.SWITCH_ON_AND_ENABLE),
-    #     make_can_msg(node=node, index=0x6060, data=0x01)]
+transitions = {
+    1: EPOSCommand.DISABLE_VOLTAGE,
+    2: EPOSCommand.SHUTDOWN,
+    3: EPOSCommand.SWITCH_ON,
+    4: EPOSCommand.SWITCH_ON_AND_ENABLE,
+    5: EPOSCommand.DISABLE_OPERATION,
+    6: EPOSCommand.SHUTDOWN,
+    7: EPOSCommand.DISABLE_VOLTAGE,
+    8: EPOSCommand.SHUTDOWN,
+    9: EPOSCommand.DISABLE_VOLTAGE,
+    10: EPOSCommand.DISABLE_VOLTAGE,
+    11: EPOSCommand.QUICK_STOP,
+    12: EPOSCommand.DISABLE_VOLTAGE,
+    14: EPOSCommand.FAULT_RESET,
+    15: EPOSCommand.FAULT_RESET,
+}
+
+control_word_dict = {
+    'Switch on disabled': EPOSCommand.DISABLE_VOLTAGE,
+    'Ready to switch on': EPOSCommand.SHUTDOWN,
+    'Switched on': EPOSCommand.SWITCH_ON,
+    'Operation enabled': EPOSCommand.SWITCH_ON_AND_ENABLE,
+    'Quick stop active': EPOSCommand.QUICK_STOP,
+}
+
+
+def set_state(node: int, target_state, graph: nx.classes.digraph = None, status_word: int = None):
+    if target_state in status_epos.values():
+        if graph is not None and status_word is not None:
+            if get_status(status_word) != target_state:
+                msgs = []
+                for transition in get_transitions(graph=graph, start=get_status(status_word), end=target_state):
+                    msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
+                return msgs
+            else:
+                return None
+        else:
+            if target_state == EPOSStatus.Operation_enabled:
+                command = EPOSCommand.SWITCH_ON_AND_ENABLE
+            else:
+                command = EPOSCommand.DISABLE_OPERATION
+            return [
+                make_can_msg(node=node, index=0x6040, data=command)]
+    else:
+        raise ValueError(f'Target state not valid: {target_state}')
+
+
+def configuration(node: int, graph: nx.classes.digraph, status_word: int):
+    msgs = []
+    for transition in get_transitions(graph=graph, start=get_status(status_word), end='Ready to switch on'):
+        msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
+    return msgs
 
 
 def read_status(node: int):
@@ -59,10 +115,29 @@ def read_position(node: int):
     return [make_can_msg(node=node, index=0x6064, write=False)]
 
 
-def disable(node: int):
-    return [
-        make_can_msg(node=node, index=0x6040, data=EPOSCommand.DISABLE_OPERATION),
-    ]
+def get_status(status_word: int) -> str:
+    return status_epos.get(status_word & 0x006F)
+
+
+def get_status_from_dict(dictionary: dict) -> str:
+    return get_status(dictionary.get('Statusword'))
+
+
+def get_status_hex(status_word: int) -> int:
+    return status_word & 0x006F
+
+
+def reset_position(node: int, position: int = 0, prev_mode: str = 'PPM', status_word=0x23):
+    control_word = control_word_dict.get(get_status(status_word))
+    if control_word is None:
+        raise ValueError(f'Error getting control word from status: {hex(status_word)}')
+
+    return [make_can_msg(node, 0x6060, 0, mode_epos.get('HMM')),  # operation mode=Homing mode
+            make_can_msg(node, 0x6098, 0, 37),  # homing method = Actual position
+            make_can_msg(node, 0x30B0, 0, position),  # set position 0
+            make_can_msg(node, 0x6040, 0, control_word + 0x10),  # set position 0
+            make_can_msg(node, 0x6060, 0, mode_epos.get(prev_mode)),  # operation mode=prev_mode default=PPM
+            ]
 
 
 def fault_reset(node: int):
@@ -99,3 +174,11 @@ def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
         # make_can_msg(node, 0x6040, 0, EPOSCommand.SWITCH_ON_AND_ENABLE),
         # make_can_msg(node, 0x2078, 2, 0x3000)  # DO configuration
     ]
+
+
+def get_transitions(graph, start, end):
+    edge_labels = nx.get_edge_attributes(graph, 'transitions')
+    path = nx.shortest_path(graph)
+    path_edges = [edge_labels.get(x, edge_labels.get((x[1], x[0]))) for x in
+                  zip(path[start][end], path[start][end][1:])]
+    return path_edges
