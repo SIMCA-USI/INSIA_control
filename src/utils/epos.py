@@ -80,7 +80,7 @@ def set_state(node: int, target_state, graph: nx.classes.digraph = None, status_
         if graph is not None and status_word is not None:
             if get_status(status_word) != target_state:
                 msgs = []
-                for transition in get_transitions(graph=graph, print(get_transitions(g, 'Fault', 'Switched on'))start=get_status(status_word), end=target_state):
+                for transition in get_transitions(graph=graph, start=get_status(status_word), end=target_state):
                     msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
                 return msgs
             else:
