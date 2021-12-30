@@ -161,6 +161,13 @@ class Maxon_Node(Node):
     def shutdown(self):
         try:
             self.shutdown_flag = True
+            msg = epos.set_state(node=self.cobid, target_state=EPOSStatus.Switched_on, graph=self.motor_graph,
+                                 status_word=self.epos_dictionary.get('Statusword'))
+            if msg is not None:
+                self.pub_CAN.publish(CANGroup(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    can_frames=msg
+                ))
             self.timer_heartbit.cancel()
         except Exception:
             pass

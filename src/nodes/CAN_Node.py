@@ -142,6 +142,8 @@ class CAN_Node(Node):
 
     def shutdown(self):
         try:
+            for _ in range(3):
+                rclpy.spin_once(self)
             self.shutdown_flag = True
             self.timer_heartbit.cancel()
         except Exception:
