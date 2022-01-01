@@ -25,7 +25,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='maxon',
+            executable='epos4',
             name='EPOS4_Volante',
             parameters=[parameters_file_path],
             output='screen',

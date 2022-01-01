@@ -149,18 +149,16 @@ def fault_reset(node: int):
             make_can_msg(node, 0x6040, 0, EPOSCommand.SWITCH_ON_AND_ENABLE), ]
 
 
-def set_angle_value(node: int, angle: int, absolute: bool = False, motor_type: str = 'MCD60'):
+def set_angle_value(node: int, angle: int, absolute: bool = False):
     qc_to_rotate = int(QC_FACTOR * angle)
     set_angle = []
     if absolute:
         set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
-        if motor_type == 'EPOS4':
-            set_angle += [make_can_msg(node=node, index=0x6040, data=0x002F)]
+        set_angle += [make_can_msg(node=node, index=0x6040, data=0x002F)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x003F)]
     else:
         set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
-        if motor_type == 'EPOS4':
-            set_angle += [make_can_msg(node=node, index=0x6040, data=0x006F)]
+        set_angle += [make_can_msg(node=node, index=0x6040, data=0x006F)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x007F)]
     return set_angle
 

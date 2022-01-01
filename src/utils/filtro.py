@@ -27,7 +27,7 @@ class Decoder:
         for i in imiev_parameters.keys():  # cobid
             for j in imiev_parameters[i].keys():  # index
                 if j == 0xFFFF:
-                    self.dic_parameters.update({f'{i + cobid}:': Filter(imiev_parameters[i][j][0xFF])})
+                    self.dic_parameters.update({f'{i + cobid}': Filter(imiev_parameters[i][j][0xFF])})
                 else:
                     for k in imiev_parameters[i][j].keys():
                         if k == 0xFF:
@@ -40,7 +40,7 @@ class Decoder:
             return self.dic_parameters.get(f'{msg.cobid}:{msg.index}:{msg.sub_index}').decoder(msg)
         elif f'{msg.cobid}:{msg.index}' in self.dic_parameters.keys():
             return self.dic_parameters.get(f'{msg.cobid}:{msg.index}').decoder(msg)
-        elif f'{msg.cobid}:' in self.dic_parameters.keys():
+        elif f'{msg.cobid}' in self.dic_parameters.keys():
             return self.dic_parameters.get(f'{msg.cobid}:').decoder(msg)
         else:
             raise ValueError(f'msg no declarado: {msg.cobid}:{msg.index}:{msg.sub_index}')
@@ -71,7 +71,7 @@ class Filter:
 
 def main(args=None):
     try:
-        Decoder()
+        Decoder(dictionary='../epos4_dictionary.yaml')
     except KeyboardInterrupt:
         print('CAN: Keyboard interrupt')
     except Exception as e:

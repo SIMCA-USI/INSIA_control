@@ -1,0 +1,31 @@
+0x580: # se suma automaticamente el cobid
+  0x6041:
+    0x00:
+      name: Statusword
+      inicio: 0
+      longitud: 16
+      factor: 1
+      offset: 0
+      signed: False
+      type: intel #motorola/bigendian    intel/little endian
+      can_open: True
+  0x6064:
+    0x00:
+      name: position_actual_value
+      inicio: 0
+      longitud: 32
+      factor: 1
+      offset: 0
+      signed: True
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: True
+  0x3150:
+    0x01:
+      name: Digital_outputs_logic_state
+      inicio: 0
+      longitud: 16
+      factor: 1
+      offset: 0
+      signed: True
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: True
