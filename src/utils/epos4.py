@@ -137,7 +137,8 @@ def reset_position(node: int, position: int = 0, prev_mode: str = 'PPM', status_
     return [make_can_msg(node, 0x6060, 0, mode_epos.get('HMM')),  # operation mode=Homing mode
             make_can_msg(node, 0x6098, 0, 37),  # homing method = Actual position
             make_can_msg(node, 0x30B0, 0, position),  # set position 0
-            make_can_msg(node, 0x6040, 0, control_word + 0x10),  # set position 0
+            make_can_msg(node, 0x6040, 0, control_word & 0xEF),  # set position 0
+            make_can_msg(node, 0x6040, 0, (control_word & 0xEF) + 0x10),  # set position 0
             make_can_msg(node, 0x6060, 0, mode_epos.get(prev_mode)),  # operation mode=prev_mode default=PPM
             ]
 

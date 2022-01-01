@@ -29,6 +29,16 @@
       signed: True
       type: intel #motorola/big_endian    intel/little_endian
       can_open: True
+  0x6061:
+    0x01:
+      name: Modes_of_operation
+      inicio: 0
+      longitud: 32
+      factor: 1
+      offset: 0
+      signed: False
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: True
 0x80:
   0xFFFF:
     0xFF:

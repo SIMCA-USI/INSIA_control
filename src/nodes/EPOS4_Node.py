@@ -3,7 +3,7 @@ import os
 import networkx as nx
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped
+from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -70,6 +70,10 @@ class Maxon_Node(Node):
         self.create_subscription(msg_type=Header,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/FaultReset',
                                  callback=self.fault_reset, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=IntStamped,
+                                 topic='/' + vehicle_parameters[
+                                     'id_vehicle'] + '/' + self.get_name() + '/ResetPosition',
+                                 callback=self.reset_position, qos_profile=HistoryPolicy.KEEP_LAST)
         self.num = 0
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
@@ -77,6 +81,13 @@ class Maxon_Node(Node):
 
     def fault_reset(self, data: Header):
         self.update_state(fault_reset=True)
+
+    def reset_position(self, data):
+        self.pub_CAN.publish(CANGroup(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            can_frames=epos.reset_position(node=self.cobid, position=data.data, prev_mode=self.op_mode,
+                                           status_word=self.epos_dictionary.get('Statusword'))
+        ))
 
     def read_dictionary(self):
         keys = list(self.decoder.dic_parameters.keys())
