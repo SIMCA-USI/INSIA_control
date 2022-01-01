@@ -1,4 +1,5 @@
 from enum import IntEnum, Enum
+from typing import Optional
 
 from src.utils.utils import make_can_msg
 import networkx as nx
@@ -86,12 +87,10 @@ def set_state(node: int, target_state, graph: nx.classes.digraph = None, status_
             else:
                 return None
         else:
-            if target_state == EPOSStatus.Operation_enabled:
-                command = EPOSCommand.SWITCH_ON_AND_ENABLE
-            else:
-                command = EPOSCommand.DISABLE_OPERATION
-            return [
-                make_can_msg(node=node, index=0x6040, data=command)]
+            msgs = []
+            for transition in get_transitions(graph=graph, start=EPOSStatus.Fault, end=target_state):
+                msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
+            return msgs
     else:
         raise ValueError(f'Target state not valid: {target_state}')
 
@@ -115,7 +114,7 @@ def read_position(node: int):
     return [make_can_msg(node=node, index=0x6064, write=False)]
 
 
-def get_status(status_word: int) -> str:
+def get_status(status_word: int) -> Optional[str]:
     if status_word is not None:
         return status_epos.get(status_word & 0x006F)
     else:

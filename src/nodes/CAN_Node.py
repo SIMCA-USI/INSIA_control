@@ -137,6 +137,7 @@ class CAN_Node(Node):
             data=data,
             msg_raw=bytearray(can_frame)
         )
+        self.logger.debug(f'Decoded msg {hex(cobid)} {hex(index)} {hex(sub_index)} {data_raw}')
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_CAN.publish(msg)
 

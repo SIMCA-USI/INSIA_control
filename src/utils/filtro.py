@@ -41,7 +41,7 @@ class Decoder:
         elif f'{msg.cobid}:{msg.index}' in self.dic_parameters.keys():
             return self.dic_parameters.get(f'{msg.cobid}:{msg.index}').decoder(msg)
         elif f'{msg.cobid}' in self.dic_parameters.keys():
-            return self.dic_parameters.get(f'{msg.cobid}:').decoder(msg)
+            return self.dic_parameters.get(f'{msg.cobid}').decoder(msg)
         else:
             raise ValueError(f'msg no declarado: {msg.cobid}:{msg.index}:{msg.sub_index}')
 

@@ -1,6 +1,6 @@
 import os
-import sys
 
+import networkx as nx
 import rclpy
 import yaml
 from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped
@@ -9,11 +9,10 @@ from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
-from src.utils.filtro import Decoder
-import networkx as nx
 
 import src.utils.epos4 as epos
-from src.utils.epos4 import EPOSStatus, EPOSCommand
+from src.utils.epos4 import EPOSStatus
+from src.utils.filtro import Decoder
 from src.utils.utils import make_can_msg
 
 
@@ -42,6 +41,7 @@ class Maxon_Node(Node):
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
         self.last_position_updated = 0
         self.motor_graph = nx.read_graphml('/home/simca/ros2_ws/src/INSIA_control/src/utils/maxon.graphml')
+        self.informed_fault = False
 
         self.status_freq = self.get_parameter_or('status_freq', Parameter(name='status_freq', value=2)).value
 
@@ -67,22 +67,31 @@ class Maxon_Node(Node):
         self.create_subscription(msg_type=BoolStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
                                  callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
-
+        self.create_subscription(msg_type=Header,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/FaultReset',
+                                 callback=self.fault_reset, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.num = 0
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
-        self.timer_read_dictionary = self.create_timer(10, self.read_dictionary)
+        self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
         self.timer_io = None
 
+    def fault_reset(self, data: Header):
+        self.update_state(fault_reset=True)
+
     def read_dictionary(self):
-        keys = list(self.epos_dictionary)
+        keys = list(self.decoder.dic_parameters.keys())
         next_key = (self.last_position_updated + 1) % len(keys)
         self.last_position_updated = next_key
         key = keys[next_key].split(':')
-        key = key + ([0] * (3 - len(key)))  # array de longitud 3 relleno de cobid index subindex y los 0's necesarios
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=[make_can_msg(node=self.cobid, index=key[1], sub_index=key[2], write=False)]
-        ))
-        self.logger.debug(f'Read {hex(key[1])}:{hex(key[2])}')
+        if 500 < int(key[0]):
+            key = key + ([0] * (
+                    3 - len(key)))  # array de longitud 3 relleno de cobid index subindex y los 0's necesarios
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[make_can_msg(node=self.cobid, index=int(key[1]), sub_index=int(key[2]), write=False)]
+            ))
+            self.logger.debug(f'Read {hex(int(key[1]))}:{hex(int(key[2]))}')
+            self.num += 1
 
     def read_io(self):
         self.pub_CAN.publish(CANGroup(
@@ -98,13 +107,7 @@ class Maxon_Node(Node):
         else:
             self.target_state = EPOSStatus.Switched_on
 
-        msg = epos.set_state(node=self.cobid, target_state=self.target_state, graph=self.motor_graph,
-                             status_word=self.epos_dictionary.get('Statusword'))
-        if msg is not None:
-            self.pub_CAN.publish(CANGroup(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=msg
-            ))
+        self.update_state()
 
     def digital(self, msg):
         # TODO: Habilitar salida digital comparando con las salidas existentes
@@ -136,32 +139,36 @@ class Maxon_Node(Node):
         else:
             self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
 
-    def fault_reset(self):
+    def update_state(self, fault=False, fault_reset=False):
         status = epos.get_status_from_dict(self.epos_dictionary)
-        fault_mode = status == EPOSStatus.Fault or status == EPOSStatus.Fault_reaction_active
-        if self.auto_fault_reset or not fault_mode:
-            if fault_mode:
-                self.logger.warn('Motor in fault mode')
+        fault_mode = (status == EPOSStatus.Fault or status == EPOSStatus.Fault_reaction_active)
+        if self.auto_fault_reset or fault_reset or (not fault_mode and not fault):
+            if fault_reset:
+                self.logger.info('Reset fault')
             msg = epos.set_state(node=self.cobid, target_state=self.target_state, graph=self.motor_graph,
-                                 status_word=self.epos_dictionary.get('Statusword'))
+                                 status_word=self.epos_dictionary.get('Statusword') if not fault else None)
             if msg is not None:
                 self.pub_CAN.publish(CANGroup(
                     header=Header(stamp=self.get_clock().now().to_msg()),
                     can_frames=msg
                 ))
-        else:
-            self.logger.warn('Motor in fault mode')
+            self.informed_fault = False
 
     def msg_can(self, msg):
         try:
             name, value = self.decoder.decode(msg)
             self.epos_dictionary.update({name: value})
+            if name == 'Fault':
+                self.logger.warn('Fault')
+                self.update_state(fault=True)
             if name == 'Statusword':
-                self.fault_reset()
+                self.update_state()
             self.logger.debug(f'Decoded {name}: {value}')
         except ValueError as e:
             pass
-            # self.logger.debug(f'{e}')
+            self.logger.debug(f'{e}')
+        except Exception as e:
+            self.logger.debug(f'{e}')
 
     def publish_heartbit(self):
         msg = StringStamped(
