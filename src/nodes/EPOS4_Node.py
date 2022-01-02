@@ -3,7 +3,7 @@ import os
 import networkx as nx
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped
+from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped, EPOSAnalog
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -33,7 +33,7 @@ class Maxon_Node(Node):
         self.op_mode = self.get_parameter('mode').value
         self.can_conected = self.get_parameter('can').value
         self.epos_dictionary = {}
-        self.digital_outputs = {1: False, 2: False, 3: False, 4: False}
+        self.digital_outputs = {1: False, 2: False}
         self.digital_outputs_target = self.digital_outputs
         self.current_position = None
         self.target_state = EPOSStatus.Switched_on
@@ -64,6 +64,10 @@ class Maxon_Node(Node):
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Digital',
                                  callback=self.digital, qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.create_subscription(msg_type=EPOSAnalog,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Analog',
+                                 callback=self.analog, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=BoolStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
                                  callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
@@ -77,6 +81,7 @@ class Maxon_Node(Node):
         self.num = 0
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
+        # self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
         self.timer_io = None
 
     def fault_reset(self, data: Header):
@@ -88,6 +93,10 @@ class Maxon_Node(Node):
             can_frames=epos.reset_position(node=self.cobid, position=data.data, prev_mode=self.op_mode,
                                            status_word=self.epos_dictionary.get('Statusword'))
         ))
+
+    def print_dictionary(self):
+        for key, value in self.epos_dictionary.items():
+            print(f'{key}: {value}')
 
     def read_dictionary(self):
         keys = list(self.decoder.dic_parameters.keys())
@@ -120,14 +129,33 @@ class Maxon_Node(Node):
 
         self.update_state()
 
-    def digital(self, msg):
-        # TODO: Habilitar salida digital comparando con las salidas existentes
-        if msg.io_digital in self.digital_outputs:
-            if self.timer_io is None:
-                self.timer_io = self.create_timer(self.status_freq, self.read_io)
-            self.digital_outputs_target.update({msg.io_digital: msg.enable})
-            if self.digital_outputs_target != self.digital_outputs:
-                self.send_io()
+    def analog(self, msg: EPOSAnalog):
+        if 1 <= msg.io_analog <= 2 and -4 <= msg.voltaje <= 4:
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=epos.set_analog(node=self.cobid, analog_out=msg.io_analog, voltage=msg.voltaje)
+            ))
+        else:
+            self.logger.warn(f'Set voltage out of range out: {msg.io_analog} voltage: {msg.voltaje}')
+
+    def digital(self, msg: EPOSDigital):
+        self.logger.error(f'Digital {msg.io_digital} {msg.enable}')
+        if 1 <= msg.io_digital <= 2:
+            self.digital_outputs.update({msg.io_digital: msg.enable})
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=epos.set_digital(node=self.cobid, out_1=self.digital_outputs.get(1),
+                                            out_2=self.digital_outputs.get(2))
+            ))
+        else:
+            self.logger.warn(f'Digital outpout out of range')
+        # # TODO: Habilitar salida digital comparando con las salidas existentes
+        # if msg.io_digital in self.digital_outputs:
+        #     if self.timer_io is None:
+        #         self.timer_io = self.create_timer(self.status_freq, self.read_io)
+        #     self.digital_outputs_target.update({msg.io_digital: msg.enable})
+        #     if self.digital_outputs_target != self.digital_outputs:
+        #         self.send_io()
 
     def send_io(self):
         msg_data = 0

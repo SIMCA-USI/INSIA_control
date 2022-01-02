@@ -30,13 +30,32 @@
       type: intel #motorola/big_endian    intel/little_endian
       can_open: True
   0x6061:
-    0x01:
-      name: Modes_of_operation
+    0x00:
+      name: Modes_of_operation_display
       inicio: 0
-      longitud: 32
+      longitud: 8
       factor: 1
       offset: 0
-      signed: False
+      signed: True
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: True
+  0x3180:
+    0x01:
+      name: Analog_output_1_configuration
+      inicio: 0
+      longitud: 16
+      factor: 1
+      offset: 0
+      signed: True
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: True
+    0x02:
+      name: Analog_output_2_configuration
+      inicio: 0
+      longitud: 16
+      factor: 1
+      offset: 0
+      signed: True
       type: intel #motorola/big_endian    intel/little_endian
       can_open: True
 0x80:

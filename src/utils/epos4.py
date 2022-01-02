@@ -102,6 +102,16 @@ def configuration(node: int, graph: nx.classes.digraph, status_word: int):
     return msgs
 
 
+def set_digital(node: int, out_1: bool = False, out_2: bool = False):
+    out = (2 if out_2 else 0) + (1 if out_1 else 0)
+    return [make_can_msg(node=node, index=0x3150, sub_index=0x02, data=out)]
+
+
+def set_analog(node: int, analog_out: int, voltage: float):
+    print(f'Set analog {analog_out} v {int(voltage * 1000)}')
+    return [make_can_msg(node=node, index=0x3182, sub_index=analog_out, data=int(voltage * 1000))]
+
+
 def read_status(node: int):
     return [make_can_msg(node=node, index=0x6041, write=False)]
 
