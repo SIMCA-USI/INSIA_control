@@ -10,13 +10,13 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
-import src.utils.epos4 as epos
-from src.utils.epos4 import EPOSStatus
+import src.utils.epos as epos
+from src.utils.epos import EPOSStatus
 from src.utils.filtro import Decoder
 from src.utils.utils import make_can_msg
 
 
-class EPOS4_Node(Node):
+class EPOS_Node(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -33,7 +33,7 @@ class EPOS4_Node(Node):
         self.op_mode = self.get_parameter('mode').value
         self.can_conected = self.get_parameter('can').value
         self.epos_dictionary = {}
-        self.digital_outputs = {1: False, 2: False}
+        self.digital_outputs = {1: False, 2: False, 3: False, 4: False}
         self.digital_outputs_target = self.digital_outputs
         self.current_position = None
         self.target_state = EPOSStatus.Switched_on
@@ -48,6 +48,7 @@ class EPOS4_Node(Node):
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.pub_CAN = self.create_publisher(msg_type=CANGroup,
                                              topic='/' + vehicle_parameters['id_vehicle'] + '/' + str(
                                                  self.can_conected), qos_profile=HistoryPolicy.KEEP_LAST)
@@ -63,10 +64,6 @@ class EPOS4_Node(Node):
         self.create_subscription(msg_type=EPOSDigital,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Digital',
                                  callback=self.digital, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=EPOSAnalog,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Analog',
-                                 callback=self.analog, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
@@ -113,14 +110,6 @@ class EPOS4_Node(Node):
             self.logger.debug(f'Read {hex(int(key[1]))}:{hex(int(key[2]))}')
             self.num += 1
 
-    def read_io(self):
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=epos.read_io(node=self.cobid)
-        ))
-        if self.digital_outputs_target != self.digital_outputs:
-            self.send_io()
-
     def enable(self, msg):
         if msg.data:
             self.target_state = EPOSStatus.Operation_enabled
@@ -129,23 +118,24 @@ class EPOS4_Node(Node):
 
         self.update_state()
 
-    def analog(self, msg: EPOSAnalog):
-        if 1 <= msg.io_analog <= 2 and -4 <= msg.voltaje <= 4:
-            self.pub_CAN.publish(CANGroup(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=epos.set_analog(node=self.cobid, analog_out=msg.io_analog, voltage=msg.voltaje)
-            ))
-        else:
-            self.logger.warn(f'Set voltage out of range out: {msg.io_analog} voltage: {msg.voltaje}')
+    # def analog(self, msg: EPOSAnalog):
+    #     if 1 <= msg.io_analog <= 2 and -4 <= msg.voltaje <= 4:
+    #         self.pub_CAN.publish(CANGroup(
+    #             header=Header(stamp=self.get_clock().now().to_msg()),
+    #             can_frames=epos.set_analog(node=self.cobid, analog_out=msg.io_analog, voltage=msg.voltaje)
+    #         ))
+    #     else:
+    #         self.logger.warn(f'Set voltage out of range out: {msg.io_analog} voltage: {msg.voltaje}')
 
     def digital(self, msg: EPOSDigital):
         self.logger.error(f'Digital {msg.io_digital} {msg.enable}')
-        if 1 <= msg.io_digital <= 2:
+        if 1 <= msg.io_digital <= 4:
             self.digital_outputs.update({msg.io_digital: msg.enable})
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 can_frames=epos.set_digital(node=self.cobid, out_1=self.digital_outputs.get(1),
-                                            out_2=self.digital_outputs.get(2))
+                                            out_2=self.digital_outputs.get(2), out_3=self.digital_outputs.get(3),
+                                            out_4=self.digital_outputs.get(4))
             ))
         else:
             self.logger.warn(f'Digital outpout out of range')
@@ -156,17 +146,6 @@ class EPOS4_Node(Node):
         #     self.digital_outputs_target.update({msg.io_digital: msg.enable})
         #     if self.digital_outputs_target != self.digital_outputs:
         #         self.send_io()
-
-    def send_io(self):
-        msg_data = 0
-        for output in self.digital_outputs_target:
-            msg_data = (msg_data << 1) + self.digital_outputs_target.get(output)
-        msg_data = msg_data << (16 - len(self.digital_outputs_target))
-
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=[make_can_msg(node=self.cobid, index=0x2078, data=msg_data)]
-        ))
 
     def consigna(self, msg):
         status = epos.get_status_from_dict(self.epos_dictionary)
@@ -235,7 +214,7 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = EPOS4_Node()
+        manager = EPOS_Node()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('Maxon: Keyboard interrupt')
