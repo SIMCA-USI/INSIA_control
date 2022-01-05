@@ -113,14 +113,6 @@ class EPOS4_Node(Node):
             self.logger.debug(f'Read {hex(int(key[1]))}:{hex(int(key[2]))}')
             self.num += 1
 
-    def read_io(self):
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=epos.read_io(node=self.cobid)
-        ))
-        if self.digital_outputs_target != self.digital_outputs:
-            self.send_io()
-
     def enable(self, msg):
         if msg.data:
             self.target_state = EPOSStatus.Operation_enabled
@@ -155,17 +147,6 @@ class EPOS4_Node(Node):
         #     self.digital_outputs_target.update({msg.io_digital: msg.enable})
         #     if self.digital_outputs_target != self.digital_outputs:
         #         self.send_io()
-
-    def send_io(self):
-        msg_data = 0
-        for output in self.digital_outputs_target:
-            msg_data = (msg_data << 1) + self.digital_outputs_target.get(output)
-        msg_data = msg_data << (16 - len(self.digital_outputs_target))
-
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=[make_can_msg(node=self.cobid, index=0x2078, data=msg_data)]
-        ))
 
     def consigna(self, msg):
         status = epos.get_status_from_dict(self.epos_dictionary)
@@ -237,7 +218,7 @@ def main(args=None):
         manager = EPOS4_Node()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('Maxon: Keyboard interrupt')
+        print('EPOS4: Keyboard interrupt')
     except Exception as e:
         print(f'{e}')
     finally:

@@ -217,7 +217,7 @@ def main(args=None):
         manager = EPOS_Node()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('Maxon: Keyboard interrupt')
+        print('MCD60: Keyboard interrupt')
     except Exception as e:
         print(f'{e}')
     finally:
