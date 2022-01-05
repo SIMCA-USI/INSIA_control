@@ -103,8 +103,9 @@ def configuration(node: int, graph: nx.classes.digraph, status_word: int):
 
 
 def set_digital(node: int, out_1: bool = False, out_2: bool = False, out_3: bool = False, out_4: bool = False):
-    out = ((8 if out_4 else 0) + (4 if out_3 else 0) + (2 if out_2 else 0) + (1 if out_1 else 0)) << 12
-    return [make_can_msg(node=node, index=0x2078, sub_index=0x01, data=out)]
+    out = ((8 if out_1 else 0) + (4 if out_2 else 0) + (2 if out_3 else 0) + (1 if out_4 else 0)) << 12
+    return [make_can_msg(node=node, index=0x2078, sub_index=0x02, data=0xffff),
+            make_can_msg(node=node, index=0x2078, sub_index=0x01, data=out)]
 
 
 def read_status(node: int):
@@ -140,7 +141,7 @@ def reset_position(node: int, position: int = 0, prev_mode: str = 'PPM', status_
         raise ValueError(f'Error getting control word from status: {hex(status_word)}')
 
     return [make_can_msg(node, 0x6060, 0, mode_epos.get('HMM')),  # operation mode=Homing mode
-            make_can_msg(node, 0x6098, 0, 37),  # homing method = Actual position
+            make_can_msg(node, 0x6098, 0, 35),  # homing method = Actual position
             make_can_msg(node, 0x2081, 0, position),  # set position 0
             make_can_msg(node, 0x6040, 0, control_word & 0xEF),  # set position 0
             make_can_msg(node, 0x6040, 0, (control_word & 0xEF) + 0x10),  # set position 0

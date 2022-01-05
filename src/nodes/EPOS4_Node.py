@@ -139,7 +139,6 @@ class EPOS4_Node(Node):
             self.logger.warn(f'Set voltage out of range out: {msg.io_analog} voltage: {msg.voltaje}')
 
     def digital(self, msg: EPOSDigital):
-        self.logger.error(f'Digital {msg.io_digital} {msg.enable}')
         if 1 <= msg.io_digital <= 2:
             self.digital_outputs.update({msg.io_digital: msg.enable})
             self.pub_CAN.publish(CANGroup(
@@ -148,7 +147,7 @@ class EPOS4_Node(Node):
                                             out_2=self.digital_outputs.get(2))
             ))
         else:
-            self.logger.warn(f'Digital outpout out of range')
+            self.logger.warn(f'Digital output out of range')
         # # TODO: Habilitar salida digital comparando con las salidas existentes
         # if msg.io_digital in self.digital_outputs:
         #     if self.timer_io is None:
