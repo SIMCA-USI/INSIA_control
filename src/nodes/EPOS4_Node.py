@@ -10,10 +10,9 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
-import src.utils.epos4 as epos
-from src.utils.epos4 import EPOSStatus
 from src.utils.filtro import Decoder
 from src.utils.utils import make_can_msg
+import importlib
 
 
 class EPOS4_Node(Node):
@@ -32,11 +31,21 @@ class EPOS4_Node(Node):
         self.cobid = self.get_parameter('cobid').value
         self.op_mode = self.get_parameter('mode').value
         self.can_conected = self.get_parameter('can').value
+        driver_type = self.get_parameter('driver_type').value
+        if driver_type == 'epos4':
+            self.epos = importlib.import_module('src.utils.epos4')
+        elif driver_type == 'epos':
+            self.epos = importlib.import_module('src.utils.epos')
+        else:
+            raise ValueError(f'Driver {driver_type} is not implemented')
+        self.EPOSStatus = getattr(self.epos, 'EPOSStatus')
         self.epos_dictionary = {}
-        self.digital_outputs = {1: False, 2: False}
+        self.digital_outputs = {}
+        for i in range(self.get_parameter('digital_outputs').value):
+            self.digital_outputs.update({i + 1: False})
         self.digital_outputs_target = self.digital_outputs
         self.current_position = None
-        self.target_state = EPOSStatus.Switched_on
+        self.target_state = self.EPOSStatus.Switched_on
         self.auto_fault_reset = self.get_parameter('auto_fault_reset').value
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
         self.last_position_updated = 0
@@ -48,6 +57,7 @@ class EPOS4_Node(Node):
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.pub_CAN = self.create_publisher(msg_type=CANGroup,
                                              topic='/' + vehicle_parameters['id_vehicle'] + '/' + str(
                                                  self.can_conected), qos_profile=HistoryPolicy.KEEP_LAST)
@@ -78,7 +88,7 @@ class EPOS4_Node(Node):
                                  topic='/' + vehicle_parameters[
                                      'id_vehicle'] + '/' + self.get_name() + '/ResetPosition',
                                  callback=self.reset_position, qos_profile=HistoryPolicy.KEEP_LAST)
-        self.num = 0
+
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
         # self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
@@ -90,8 +100,8 @@ class EPOS4_Node(Node):
     def reset_position(self, data):
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=epos.reset_position(node=self.cobid, position=data.data, prev_mode=self.op_mode,
-                                           status_word=self.epos_dictionary.get('Statusword'))
+            can_frames=self.epos.reset_position(node=self.cobid, position=data.data, prev_mode=self.op_mode,
+                                                status_word=self.epos_dictionary.get('Statusword'))
         ))
 
     def print_dictionary(self):
@@ -111,13 +121,12 @@ class EPOS4_Node(Node):
                 can_frames=[make_can_msg(node=self.cobid, index=int(key[1]), sub_index=int(key[2]), write=False)]
             ))
             self.logger.debug(f'Read {hex(int(key[1]))}:{hex(int(key[2]))}')
-            self.num += 1
 
     def enable(self, msg):
         if msg.data:
-            self.target_state = EPOSStatus.Operation_enabled
+            self.target_state = self.EPOSStatus.Operation_enabled
         else:
-            self.target_state = EPOSStatus.Switched_on
+            self.target_state = self.EPOSStatus.Switched_on
 
         self.update_state()
 
@@ -125,7 +134,7 @@ class EPOS4_Node(Node):
         if 1 <= msg.io_analog <= 2 and -4 <= msg.voltaje <= 4:
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=epos.set_analog(node=self.cobid, analog_out=msg.io_analog, voltage=msg.voltaje)
+                can_frames=self.epos.set_analog(node=self.cobid, analog_out=msg.io_analog, voltage=msg.voltaje)
             ))
         else:
             self.logger.warn(f'Set voltage out of range out: {msg.io_analog} voltage: {msg.voltaje}')
@@ -135,8 +144,8 @@ class EPOS4_Node(Node):
             self.digital_outputs.update({msg.io_digital: msg.enable})
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=epos.set_digital(node=self.cobid, out_1=self.digital_outputs.get(1),
-                                            out_2=self.digital_outputs.get(2))
+                can_frames=self.epos.set_digital(node=self.cobid, out_1=self.digital_outputs.get(1),
+                                                 out_2=self.digital_outputs.get(2))
             ))
         else:
             self.logger.warn(f'Digital output out of range')
@@ -149,23 +158,23 @@ class EPOS4_Node(Node):
         #         self.send_io()
 
     def consigna(self, msg):
-        status = epos.get_status_from_dict(self.epos_dictionary)
-        if status == EPOSStatus.Operation_enabled:
+        status = self.epos.get_status_from_dict(self.epos_dictionary)
+        if status == self.EPOSStatus.Operation_enabled:
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
+                can_frames=self.epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
             ))
         else:
             self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
 
     def update_state(self, fault=False, fault_reset=False):
-        status = epos.get_status_from_dict(self.epos_dictionary)
-        fault_mode = (status == EPOSStatus.Fault or status == EPOSStatus.Fault_reaction_active)
+        status = self.epos.get_status_from_dict(self.epos_dictionary)
+        fault_mode = (status == self.EPOSStatus.Fault or status == self.EPOSStatus.Fault_reaction_active)
         if self.auto_fault_reset or fault_reset or (not fault_mode and not fault):
             if fault_reset:
                 self.logger.info('Reset fault')
-            msg = epos.set_state(node=self.cobid, target_state=self.target_state, graph=self.motor_graph,
-                                 status_word=self.epos_dictionary.get('Statusword') if not fault else None)
+            msg = self.epos.set_state(node=self.cobid, target_state=self.target_state, graph=self.motor_graph,
+                                      status_word=self.epos_dictionary.get('Statusword') if not fault else None)
             if msg is not None:
                 self.pub_CAN.publish(CANGroup(
                     header=Header(stamp=self.get_clock().now().to_msg()),
@@ -199,8 +208,8 @@ class EPOS4_Node(Node):
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            msg = epos.set_state(node=self.cobid, target_state=EPOSStatus.Switched_on, graph=self.motor_graph,
-                                 status_word=self.epos_dictionary.get('Statusword'))
+            msg = self.epos.set_state(node=self.cobid, target_state=self.EPOSStatus.Switched_on, graph=self.motor_graph,
+                                      status_word=self.epos_dictionary.get('Statusword'))
             if msg is not None:
                 self.pub_CAN.publish(CANGroup(
                     header=Header(stamp=self.get_clock().now().to_msg()),

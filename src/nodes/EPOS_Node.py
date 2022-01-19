@@ -75,7 +75,7 @@ class EPOS_Node(Node):
                                  topic='/' + vehicle_parameters[
                                      'id_vehicle'] + '/' + self.get_name() + '/ResetPosition',
                                  callback=self.reset_position, qos_profile=HistoryPolicy.KEEP_LAST)
-        self.num = 0
+
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
         self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
@@ -108,7 +108,6 @@ class EPOS_Node(Node):
                 can_frames=[make_can_msg(node=self.cobid, index=int(key[1]), sub_index=int(key[2]), write=False)]
             ))
             # self.logger.debug(f'Read {hex(int(key[1]))}:{hex(int(key[2]))}')
-            self.num += 1
 
     def enable(self, msg):
         if msg.data:

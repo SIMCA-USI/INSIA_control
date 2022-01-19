@@ -4,10 +4,6 @@ from typing import Optional
 from src.utils.utils import make_can_msg
 import networkx as nx
 
-QC_FACTOR = 1  # 625000 / 360
-DIGITAL_OUTPUT_3 = False
-DIGITAL_OUTPUT_4 = False
-
 
 class EPOSCommand(IntEnum):
     SHUTDOWN = 0x06
@@ -102,8 +98,13 @@ def configuration(node: int, graph: nx.classes.digraph, status_word: int):
     return msgs
 
 
-def set_digital(node: int, out_1: bool = False, out_2: bool = False, out_3: bool = False, out_4: bool = False):
-    out = ((8 if out_1 else 0) + (4 if out_2 else 0) + (2 if out_3 else 0) + (1 if out_4 else 0)) << 12
+def set_digital(node: int, outputs: dict = None):
+    if outputs is None:
+        outputs = {1: False, 2: False, 3: False, 4: False}
+    if not outputs.keys() >= {1,2,3,4}:
+        raise ValueError(f'Digital outputs keys missing {outputs.keys()} , required 1,2,3,4')
+    out = ((8 if outputs.get(1) else 0) + (4 if outputs.get(2) else 0) + (2 if outputs.get(3) else 0) + (
+        1 if outputs.get(4) else 0)) << 12
     return [make_can_msg(node=node, index=0x2078, sub_index=0x02, data=0xffff),
             make_can_msg(node=node, index=0x2078, sub_index=0x01, data=out)]
 
@@ -156,13 +157,12 @@ def fault_reset(node: int):
 
 
 def set_angle_value(node: int, angle: int, absolute: bool = False):
-    qc_to_rotate = int(QC_FACTOR * angle)
     set_angle = []
     if absolute:
-        set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
+        set_angle += [make_can_msg(node=node, index=0x607A, data=angle)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x003F)]
     else:
-        set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
+        set_angle += [make_can_msg(node=node, index=0x607A, data=angle)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x007F)]
     return set_angle
 

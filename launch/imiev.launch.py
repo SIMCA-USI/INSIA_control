@@ -23,14 +23,14 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='epos4',
-        #     name='EPOS4_Volante',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
+        Node(
+            package='INSIA_control',
+            executable='epos4',
+            name='EPOS4_Volante',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
         Node(
             package='INSIA_control',
             executable='mcd60',
