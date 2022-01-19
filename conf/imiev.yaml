@@ -30,11 +30,13 @@ imiev:
     ros__parameters:
       log_level: 10
       cobid: 1
+      driver_type: epos
       mode: PPM #PPM: Profile position mode, TODO:Por ahora solo funciona en profile position mode
       auto_fault_reset: True
       speed: 2000
       dictionary: epos_dictionary.yaml
       can: CAN_7
+      digital_outputs: 4
   CANADAC:
     ros__parameters:
       log_level: 10

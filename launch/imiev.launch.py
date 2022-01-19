@@ -25,7 +25,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='epos4',
+            executable='maxon',
             name='EPOS4_Volante',
             parameters=[parameters_file_path],
             output='screen',
@@ -33,7 +33,7 @@ def generate_launch_description():
         ),
         # Node(
         #     package='INSIA_control',
-        #     executable='mcd60',
+        #     executable='maxon',
         #     name='MCD60_Freno',
         #     parameters=[parameters_file_path],
         #     output='screen',

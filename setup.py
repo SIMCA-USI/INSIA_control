@@ -25,8 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'can = src.nodes.CAN_Node:main',
-            'epos4 = src.nodes.EPOS4_Node:main',
-            'mcd60 = src.nodes.EPOS_Node:main',
+            'maxon = src.nodes.Maxon_Node:main',
             'canadac = src.nodes.CANADAC_Node:main',
             'vehicledecoder = src.nodes.Vehicle_Node:main',
             'test_can = test.test_CAN_node:main',
