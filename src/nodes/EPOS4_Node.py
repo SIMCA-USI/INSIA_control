@@ -144,8 +144,7 @@ class EPOS4_Node(Node):
             self.digital_outputs.update({msg.io_digital: msg.enable})
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=self.epos.set_digital(node=self.cobid, out_1=self.digital_outputs.get(1),
-                                                 out_2=self.digital_outputs.get(2))
+                can_frames=self.epos.set_digital(node=self.cobid, outputs=self.digital_outputs)
             ))
         else:
             self.logger.warn(f'Digital output out of range')
