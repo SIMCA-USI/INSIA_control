@@ -31,14 +31,14 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='maxon',
-        #     name='MCD60_Freno',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
+        Node(
+            package='INSIA_control',
+            executable='maxon',
+            name='MCD60_Freno',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
         # Node(
         #     package='INSIA_control',
         #     executable='canadac',
