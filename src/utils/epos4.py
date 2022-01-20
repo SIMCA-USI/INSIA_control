@@ -182,7 +182,7 @@ def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
     return [
         make_can_msg(node, 0x6040, 0, EPOSCommand.FAULT_RESET),
         make_can_msg(node, 0x6060, 0, mode_epos.get(mode)),  # operation mode
-        make_can_msg(node, 0x6081, 0, 1, rpm),  # rpm speed 1-25000 = 10_000 rpm
+        make_can_msg(node, 0x6081, 0, rpm),  # rpm speed 1-25000 = 10_000 rpm
     ]
 
 

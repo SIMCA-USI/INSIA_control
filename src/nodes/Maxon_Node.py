@@ -178,7 +178,7 @@ class EPOS4_Node(Node):
             if status == self.EPOSStatus.Operation_enabled:
                 self.pub_CAN.publish(CANGroup(
                     header=Header(stamp=self.get_clock().now().to_msg()),
-                    can_frames=self.epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
+                    can_frames=self.epos.set_angle_value(node=self.cobid, angle=int(msg.position), absolute=msg.mode)
                 ))
             else:
                 self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
