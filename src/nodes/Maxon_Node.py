@@ -31,6 +31,7 @@ class EPOS4_Node(Node):
         self.cobid = self.get_parameter('cobid').value
         self.op_mode = self.get_parameter('mode').value
         self.can_conected = self.get_parameter('can').value
+        self.speed = self.get_parameter('speed').value
         driver_type = self.get_parameter('driver_type').value
         if driver_type == 'epos4':
             self.epos = importlib.import_module('src.utils.epos4')
@@ -67,8 +68,13 @@ class EPOS4_Node(Node):
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=EPOSConsigna,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Consigna',
-                                 callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
+                                 topic='/' + vehicle_parameters[
+                                     'id_vehicle'] + '/' + self.get_name() + '/TargetPosition',
+                                 callback=self.target_position_update, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=IntStamped,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/TargetTorque',
+                                 callback=self.target_torque_update(), qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=EPOSDigital,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Digital',
@@ -93,6 +99,14 @@ class EPOS4_Node(Node):
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
         # self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
         self.timer_io = None
+        self.init_device()
+
+    def init_device(self):
+        import src.utils.epos as epos
+        self.pub_CAN.publish(CANGroup(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            can_frames=self.epos.init_device(node=self.cobid, mode=self.op_mode, rpm=self.speed)
+        ))
 
     def fault_reset(self, data: Header):
         self.update_state(fault_reset=True)
@@ -156,15 +170,31 @@ class EPOS4_Node(Node):
         #     if self.digital_outputs_target != self.digital_outputs:
         #         self.send_io()
 
-    def consigna(self, msg):
-        status = self.epos.get_status_from_dict(self.epos_dictionary)
-        if status == self.EPOSStatus.Operation_enabled:
-            self.pub_CAN.publish(CANGroup(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=self.epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
-            ))
+    def target_position_update(self, msg):
+        if self.op_mode == 'PPM':
+            status = self.epos.get_status_from_dict(self.epos_dictionary)
+            if status == self.EPOSStatus.Operation_enabled:
+                self.pub_CAN.publish(CANGroup(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    can_frames=self.epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
+                ))
+            else:
+                self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
         else:
-            self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
+            self.logger.debug(f'Received position but driver is in {self.op_mode} mode')
+
+    def target_torque_update(self, msg:IntStamped):
+        if self.op_mode == 'CST':
+            status = self.epos.get_status_from_dict(self.epos_dictionary)
+            if status == self.EPOSStatus.Operation_enabled:
+                self.pub_CAN.publish(CANGroup(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    can_frames=self.epos.set_torque(node=self.cobid, torque=msg.data)
+                ))
+            else:
+                self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
+        else:
+            self.logger.debug(f'Received position but driver is in {self.op_mode} mode')
 
     def update_state(self, fault=False, fault_reset=False):
         status = self.epos.get_status_from_dict(self.epos_dictionary)

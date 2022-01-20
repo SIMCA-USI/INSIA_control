@@ -167,17 +167,17 @@ def set_angle_value(node: int, angle: int, absolute: bool = False):
     return set_angle
 
 
+def set_torque(node: int, torque: int):
+    return [make_can_msg(node=node, index=0x6071, sub_index=0, data=int(torque))]
+
+
 def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
     if not 1 < rpm < 50000:
         raise ValueError('RPM out of range')
     return [
-        make_can_msg(node, 0x6040, 0, 0x0080),
-        make_can_msg(node, 0x6060, 0, mode_epos.get(mode)),  # operation mode=profile position
+        make_can_msg(node, 0x6040, 0, EPOSCommand.FAULT_RESET),
+        make_can_msg(node, 0x6060, 0, mode_epos.get(mode)),  # operation mode
         make_can_msg(node, 0x6081, 0, 1, rpm),  # rpm speed 1-25000 = 10_000 rpm
-        make_can_msg(node, 0x6040, 0, EPOSCommand.SHUTDOWN),  # ????
-        make_can_msg(node=node, index=0x6040, data=EPOSCommand.SWITCH_ON_AND_ENABLE),
-        # make_can_msg(node, 0x6040, 0, EPOSCommand.SWITCH_ON_AND_ENABLE),
-        # make_can_msg(node, 0x2078, 2, 0x3000)  # DO configuration
     ]
 
 
