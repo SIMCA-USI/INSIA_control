@@ -10,7 +10,7 @@ imiev:
   CAN_7:
     ros__parameters:
       log_level: 0
-      local: True # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
       connection_mode: tcp
       ip: 192.168.0.7
       port: 10001
@@ -20,7 +20,7 @@ imiev:
       log_level: 0
       cobid: 2
       driver_type: epos4
-      mode: PPM #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
+      mode: CST #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
       auto_fault_reset: True
       speed: 2000
       dictionary: epos4_dictionary.yaml

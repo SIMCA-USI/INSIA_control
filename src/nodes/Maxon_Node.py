@@ -74,7 +74,7 @@ class EPOS4_Node(Node):
 
         self.create_subscription(msg_type=IntStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/TargetTorque',
-                                 callback=self.target_torque_update(), qos_profile=HistoryPolicy.KEEP_LAST)
+                                 callback=self.target_torque_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=EPOSDigital,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Digital',
@@ -99,6 +99,8 @@ class EPOS4_Node(Node):
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
         # self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
         self.timer_io = None
+        from time import sleep
+        sleep(1)
         self.init_device()
 
     def init_device(self):
@@ -192,7 +194,7 @@ class EPOS4_Node(Node):
                     can_frames=self.epos.set_torque(node=self.cobid, torque=msg.data)
                 ))
             else:
-                self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
+                self.logger.debug(f'Torque {msg.data} no enviada, motor en status: {status}')
         else:
             self.logger.debug(f'Received position but driver is in {self.op_mode} mode')
 
