@@ -24,10 +24,10 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'can = src.nodes.CAN_Node:main',
-            'maxon = src.nodes.Maxon_Node:main',
-            'canadac = src.nodes.CANADAC_Node:main',
-            'vehicledecoder = src.nodes.Vehicle_Node:main',
+            'can = src.DriverNodes.CAN_Node:main',
+            'maxon = src.DriverNodes.Maxon_Node:main',
+            'canadac = src.DriverNodes.CANADAC_Node:main',
+            'vehicledecoder = src.DriverNodes.Vehicle_Node:main',
             'test_can = test.test_CAN_node:main',
         ],
     },
