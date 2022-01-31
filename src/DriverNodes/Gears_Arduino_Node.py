@@ -29,9 +29,6 @@ class CANADAC_Node(Node):
         self.cobid = self.get_parameter('cobid').value
         self.can_connected = self.get_parameter('can').value
 
-        self.enabled = False
-        self.current_gear = 'M'
-
         self.gear_value = {
             'M': make_can_msg(node=self.cobid, data=0x0000200),
             'N': make_can_msg(node=self.cobid, data=0x00000100),
@@ -61,42 +58,23 @@ class CANADAC_Node(Node):
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Consigna',
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
-                                 callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
-
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
-
-    def enable(self, data):
-        if data.data != self.enabled:
-            if self.enabled:
-                self.publish_gear('M')
-                self.enabled = False
-            else:
-                self.enabled = True
 
     def consigna(self, data):
         if data.data in self.gear_value.keys():
-            if self.enabled:
-                self.publish_gear(data.data)
-            else:
-                self.logger.warn('Target gear received but gears are not enabled')
+            self.publish_gear(data.data)
         else:
             self.logger.error(f' Gear selected not valid {data.data}')
 
     def publish_gear(self, gear):
-        if self.current_gear == 'P':
-            self.logger.warn(f'Not possible to change to manual, current gear P')
-        else:
-            msg = self.gear_value.get(gear)
-            msg.header = Header(stamp=self.get_clock().now().to_msg())
-            self.pub_CAN.publish(CANGroup(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=[
-                    msg
-                ]
-            ))
-            self.current_gear = gear
+        msg = self.gear_value.get(gear)
+        msg.header = Header(stamp=self.get_clock().now().to_msg())
+        self.pub_CAN.publish(CANGroup(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            can_frames=[
+                msg
+            ]
+        ))
 
     def publish_heartbit(self):
         msg = StringStamped(
