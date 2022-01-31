@@ -13,7 +13,7 @@ from src.utils.utils import make_can_msg
 from traceback import format_exc
 
 
-class CANADAC_Node(Node):
+class Arduino_Node(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -29,22 +29,10 @@ class CANADAC_Node(Node):
         self.cobid = self.get_parameter('cobid').value
         self.can_connected = self.get_parameter('can').value
 
-        self.gear_value = {
-            'M': make_can_msg(node=self.cobid, data=0x0000200),
-            'N': make_can_msg(node=self.cobid, data=0x00000100),
-            'D1': make_can_msg(node=self.cobid, data=0x01010100),
-            'D2': make_can_msg(node=self.cobid, data=0x02010100),
-            'DA1': make_can_msg(node=self.cobid, data=0x03010100),
-            'DA2': make_can_msg(node=self.cobid, data=0x04010100),
-            'R1': make_can_msg(node=self.cobid, data=0x01020100),
-            'R2': make_can_msg(node=self.cobid, data=0x02020100),
-            'RA1': make_can_msg(node=self.cobid, data=0x03020100),
-            'RA2': make_can_msg(node=self.cobid, data=0x04020100),
-            'P1': make_can_msg(node=self.cobid, data=0x01030100),
-            'P2': make_can_msg(node=self.cobid, data=0x02030100),
-            'PA1': make_can_msg(node=self.cobid, data=0x03030100),
-            'PA2': make_can_msg(node=self.cobid, data=0x4030100)
-        }
+        try:
+            self.gear_value = self.load_gears(dictionary=self.get_parameter('dicctionary').value)
+        except Exception as e:
+            self.logger.error(f'Exception loading gears: {e}')
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
@@ -60,6 +48,10 @@ class CANADAC_Node(Node):
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
+    def load_gears(self, dictionary):
+        with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
+            return yaml.load(f, Loader=yaml.FullLoader)
+
     def consigna(self, data):
         if data.data in self.gear_value.keys():
             self.publish_gear(data.data)
@@ -67,8 +59,7 @@ class CANADAC_Node(Node):
             self.logger.error(f' Gear selected not valid {data.data}')
 
     def publish_gear(self, gear):
-        msg = self.gear_value.get(gear)
-        msg.header = Header(stamp=self.get_clock().now().to_msg())
+        msg = make_can_msg(node=self.cobid, data=self.gear_value.get(gear), clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -95,7 +86,7 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = CANADAC_Node()
+        manager = Arduino_Node()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('Arduino Marchas: Keyboard interrupt')
