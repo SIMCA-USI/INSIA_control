@@ -42,7 +42,7 @@ def make_can_frame(node, index, sub_index=0, data=0, write=True) -> bytearray:
         return bytearray(struct.pack('<2xBBBHBiB', 6, node, 0x40, index, sub_index, data, 0x08))
 
 
-def make_can_msg(node, index, sub_index=0, data=0, write=True, clock=None) -> CAN:
+def make_can_msg(node, index=0x0000, sub_index=0, data=0, write=True, clock=None) -> CAN:
     msg = make_can_frame(node, index, sub_index, data, write)
     _, data_raw, cobid, specifier, index, sub_index = decoder_can(msg)
     return CAN(
