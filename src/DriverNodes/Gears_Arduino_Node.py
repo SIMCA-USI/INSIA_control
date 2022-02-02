@@ -11,6 +11,7 @@ from yaml.loader import SafeLoader
 
 from src.utils.utils import make_can_msg
 from traceback import format_exc
+import struct
 
 
 class Arduino_Node(Node):
@@ -31,8 +32,10 @@ class Arduino_Node(Node):
 
         try:
             dictionary = self.get_parameter('dictionary').value
-            self.gear_value = self.load_gears(dictionary=dictionary)
+            self.gear_value = self.load_gears(dictionary=dictionary,
+                                              big_endian=self.get_parameter('dict_BigEndian').value)
             self.logger.info(f'Loaded dictionary {dictionary}')
+            self.logger.debug(f'Valid gears: {list(self.gear_value.keys())}')
         except Exception as e:
             self.logger.error(f'Exception loading gears: {e}')
 
@@ -50,9 +53,13 @@ class Arduino_Node(Node):
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
-    def load_gears(self, dictionary):
+    def load_gears(self, dictionary, big_endian=False):
         with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
-            return yaml.load(f, Loader=yaml.FullLoader)
+            dictionary_loaded = yaml.load(f, Loader=yaml.FullLoader)
+        if big_endian:
+            for item in dictionary_loaded:
+                dictionary_loaded.update({item: struct.unpack('>i', struct.pack('<i', dictionary_loaded[item]))[0]})
+        return dictionary_loaded
 
     def consigna(self, data):
         if data.data in self.gear_value.keys():
