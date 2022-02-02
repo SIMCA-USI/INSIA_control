@@ -50,7 +50,8 @@ class EPOS4_Node(Node):
         self.auto_fault_reset = self.get_parameter('auto_fault_reset').value
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
         self.last_position_updated = 0
-        self.motor_graph = nx.read_graphml('/home/simca/ros2_ws/src/INSIA_control/src/utils/maxon.graphml')
+        self.motor_graph = nx.read_graphml(
+            os.path.abspath('~/ros2_ws/src/INSIA_control/src/utils/maxon.graphml').replace('/~', ''))
         self.informed_fault = False
 
         self.status_freq = self.get_parameter_or('status_freq', Parameter(name='status_freq', value=2)).value
@@ -185,7 +186,7 @@ class EPOS4_Node(Node):
         else:
             self.logger.debug(f'Received position but driver is in {self.op_mode} mode')
 
-    def target_torque_update(self, msg:IntStamped):
+    def target_torque_update(self, msg: IntStamped):
         if self.op_mode == 'CST':
             status = self.epos.get_status_from_dict(self.epos_dictionary)
             if status == self.EPOSStatus.Operation_enabled:

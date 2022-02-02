@@ -30,7 +30,9 @@ class Arduino_Node(Node):
         self.can_connected = self.get_parameter('can').value
 
         try:
-            self.gear_value = self.load_gears(dictionary=self.get_parameter('dicctionary').value)
+            dictionary = self.get_parameter('dictionary').value
+            self.gear_value = self.load_gears(dictionary=dictionary)
+            self.logger.info(f'Loaded dictionary {dictionary}')
         except Exception as e:
             self.logger.error(f'Exception loading gears: {e}')
 

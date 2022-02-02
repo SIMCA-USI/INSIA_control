@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'can = src.DriverNodes.CAN_Node:main',
             'maxon = src.DriverNodes.Maxon_Node:main',
+            'gears_arduino = src.DriverNodes.Gears_Arduino_Node:main',
             'canadac = src.DriverNodes.CANADAC_Node:main',
             'vehicledecoder = src.DriverNodes.Vehicle_Node:main',
             'test_can = test.test_CAN_node:main',
