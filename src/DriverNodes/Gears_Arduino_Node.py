@@ -14,7 +14,16 @@ from traceback import format_exc
 import struct
 
 
-class Arduino_Node(Node):
+def load_gears(dictionary, big_endian=False):
+    with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
+        dictionary_loaded = yaml.load(f, Loader=yaml.FullLoader)
+    if big_endian:
+        for item in dictionary_loaded:
+            dictionary_loaded.update({item: struct.unpack('>i', struct.pack('<i', dictionary_loaded[item]))[0]})
+    return dictionary_loaded
+
+
+class ArduinoNode(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -32,8 +41,7 @@ class Arduino_Node(Node):
 
         try:
             dictionary = self.get_parameter('dictionary').value
-            self.gear_value = self.load_gears(dictionary=dictionary,
-                                              big_endian=self.get_parameter('dict_BigEndian').value)
+            self.gear_value = load_gears(dictionary=dictionary, big_endian=self.get_parameter('dict_BigEndian').value)
             self.logger.info(f'Loaded dictionary {dictionary}')
             self.logger.debug(f'Valid gears: {list(self.gear_value.keys())}')
         except Exception as e:
@@ -52,14 +60,6 @@ class Arduino_Node(Node):
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
-
-    def load_gears(self, dictionary, big_endian=False):
-        with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
-            dictionary_loaded = yaml.load(f, Loader=yaml.FullLoader)
-        if big_endian:
-            for item in dictionary_loaded:
-                dictionary_loaded.update({item: struct.unpack('>i', struct.pack('<i', dictionary_loaded[item]))[0]})
-        return dictionary_loaded
 
     def consigna(self, data):
         if data.data in self.gear_value.keys():
@@ -87,15 +87,15 @@ class Arduino_Node(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbit.cancel()
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.error(f'Exception in shutdown: {e}')
 
 
 def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = Arduino_Node()
+        manager = ArduinoNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('Arduino Marchas: Keyboard interrupt')

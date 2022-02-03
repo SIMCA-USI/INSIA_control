@@ -13,7 +13,7 @@ from src.utils.filtro import Decoder
 from src.utils.utils import convert_types
 
 
-class Vehicle_Node(Node):
+class VehicleNode(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -71,15 +71,15 @@ class Vehicle_Node(Node):
         try:
             self.shutdown_flag = True
             self.timer_telemetry.cancel()
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.error(f'Exception in shutdown: {e}')
 
 
 def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = Vehicle_Node()
+        manager = VehicleNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('Vehicle Decoder: Keyboard interrupt')

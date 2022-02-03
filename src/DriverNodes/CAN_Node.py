@@ -1,24 +1,21 @@
-import numpy as np
+import os
+import queue
+import threading
+import time
+
 import rclpy
+import yaml
+from insia_msg.msg import CAN, CANGroup, StringStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from std_msgs.msg import Header
-
-import os
-import yaml
 from yaml.loader import SafeLoader
-import queue
-import threading
-import struct
-import time
 
 from src.utils.connection import Connection
 from src.utils.utils import decoder_can
-from insia_msg.msg import CAN, CANGroup, StringStamped
 
 
-class CAN_Node(Node):
+class CanNode(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -80,7 +77,8 @@ class CAN_Node(Node):
         else:
             [self.logger.debug(
                 f'Msg received: \n cobid: {hex(frame.cobid)}\n specifier: {hex(frame.specifier)}\n '
-                f'index: {hex(frame.index)}\n sub_index: {hex(frame.sub_index)}\n data: {" ".join(hex(x) for x in frame.data)}')
+                f'index: {hex(frame.index)}\n sub_index: {hex(frame.sub_index)}\n'
+                f' data: {" ".join(hex(x) for x in frame.data)}')
                 for frame in data.can_frames]
 
     def is_connected(self):
@@ -89,6 +87,7 @@ class CAN_Node(Node):
     def write(self):
         # Write
         if self.is_connected():
+            msg = None
             try:
                 msg = self.queue.get_nowait()
                 assert len(msg) == 13
@@ -106,6 +105,7 @@ class CAN_Node(Node):
         while not self.shutdown_flag:
             # Write
             if self.is_connected():
+                msg = None
                 try:
                     msg = self.queue.get_nowait()
                     assert len(msg) == 13
@@ -147,15 +147,15 @@ class CAN_Node(Node):
                 rclpy.spin_once(self)
             self.shutdown_flag = True
             self.timer_heartbit.cancel()
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.error(f'Exception in shutdown: {e}')
 
 
 def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = CAN_Node()
+        manager = CanNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('CAN: Keyboard interrupt')

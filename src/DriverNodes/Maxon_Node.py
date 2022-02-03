@@ -1,3 +1,4 @@
+import importlib
 import os
 
 import networkx as nx
@@ -12,10 +13,9 @@ from yaml.loader import SafeLoader
 
 from src.utils.filtro import Decoder
 from src.utils.utils import make_can_msg
-import importlib
 
 
-class EPOS4_Node(Node):
+class EPOS4Node(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -105,7 +105,6 @@ class EPOS4_Node(Node):
         self.init_device()
 
     def init_device(self):
-        import src.utils.epos as epos
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=self.epos.init_device(node=self.cobid, mode=self.op_mode, rpm=self.speed)
@@ -248,15 +247,15 @@ class EPOS4_Node(Node):
                     can_frames=msg
                 ))
             self.timer_heartbit.cancel()
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.error(f'Exception in shutdown: {e}')
 
 
 def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = EPOS4_Node()
+        manager = EPOS4Node()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('EPOS4: Keyboard interrupt')

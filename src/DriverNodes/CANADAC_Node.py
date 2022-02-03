@@ -13,7 +13,7 @@ from src.utils.utils import make_can_msg
 from traceback import format_exc
 
 
-class CANADAC_Node(Node):
+class CANADACNode(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -80,15 +80,15 @@ class CANADAC_Node(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbit.cancel()
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.error(f'Exception in shutdown: {e}')
 
 
 def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = CANADAC_Node()
+        manager = CANADACNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('CANADAC: Keyboard interrupt')
