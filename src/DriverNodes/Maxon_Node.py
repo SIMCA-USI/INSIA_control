@@ -88,9 +88,11 @@ class EPOS4Node(Node):
         self.create_subscription(msg_type=BoolStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
                                  callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=Header,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/FaultReset',
                                  callback=self.fault_reset, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=IntStamped,
                                  topic='/' + vehicle_parameters[
                                      'id_vehicle'] + '/' + self.get_name() + '/ResetPosition',
