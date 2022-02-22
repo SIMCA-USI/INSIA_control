@@ -53,3 +53,15 @@ imiev:
       can: CAN_7
       dictionary: emt_gears_dictionary.yaml
       dict_BigEndian: True # True si es big endian False si está en little endian
+  Longitudinal_Control:
+    ros__parameters:
+      log_level: 10
+      speed_range: [0, 120]
+      throttle:
+        kp: 3
+        ti: 2
+        td: 0
+      brake:
+        kp: 0.5
+        ti: 4
+        td: 0
