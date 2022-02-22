@@ -11,8 +11,8 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
-from src.utils.filtro import Decoder
-from src.utils.utils import make_can_msg
+from INSIA_control.utils.filtro import Decoder
+from INSIA_control.utils.utils import make_can_msg
 
 
 class EPOS4Node(Node):
@@ -34,9 +34,9 @@ class EPOS4Node(Node):
         self.speed = self.get_parameter('speed').value
         driver_type = self.get_parameter('driver_type').value
         if driver_type == 'epos4':
-            self.epos = importlib.import_module('src.utils.epos4')
+            self.epos = importlib.import_module('INSIA_control.utils.epos4')
         elif driver_type == 'epos':
-            self.epos = importlib.import_module('src.utils.epos')
+            self.epos = importlib.import_module('INSIA_control.utils.epos')
         else:
             raise ValueError(f'Driver {driver_type} is not implemented')
         self.EPOSStatus = getattr(self.epos, 'EPOSStatus')
@@ -51,7 +51,7 @@ class EPOS4Node(Node):
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
         self.last_position_updated = 0
         self.motor_graph = nx.read_graphml(
-            os.path.abspath('~/ros2_ws/src/INSIA_control/src/utils/maxon.graphml').replace('/~', ''))
+            os.path.abspath('/INSIA_control/utils/maxon.graphml').replace('/~', ''))
         self.informed_fault = False
 
         self.status_freq = self.get_parameter_or('status_freq', Parameter(name='status_freq', value=2)).value

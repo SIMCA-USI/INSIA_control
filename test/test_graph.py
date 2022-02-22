@@ -11,7 +11,7 @@ def get_transitions(graph, start, end):
 
 
 if __name__ == '__main__':
-    g = nx.read_graphml('../src/utils/maxon.graphml')
+    g = nx.read_graphml('../INSIA_control/utils/maxon.graphml')
     print(type(g))
     print('graph created')
     print(get_transitions(g, 'Fault', 'Switched on'))

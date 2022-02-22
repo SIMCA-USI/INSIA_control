@@ -10,7 +10,7 @@ imiev:
   CAN_7:
     ros__parameters:
       log_level: 0
-      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      local: True # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
       connection_mode: tcp
       ip: 192.168.0.7
       port: 10001

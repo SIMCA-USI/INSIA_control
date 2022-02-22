@@ -1,8 +1,11 @@
 from enum import IntEnum, Enum
-from typing import Optional
 
-from src.utils.utils import make_can_msg
+from INSIA_control.utils.utils import make_can_msg
 import networkx as nx
+
+QC_FACTOR = 1  # 625000 / 360
+DIGITAL_OUTPUT_3 = False
+DIGITAL_OUTPUT_4 = False
 
 
 class EPOSCommand(IntEnum):
@@ -83,10 +86,12 @@ def set_state(node: int, target_state, graph: nx.classes.digraph = None, status_
             else:
                 return None
         else:
-            msgs = []
-            for transition in get_transitions(graph=graph, start=EPOSStatus.Fault, end=target_state):
-                msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
-            return msgs
+            if target_state == EPOSStatus.Operation_enabled:
+                command = EPOSCommand.SWITCH_ON_AND_ENABLE
+            else:
+                command = EPOSCommand.DISABLE_OPERATION
+            return [
+                make_can_msg(node=node, index=0x6040, data=command)]
     else:
         raise ValueError(f'Target state not valid: {target_state}')
 
@@ -96,20 +101,6 @@ def configuration(node: int, graph: nx.classes.digraph, status_word: int):
     for transition in get_transitions(graph=graph, start=get_status(status_word), end='Ready to switch on'):
         msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
     return msgs
-
-
-def set_digital(node: int, outputs: dict = None):
-    if outputs is None:
-        outputs = {1: False, 2: False}
-    if not outputs.keys() >= {1, 2}:
-        raise ValueError(f'Digital outputs keys missing {outputs.keys()} , required 1,2')
-    out = (2 if outputs.get(2) else 0) + (1 if outputs.get(1) else 0)
-    return [make_can_msg(node=node, index=0x3150, sub_index=0x02, data=out)]
-
-
-def set_analog(node: int, analog_out: int, voltage: float):
-    print(f'Set analog {analog_out} v {int(voltage * 1000)}')
-    return [make_can_msg(node=node, index=0x3182, sub_index=analog_out, data=int(voltage * 1000))]
 
 
 def read_status(node: int):
@@ -124,7 +115,7 @@ def read_position(node: int):
     return [make_can_msg(node=node, index=0x6064, write=False)]
 
 
-def get_status(status_word: int) -> Optional[str]:
+def get_status(status_word: int) -> str:
     if status_word is not None:
         return status_epos.get(status_word & 0x006F)
     else:
@@ -147,8 +138,7 @@ def reset_position(node: int, position: int = 0, prev_mode: str = 'PPM', status_
     return [make_can_msg(node, 0x6060, 0, mode_epos.get('HMM')),  # operation mode=Homing mode
             make_can_msg(node, 0x6098, 0, 37),  # homing method = Actual position
             make_can_msg(node, 0x30B0, 0, position),  # set position 0
-            make_can_msg(node, 0x6040, 0, control_word & 0xEF),  # set position 0
-            make_can_msg(node, 0x6040, 0, (control_word & 0xEF) + 0x10),  # set position 0
+            make_can_msg(node, 0x6040, 0, control_word + 0x10),  # set position 0
             make_can_msg(node, 0x6060, 0, mode_epos.get(prev_mode)),  # operation mode=prev_mode default=PPM
             ]
 
@@ -160,29 +150,28 @@ def fault_reset(node: int):
 
 
 def set_angle_value(node: int, angle: int, absolute: bool = False):
+    qc_to_rotate = int(QC_FACTOR * angle)
     set_angle = []
     if absolute:
-        set_angle += [make_can_msg(node=node, index=0x607A, data=angle)]
-        set_angle += [make_can_msg(node=node, index=0x6040, data=0x002F)]
+        set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x003F)]
     else:
-        set_angle += [make_can_msg(node=node, index=0x607A, data=angle)]
-        set_angle += [make_can_msg(node=node, index=0x6040, data=0x006F)]
+        set_angle += [make_can_msg(node=node, index=0x607A, data=qc_to_rotate)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x007F)]
     return set_angle
-
-
-def set_torque(node: int, torque: int):
-    return [make_can_msg(node=node, index=0x6071, sub_index=0, data=int(torque))]
 
 
 def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
     if not 1 < rpm < 50000:
         raise ValueError('RPM out of range')
     return [
-        make_can_msg(node, 0x6040, 0, EPOSCommand.FAULT_RESET),
-        make_can_msg(node, 0x6060, 0, mode_epos.get(mode)),  # operation mode
-        make_can_msg(node, 0x6081, 0, rpm),  # rpm speed 1-25000 = 10_000 rpm
+        make_can_msg(node, 0x6040, 0, 0x0080),
+        make_can_msg(node, 0x6060, 0, mode_epos.get(mode)),  # operation mode=profile position
+        make_can_msg(node, 0x6081, 0, 1, rpm),  # rpm speed 1-25000 = 10_000 rpm
+        make_can_msg(node, 0x6040, 0, EPOSCommand.SHUTDOWN),  # ????
+        make_can_msg(node=node, index=0x6040, data=EPOSCommand.SWITCH_ON_AND_ENABLE),
+        # make_can_msg(node, 0x6040, 0, EPOSCommand.SWITCH_ON_AND_ENABLE),
+        # make_can_msg(node, 0x2078, 2, 0x3000)  # DO configuration
     ]
 
 

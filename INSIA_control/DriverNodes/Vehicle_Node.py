@@ -9,8 +9,8 @@ from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from yaml.loader import SafeLoader
 
-from src.utils.filtro import Decoder
-from src.utils.utils import convert_types
+from INSIA_control.utils.filtro import Decoder
+from INSIA_control.utils.utils import convert_types
 
 
 class VehicleNode(Node):

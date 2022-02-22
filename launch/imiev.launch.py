@@ -54,12 +54,12 @@ def generate_launch_description():
         #     output='screen',
         #     emulate_tty=True
         # ),
-        Node(
-            package='INSIA_control',
-            executable='gears_arduino',
-            name='Arduino_Gears',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
+        # Node(
+        #     package='INSIA_control',
+        #     executable='gears_arduino',
+        #     name='Arduino_Gears',
+        #     parameters=[parameters_file_path],
+        #     output='screen',
+        #     emulate_tty=True
+        # ),
     ])

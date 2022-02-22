@@ -22,7 +22,7 @@ dic_format = {
 class Decoder:
     def __init__(self, dictionary, cobid=0):
         self.dic_parameters = {}
-        with open(os.getenv('ROS_WS') + '/src/INSIA_control/src/diccionarios/' + dictionary) as f:
+        with open(os.getenv('ROS_WS') + '/src/INSIA_control/INSIA_control/diccionarios/' + dictionary) as f:
             imiev_parameters = yaml.load(f, Loader=yaml.FullLoader)
         for i in imiev_parameters.keys():  # cobid
             for j in imiev_parameters[i].keys():  # index

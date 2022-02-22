@@ -9,15 +9,25 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
-from src.utils.utils import make_can_msg
+from INSIA_control.utils.utils import make_can_msg
 from traceback import format_exc
+import struct
 
 
-class CANADACNode(Node):
+def load_gears(dictionary, big_endian=False):
+    with open(os.getenv('ROS_WS') + '/src/INSIA_control/INSIA_control/diccionarios/' + dictionary) as f:
+        dictionary_loaded = yaml.load(f, Loader=yaml.FullLoader)
+    if big_endian:
+        for item in dictionary_loaded:
+            dictionary_loaded.update({item: struct.unpack('>i', struct.pack('<i', dictionary_loaded[item]))[0]})
+    return dictionary_loaded
+
+
+class ArduinoNode(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
-        super().__init__(node_name='CANADAC', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
+        super().__init__(node_name='Arduino', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
                          allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
 
@@ -29,6 +39,14 @@ class CANADACNode(Node):
         self.cobid = self.get_parameter('cobid').value
         self.can_connected = self.get_parameter('can').value
 
+        try:
+            dictionary = self.get_parameter('dictionary').value
+            self.gear_value = load_gears(dictionary=dictionary, big_endian=self.get_parameter('dict_BigEndian').value)
+            self.logger.info(f'Loaded dictionary {dictionary}')
+            self.logger.debug(f'Valid gears: {list(self.gear_value.keys())}')
+        except Exception as e:
+            self.logger.error(f'Exception loading gears: {e}')
+
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
@@ -37,31 +55,20 @@ class CANADACNode(Node):
                                              topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.can_connected,
                                              qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=FloatStamped,
+        self.create_subscription(msg_type=StringStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Consigna',
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
-                                 callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
-
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
-    def enable(self, data):
-        if data.data:
-            msg = make_can_msg(node=self.cobid, index=0x0003, data=0x01, clock=self.get_clock().now().to_msg())
-        else:
-            msg = make_can_msg(node=self.cobid, index=0x0003, data=0x00, clock=self.get_clock().now().to_msg())
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=[
-                msg
-            ]
-        ))
-
     def consigna(self, data):
-        msg = make_can_msg(node=self.cobid, index=0x0001, data=int(data.data * 100),
-                           clock=self.get_clock().now().to_msg())
+        if data.data in self.gear_value.keys():
+            self.publish_gear(data.data)
+        else:
+            self.logger.error(f' Gear selected not valid {data.data}')
+
+    def publish_gear(self, gear):
+        msg = make_can_msg(node=self.cobid, data=self.gear_value.get(gear), clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -88,10 +95,10 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = CANADACNode()
+        manager = ArduinoNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('CANADAC: Keyboard interrupt')
+        print('Arduino Marchas: Keyboard interrupt')
     except Exception as e:
         format_exc()
         print(e)

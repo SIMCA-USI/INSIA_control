@@ -6,7 +6,7 @@ package_name = 'INSIA_control'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=['src'],
+    packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
          ['resource/' + package_name]),
@@ -24,11 +24,11 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'can = src.DriverNodes.CAN_Node:main',
-            'maxon = src.DriverNodes.Maxon_Node:main',
-            'gears_arduino = src.DriverNodes.Gears_Arduino_Node:main',
-            'canadac = src.DriverNodes.CANADAC_Node:main',
-            'vehicledecoder = src.DriverNodes.Vehicle_Node:main',
+            'can = INSIA_control.DriverNodes.CAN_Node:main',
+            'maxon = INSIA_control.DriverNodes.Maxon_Node:main',
+            'gears_arduino = INSIA_control.DriverNodes.Gears_Arduino_Node:main',
+            'canadac = INSIA_control.DriverNodes.CANADAC_Node:main',
+            'vehicledecoder = INSIA_control.DriverNodes.Vehicle_Node:main',
             'test_can = test.test_CAN_node:main',
         ],
     },

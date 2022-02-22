@@ -11,8 +11,8 @@ from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from yaml.loader import SafeLoader
 
-from src.utils.connection import Connection
-from src.utils.utils import decoder_can
+from INSIA_control.utils.connection import Connection
+from INSIA_control.utils.utils import decoder_can
 
 
 class CanNode(Node):
