@@ -30,6 +30,11 @@ setup(
             'canadac = INSIA_control.DriverNodes.CANADAC_Node:main',
             'vehicledecoder = INSIA_control.DriverNodes.Vehicle_Node:main',
             'test_can = test.test_CAN_node:main',
+            'brake_imiev = INSIA_control.DevicesControlNodes.Imiev.BrakeNode:main',
+            'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
+            'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
+            'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
+            'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
         ],
     },
 )
