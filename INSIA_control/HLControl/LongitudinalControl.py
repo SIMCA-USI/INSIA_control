@@ -30,8 +30,10 @@ class LongitudinalControlNode(Node):
         self.speed_range = self.get_parameter('speed_range').value
         th_params = self.get_parameters_by_prefix('throttle')
         br_params = self.get_parameters_by_prefix('brake')
-        self.pid_throttle = PID(kp=th_params['kp'].value, ti=th_params['ti'], td=th_params['td'], anti_wind_up=0.1)
-        self.pid_brake = PID(kp=br_params['kp'], ti=br_params['ti'], td=br_params['td'], anti_wind_up=0.2)
+        self.pid_throttle = PID(kp=th_params['kp'].value, ti=th_params['ti'].value, td=th_params['td'].value,
+                                anti_wind_up=0.1)
+        self.pid_brake = PID(kp=br_params['kp'].value, ti=br_params['ti'].value, td=br_params['td'].value,
+                             anti_wind_up=0.2)
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
@@ -63,12 +65,10 @@ class LongitudinalControlNode(Node):
         # Normalizar valores
         target_speed_norm = interp(self.control_msg.speed, self.speed_range, [0, 1])
         current_speed_norm = interp(self.current_speed, self.speed_range, [0, 1])
-
         # Calcular pids
 
         brake = self.pid_brake.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
         throttle = self.pid_throttle.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
-
         if self.control_msg.speed <= 0.1:
             if self.current_speed < 0.5:
                 brake_solution = -0.8
@@ -88,7 +88,6 @@ class LongitudinalControlNode(Node):
         else:
             brake_solution = brake
             throttle_solution = 0.
-
         if self.control_msg.b_throttle and self.control_msg.b_brake:
             self.pub_throttle.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
@@ -106,10 +105,10 @@ class LongitudinalControlNode(Node):
                 enable=self.control_msg.b_brake,
                 target=0.
             ))
-        self.logger.debug('Valor freno: {}'.format(brake_solution))
+        self.logger.debug(f'{self.control_msg.b_brake} Valor freno: {brake_solution}')
 
     def decision(self, decision):
-        self.control = decision
+        self.control_msg = decision
 
     def publish_heartbit(self):
         msg = StringStamped(

@@ -3,7 +3,7 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, EPOSConsigna
+from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, FloatStamped
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -30,7 +30,7 @@ class ThrottleNode(Node):
         self.controller = None
 
         self.create_subscription(msg_type=ControladorFloat,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + self.get_name(),
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
                                  callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
@@ -38,16 +38,16 @@ class ThrottleNode(Node):
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_enable = self.create_publisher(msg_type=BoolStamped,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/MCD60_Freno/Enable',
+                                                topic='/' + vehicle_parameters['id_vehicle'] + '/CANADAC/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/MCD60_Freno/TargetPosition', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='/' + vehicle_parameters[
+            'id_vehicle'] + '/CANADAC/Target', qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def controller_update(self, data):
-        self.controller = data.data
+        self.controller = data
         self.pub_enable.publish(BoolStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
             data=self.controller.enable

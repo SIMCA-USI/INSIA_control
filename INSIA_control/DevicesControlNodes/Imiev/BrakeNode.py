@@ -30,7 +30,7 @@ class BrakeNode(Node):
         self.controller = None
 
         self.create_subscription(msg_type=ControladorFloat,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + self.get_name(),
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
                                  callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
@@ -47,7 +47,7 @@ class BrakeNode(Node):
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def controller_update(self, data):
-        self.controller = data.data
+        self.controller = data
         self.pub_enable.publish(BoolStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
             data=self.controller.enable
@@ -59,7 +59,7 @@ class BrakeNode(Node):
             ))
 
     def calibration(self):
-        #TODO: Crear proceso de calibracion
+        # TODO: Crear proceso de calibracion
         pass
 
     def publish_heartbit(self):

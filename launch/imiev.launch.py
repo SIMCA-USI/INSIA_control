@@ -42,6 +42,7 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='canadac',
+            name='CANADAC',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
