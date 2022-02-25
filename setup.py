@@ -34,6 +34,7 @@ setup(
             'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
             'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
+            'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
         ],
     },
 )

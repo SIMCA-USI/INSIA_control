@@ -23,51 +23,18 @@ class PIDF(object):
         self._pro_wind_up = pro_wind_up
 
     def reset_values(self):
-        self.prev_i=0
-        self.prev_d=0
+        self.prev_i = 0
+        self.prev_d = 0
         self.prev_value = 0
         self.prev_target = 0
         self.error = 0
         self.n = 8.0
 
-    def calcValue(self, target_value, current_value, anti_wind_up_change=False, use=(True, True, True)):
-        self.error = target_value - current_value
-
-        if use[0] and self.kp != 0:
-            p = self.kp * self.error
-        else:
-            p = 0
-
-        if np.sign(self.prev_target) != np.sign(target_value) and anti_wind_up_change:
-            i = 0
-            self.prev_i = 0
-
-        if use[1] and self.ti != 0:
-            i = self.prev_i + (((self.kp * self.h) / self.ti) * self.error)
-            i = self.antiwindup(i=i)
-            self.prev_i = i
-        else:
-            i = 0
-
-        if use[2] and self.td != 0:
-            d = ((self.td / (self.td + (self.n * self.h)) * self.prev_d) - (
-                    ((self.kp * self.td * self.n) / (self.td + (self.n * self.h))) * (current_value - self.prev_value)))
-            self.prev_d = d
-        else:
-            d = 0
-
-        self.prev_value = current_value
-
-        if p + i + d < -1:
-            return -1
-        if p + i + d > 1:
-            return 1
-
-        self.prev_target = target_value
-
-        return p + i + d
-
-    def calcValue_2(self, target_value, current_value, kp, td, ti, anti_wind_up_change=False, use=(True, True, True)):
+    def calcValue(self, target_value, current_value, kp=None, td=None, ti=None, anti_wind_up_change=False,
+                  use=(True, True, True)):
+        kp = kp if kp is not None else self.kp
+        td = td if td is not None else self.td
+        ti = ti if ti is not None else self.ti
         self.error = target_value - current_value
 
         if use[0] and self.kp != 0:
