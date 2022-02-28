@@ -23,37 +23,78 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='maxon',
-        #     name='EPOS4_Volante',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='maxon',
-        #     name='MCD60_Freno',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # # Node(
-        # #     package='INSIA_control',
-        # #     executable='canadac',
-        # #     parameters=[parameters_file_path],
-        # #     output='screen',
-        # #     emulate_tty=True
-        # # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='vehicledecoder',
-        #     name='ImievDecoder',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
+        Node(
+            package='INSIA_control',
+            executable='maxon',
+            name='EPOS4_Volante',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='maxon',
+            name='MCD60_Freno',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='canadac',
+            name='CANADAC',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='vehicledecoder',
+            name='ImievDecoder',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='brake_imiev',
+            name='Brake',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='steering_imiev',
+            name='Steering',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='throttle_imiev',
+            name='Throttle',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='longitudinal_control',
+            name='Longitudinal_Control',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='lateral_control_PID',
+            name='Lateral_Control',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
         # Node(
         #     package='INSIA_control',
         #     executable='gears_arduino',

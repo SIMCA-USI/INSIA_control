@@ -38,7 +38,7 @@ class CANADACNode(Node):
                                              qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=FloatStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Consigna',
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Target',
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,

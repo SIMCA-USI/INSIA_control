@@ -46,13 +46,22 @@ imiev:
     ros__parameters:
       log_level: 0
       dictionary: imiev_dictionary.yaml
-  Arduino_Gears:
+#  Arduino_Gears:
+#    ros__parameters:
+#      log_level: 10
+#      cobid: 8
+#      can: CAN_7
+#      dictionary: emt_gears_dictionary.yaml
+#      dict_BigEndian: True # True si es big endian False si está en little endian
+  Brake:
     ros__parameters:
-      log_level: 10
-      cobid: 8
-      can: CAN_7
-      dictionary: emt_gears_dictionary.yaml
-      dict_BigEndian: True # True si es big endian False si está en little endian
+      log_level: 0
+  Steering:
+    ros__parameters:
+      log_level: 0
+  Throttle:
+    ros__parameters:
+      log_level: 0
   Longitudinal_Control:
     ros__parameters:
       log_level: 10
@@ -65,3 +74,17 @@ imiev:
         kp: 0.5
         ti: 4
         td: 0
+  Lateral_Control:
+    ros__parameters:
+      log_level: 10
+      steering_range: [ -630, 630 ]
+      steering:
+        # A6
+        kp: 10
+        ti: 8
+        td: 0.03
+        # Pista
+#        kp: 0.3
+#        ti: 0.2
+#        td: 0.1
+
