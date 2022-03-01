@@ -105,7 +105,7 @@ class LongitudinalControlNode(Node):
                 enable=self.control_msg.b_brake,
                 target=0.
             ))
-        self.logger.debug(f'{self.control_msg.b_brake} Valor freno: {brake_solution}')
+        # self.logger.debug(f'{self.control_msg.b_brake} Valor freno: {brake_solution}')
 
     def decision(self, decision):
         self.control_msg = decision

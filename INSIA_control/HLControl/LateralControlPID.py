@@ -27,7 +27,7 @@ class LateralControlPIDNode(Node):
         self.shutdown_flag = False
         self.control_msg: PetConduccion = PetConduccion()
         self.current_steering = 0.
-        self.steering_range = self.get_parameter('speed_range').value
+        self.steering_range = self.get_parameter('steering_range').value
         pid_params = self.get_parameters_by_prefix('steering')
         self.pid_steering = PIDF(kp=pid_params['kp'].value, ti=pid_params['ti'].value, td=pid_params['td'].value,
                                  anti_wind_up=0.1)
@@ -60,7 +60,6 @@ class LateralControlPIDNode(Node):
         current_steering_norm = interp(self.current_steering, self.steering_range, [-1, 1])
         # Calcular pids
         pid_params = self.get_parameters_by_prefix('steering')
-        kp = pid_params['kp'].value, ti = pid_params['ti'].value, td = pid_params['td'].value
         steering = -self.pid_steering.calcValue(target_value=target_steering_norm, current_value=current_steering_norm,
                                                 kp=pid_params['kp'].value, ti=pid_params['ti'].value,
                                                 td=pid_params['td'].value)
@@ -75,7 +74,7 @@ class LateralControlPIDNode(Node):
             self.pub_steering.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=self.control_msg.b_throttle,
-                target=0
+                target=0.
             ))
 
     def decision(self, decision):
