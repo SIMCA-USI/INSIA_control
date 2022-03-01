@@ -90,9 +90,12 @@ class IOCard(Node):
 
     def shutdown(self):
         try:
-            for _ in range(3):
-                rclpy.spin_once(self)
+            # for _ in range(3):
+            #     rclpy.spin_once(self)
             self.shutdown_flag = True
+            if not self.local:
+                self.cli_AIO.shutdown()
+                self.cli_DIO.shutdown()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

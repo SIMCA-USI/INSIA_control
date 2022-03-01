@@ -3,7 +3,7 @@ import sys
 
 import rclpy
 import yaml
-from insia_msg.msg import Telemetry, StringStamped, PetConduccion
+from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorFloat
 from insia_msg.srv import BrakeCalibration
 from numpy import interp
 from rclpy.node import Node
