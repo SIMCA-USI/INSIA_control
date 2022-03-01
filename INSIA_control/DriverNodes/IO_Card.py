@@ -28,18 +28,19 @@ class IOCard(Node):
         self.connection_mode = 'tcp'
         self.ip = '192.168.0.7'
         # self.port = self.get_parameter('port').value
-        self.local = self.get_parameter('local').value
+        self.local = False
 
         if self.local:
             self.logger.info(f'Running in local mode')
             self.cli_DIO = None
             self.cli_AIO = None
         else:
+            self.logger.info(f'Running in remote mode')
             self.cli_DIO = Connection(name=f'Connection {self.ip}:4601', mode=self.connection_mode,
-                                      ip=self.ip, port='4601',
+                                      ip=self.ip, port=4601, deco_function=self.deco_function,
                                       log_level=self._log_level.value)
             self.cli_AIO = Connection(name=f'Connection {self.ip}:4600', mode=self.connection_mode,
-                                      ip=self.ip, port='4600',
+                                      ip=self.ip, port=4600, deco_function=self.deco_function,
                                       log_level=self._log_level.value)
 
         self.create_subscription(msg_type=IOAnalogue,
@@ -50,12 +51,15 @@ class IOCard(Node):
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/iodigital',
                                  callback=self.callback_digital, qos_profile=HistoryPolicy.KEEP_LAST)
 
+    def deco_function(self, data):
+        pass
+
     def callback_analog(self, msg):
         if not self.local:
             if self.is_aio_connected():
                 value = '+{:06.3f}'.format(msg.voltage)
                 comando = '#01' + str(msg.channel) + value + '\r\n'
-                self.cli_AIO.send(comando)
+                self.cli_AIO.send(comando.encode())
                 self.logger.debug(f' Mensaje AIO enviado')
         else:
             self.logger.debug(f'')
@@ -70,7 +74,7 @@ class IOCard(Node):
                 else:
                     value = "0" + str(msg.io_digital) + "1\r\n"
                     self.logger.debug(f' Volante desactivado {msg.enable}')
-            self.cli_DIO.send(value)
+            self.cli_DIO.send(value.encode())
 
     def is_dio_connected(self):
         if self.cli_DIO.connected:
