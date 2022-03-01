@@ -51,7 +51,7 @@ class EPOS4Node(Node):
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
         self.last_position_updated = 0
         self.motor_graph = nx.read_graphml(
-            os.path.abspath('~/ros2_ws/src/INSIA_control/INSIA_control/utils/maxon.graphml').replace('/~', ''))
+            os.environ['ROS_WS'] + '/src/INSIA_control/INSIA_control/utils/maxon.graphml')
         self.informed_fault = False
 
         self.status_freq = self.get_parameter_or('status_freq', Parameter(name='status_freq', value=2)).value
