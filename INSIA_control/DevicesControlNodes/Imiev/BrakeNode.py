@@ -45,6 +45,7 @@ class BrakeNode(Node):
         self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='/' + vehicle_parameters[
             'id_vehicle'] + '/MCD60_Freno/TargetPosition', qos_profile=HistoryPolicy.KEEP_LAST)
 
+        # Servicio para la calibración del freno
         self.srv_brake_calibration = self.create_service(BrakeCalibration, 'brake_calibration', self.enable_calibration)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)

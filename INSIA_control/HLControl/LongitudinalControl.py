@@ -137,6 +137,7 @@ class LongitudinalControlNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     manager = None
+    # TODO: Falta crear el cliente del servicio y mandar la petición
     try:
         manager = LongitudinalControlNode()
         rclpy.spin(manager)
