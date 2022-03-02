@@ -35,6 +35,7 @@ setup(
             'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
+            'io_card = INSIA_control.DriverNodes.IO_Card:main',
         ],
     },
 )

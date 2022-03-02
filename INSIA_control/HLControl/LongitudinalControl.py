@@ -1,8 +1,10 @@
 import os
+import sys
 
 import rclpy
 import yaml
 from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorFloat
+from insia_msg.srv import BrakeCalibration
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -55,11 +57,19 @@ class LongitudinalControlNode(Node):
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
                                  callback=self.decision, qos_profile=HistoryPolicy.KEEP_LAST)
 
+        # ##### Cliente del servicio de calibración del freno #####
+        self.cli_calibration = self.create_client(BrakeCalibration, 'brake_calibration')
+        while not self.cli_calibration.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        self.req_calibration = BrakeCalibration.Request()
+
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_control = self.create_timer(1 / 10, self.control_loop)
 
-    def telemetry_callback(self, telemetry: Telemetry):
-        self.current_speed = telemetry.speed
+    # #### Función request para el servicio de calibración ####
+    def send_request(self):
+        self.req_calibration.bool.data = bool(sys.argv[1])
+        self.future = self.cli_calibration.call_async(self.req_calibration)
 
     def control_loop(self):
         # Normalizar valores
@@ -127,6 +137,7 @@ class LongitudinalControlNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     manager = None
+    # TODO: Falta crear el cliente del servicio y mandar la petición
     try:
         manager = LongitudinalControlNode()
         rclpy.spin(manager)
