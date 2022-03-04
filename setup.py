@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'can = INSIA_control.DriverNodes.CAN_Node:main',
             'maxon = INSIA_control.DriverNodes.Maxon_Node:main',
+            'faulhaber = INSIA_control.DriverNodes.FAULHABER_Node:main',
             'gears_arduino = INSIA_control.DriverNodes.Gears_Arduino_Node:main',
             'canadac = INSIA_control.DriverNodes.CANADAC_Node:main',
             'vehicledecoder = INSIA_control.DriverNodes.Vehicle_Node:main',

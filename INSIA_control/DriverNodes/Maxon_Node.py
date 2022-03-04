@@ -15,7 +15,7 @@ from INSIA_control.utils.filtro import Decoder
 from INSIA_control.utils.utils import make_can_msg
 
 
-class EPOS4Node(Node):
+class MaxonNode(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -179,7 +179,7 @@ class EPOS4Node(Node):
             if status == self.EPOSStatus.Operation_enabled:
                 self.pub_CAN.publish(CANGroup(
                     header=Header(stamp=self.get_clock().now().to_msg()),
-                    can_frames=self.epos.set_angle_value(node=self.cobid, angle=int(msg.position), absolute=msg.mode)
+                    can_frames=self.epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
                 ))
             else:
                 self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
@@ -256,7 +256,7 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = EPOS4Node()
+        manager = MaxonNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('EPOS4: Keyboard interrupt')
