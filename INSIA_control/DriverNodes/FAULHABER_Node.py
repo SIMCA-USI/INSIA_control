@@ -29,11 +29,10 @@ class FAULHABERNode(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
-
         self.cobid = self.get_parameter('cobid').value
         self.can_conected = self.get_parameter('can').value
 
-        # self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
+        #self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
@@ -48,10 +47,6 @@ class FAULHABERNode(Node):
                                      'id_vehicle'] + '/' + self.get_name() + '/TargetPosition',
                                  callback=self.target_position_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
-                                 callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
-
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
         sleep(1)
@@ -60,7 +55,7 @@ class FAULHABERNode(Node):
     def init_device(self):
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=FAULHABER.init_device()
+            can_frames=FAULHABER.init_device(node=self.cobid)
         ))
 
     def target_position_update(self, msg):

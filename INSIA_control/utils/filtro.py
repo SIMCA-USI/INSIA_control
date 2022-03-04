@@ -57,6 +57,10 @@ class Filter:
         self.signed = parameters['signed']
         self.type = parameters['type']
         self.can_open = parameters['can_open']
+        if 'mask' in parameters:
+            self.mask = parameters['mask']
+        else:
+            self.mask=None
 
     def decoder(self, data):
         if self.can_open:
@@ -65,7 +69,13 @@ class Filter:
             data = data.msg_raw[4:]
         deco = dic_byte_order[self.type] + dic_format[(self.signed, self.longitud)]
         value = struct.unpack(deco, data[self.inicio:int(self.inicio + self.longitud / 8)])[
-                    0] * self.factor + self.offset
+                    0]
+        try:
+            if self.mask is not None:
+                value = value & self.mask
+        except Exception as e:
+            print(f'Error aplying mask {e}')
+        value =  value * self.factor + self.offset
         return self.name, value
 
 

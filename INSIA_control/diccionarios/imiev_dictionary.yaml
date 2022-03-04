@@ -45,6 +45,7 @@
       signed: False
       type: motorola #motorola/big_endian    intel/little_endian
       can_open: False
+      mask: 0x0FFF
 
 0x418: #cobid # Gear
   0xFFFF: #index
