@@ -3,7 +3,8 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, FloatStamped
+from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, FloatStamped, \
+    EPOSDigital, IOAnalogue
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -37,25 +38,28 @@ class ThrottleNode(Node):
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable = self.create_publisher(msg_type=BoolStamped,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/CANADAC/Enable',
-                                                qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_enable_throttle = self.create_publisher(msg_type=EPOSDigital,
+                                                         topic='/' + vehicle_parameters['id_vehicle'] + '/iodigital',
+                                                         qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/CANADAC/Target', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_target = self.create_publisher(msg_type=IOAnalogue,
+                                                topic='/' + vehicle_parameters['id_vehicle'] + '/ioanalogue',
+                                                qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def controller_update(self, data):
         self.controller = data
-        self.pub_enable.publish(BoolStamped(
+        self.pub_enable_throttle.publish(EPOSDigital(
             header=Header(stamp=self.get_clock().now().to_msg()),
-            data=self.controller.enable
+            enable=self.controller.enable,
+            io_digital=8
         ))
         if self.controller.enable:
-            self.pub_target.publish(IntStamped(
+            self.pub_target.publish(IOAnalogue(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                data=interp(self.controller.target, (0, 1), self.device_range)
+                channel=3,
+                voltage=interp(self.controller.target, (0, 1), self.device_range)
             ))
 
     def publish_heartbit(self):
@@ -69,6 +73,19 @@ class ThrottleNode(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbit.cancel()
+            # Desactivar EPOS4
+            # Desactivar reles
+            self.pub_enable_throttle.publish(EPOSDigital(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                enable=False,
+                io_digital=8
+            ))
+            # Poner target de motor a 0 por si acaso
+            self.pub_target.publish(IOAnalogue(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                channel=3,
+                voltage=interp(0, (0, 1), self.device_range)
+            ))
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

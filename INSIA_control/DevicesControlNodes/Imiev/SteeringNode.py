@@ -3,7 +3,7 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat
+from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, EPOSDigital
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -42,6 +42,10 @@ class SteeringNode(Node):
                                                 topic='/' + vehicle_parameters['id_vehicle'] + '/EPOS4_Volante/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital,
+                                                         topic='/' + vehicle_parameters['id_vehicle'] + '/iodigital',
+                                                         qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.pub_target = self.create_publisher(msg_type=IntStamped, topic='/' + vehicle_parameters[
             'id_vehicle'] + '/EPOS4_Volante/TargetTorque', qos_profile=HistoryPolicy.KEEP_LAST)
 
@@ -52,6 +56,11 @@ class SteeringNode(Node):
         self.pub_enable.publish(BoolStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
             data=self.controller.enable
+        ))
+        self.pub_enable_steering.publish(EPOSDigital(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            enable=self.controller.enable,
+            io_digital=7
         ))
         if self.controller.enable:
             self.pub_target.publish(IntStamped(
@@ -70,6 +79,22 @@ class SteeringNode(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbit.cancel()
+            # Desactivar EPOS4
+            self.pub_enable.publish(BoolStamped(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                data=False
+            ))
+            # Desactivar reles
+            self.pub_enable_steering.publish(EPOSDigital(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                enable=False,
+                io_digital=7
+            ))
+            # Poner target de motor a 0 por si acaso
+            self.pub_target.publish(IntStamped(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                data=interp(0, (-1, 1), self.device_range)
+            ))
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

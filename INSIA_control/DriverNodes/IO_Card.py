@@ -70,11 +70,11 @@ class IOCard(Node):
             if self.is_dio_connected():
                 if msg.enable:
                     value = "0" + str(msg.io_digital) + "0\r\n"
-                    self.logger.debug(f' Volante activado {msg.enable}')
                 else:
                     value = "0" + str(msg.io_digital) + "1\r\n"
-                    self.logger.debug(f' Volante desactivado {msg.enable}')
             self.cli_DIO.send(value.encode())
+        log = 'ON' if msg.enable else 'OFF'
+        self.logger.debug(f' IO {msg.io_digital} {log}')
 
     def is_dio_connected(self):
         if self.cli_DIO.connected:
