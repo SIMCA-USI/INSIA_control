@@ -41,8 +41,8 @@ def generate_launch_description():
         # ),
         Node(
             package='INSIA_control',
-            executable='maxon',
-            name='MCD60_Freno',
+            executable='faulhaber',
+            name='FAULHABER_Freno',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
