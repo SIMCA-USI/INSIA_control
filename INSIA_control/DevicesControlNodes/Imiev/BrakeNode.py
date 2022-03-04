@@ -46,8 +46,7 @@ class BrakeNode(Node):
             'id_vehicle'] + '/MCD60_Freno/TargetPosition', qos_profile=HistoryPolicy.KEEP_LAST)
 
         # Servicio para la calibración del freno
-        self.srv_brake_calibration = self.create_service(BrakeCalibration, 'brake_calibration', self.enable_calibration)
-
+        # self.srv_brake_calibration = self.create_service(BrakeCalibration, 'brake_calibration', self.enable_calibration)
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def controller_update(self, data):
@@ -57,9 +56,10 @@ class BrakeNode(Node):
             data=self.controller.enable
         ))
         if self.controller.enable:
-            self.pub_target.publish(IntStamped(
+            self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                data=interp(self.controller.target, (0, 1), self.device_range)
+                position=int(interp(self.controller.target, (0, 1), self.device_range)),
+                mode=EPOSConsigna.ABSOLUTO
             ))
 
     def enable_calibration(self, request, response):

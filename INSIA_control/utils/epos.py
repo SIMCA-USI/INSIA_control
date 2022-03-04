@@ -73,22 +73,25 @@ control_word_dict = {
 
 
 def set_state(node: int, target_state, graph: nx.classes.digraph = None, status_word: int = None):
-    if target_state in status_epos.values():
-        if graph is not None and status_word is not None:
-            if get_status(status_word) != target_state:
+    try:
+        if target_state in status_epos.values():
+            if graph is not None and status_word is not None:
+                if get_status(status_word) != target_state:
+                    msgs = []
+                    for transition in get_transitions(graph=graph, start=get_status(status_word), end=target_state):
+                        msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
+                    return msgs
+                else:
+                    return None
+            else:
                 msgs = []
-                for transition in get_transitions(graph=graph, start=get_status(status_word), end=target_state):
+                for transition in get_transitions(graph=graph, start=EPOSStatus.Fault, end=target_state):
                     msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
                 return msgs
-            else:
-                return None
         else:
-            msgs = []
-            for transition in get_transitions(graph=graph, start=EPOSStatus.Fault, end=target_state):
-                msgs.append(make_can_msg(node=node, index=0x6040, data=transitions.get(transition)))
-            return msgs
-    else:
-        raise ValueError(f'Target state not valid: {target_state}')
+            raise ValueError(f'Target state not valid: {target_state}')
+    except Exception as e:
+        print(f'Exception in set_state {e}')
 
 
 def configuration(node: int, graph: nx.classes.digraph, status_word: int):
@@ -123,7 +126,11 @@ def read_position(node: int):
 
 def get_status(status_word: int) -> Optional[str]:
     if status_word is not None:
-        return status_epos.get(status_word & 0x006F)
+        status = status_epos.get(status_word & 0x006F)
+        if status is not None:
+            return status
+        else:
+            return EPOSStatus.Fault
     else:
         return None
 

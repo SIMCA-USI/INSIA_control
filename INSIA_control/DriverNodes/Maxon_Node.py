@@ -145,7 +145,6 @@ class EPOS4Node(Node):
             self.target_state = self.EPOSStatus.Operation_enabled
         else:
             self.target_state = self.EPOSStatus.Switched_on
-
         self.update_state()
 
     def analog(self, msg: EPOSAnalog):

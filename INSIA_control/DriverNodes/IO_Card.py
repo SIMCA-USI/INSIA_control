@@ -94,8 +94,8 @@ class IOCard(Node):
 
     def shutdown(self):
         try:
-            # for _ in range(3):
-            #     rclpy.spin_once(self)
+            for _ in range(3):
+                rclpy.spin_once(self)
             self.shutdown_flag = True
             if not self.local:
                 self.cli_AIO.shutdown()
