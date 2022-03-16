@@ -22,29 +22,35 @@ class DumpBoxLagarto(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
+        self.target_DumpBox = None
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_gear = self.create_publisher(msg_type=StringStamped,
-                                              topic='/' + vehicle_parameters[
-                                                  'id_vehicle'] + '/Arduino_DumpBox/Consigna',
-                                              qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_dump_box = self.create_publisher(msg_type=StringStamped, topic='/' + vehicle_parameters[
+            'id_vehicle'] + '/Arduino_DumpBox/Consigna', qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=ControladorStr,
                                  topic='/' + vehicle_parameters['id_vehicle'] + self.get_name(),
                                  callback=self.control, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_Dump_box = self.create_timer(1, self.publish_DumpBox)
 
     def control(self, controlador):
-        self.pub_gear.publish(
-            StringStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                data=controlador.target
+        if self.target_DumpBox != controlador.target:
+            self.target_DumpBox = controlador.target
+            self.publish_DumpBox()
+
+    def publish_DumpBox(self):
+        if self.target_DumpBox is not None:
+            self.pub_dump_box.publish(
+                StringStamped(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    data=self.target_DumpBox
+                )
             )
-        )
 
     def publish_heartbit(self):
         msg = StringStamped(

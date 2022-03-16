@@ -2,7 +2,7 @@ import os
 
 import rclpy
 import yaml
-from insia_msg.msg import ControladorStr, StringStamped
+from insia_msg.msg import ControladorStr, StringStamped, Telemetry
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -22,6 +22,15 @@ class Gears_Lagarto(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
+        self.telemetry = Telemetry()
+        self.current_gear = 'N'  # Eliminar cuando se recojan las marchas del vehiculo
+        with open(os.getenv('ROS_WS') + '/src/INSIA_control/INSIA_control/diccionarios/' + self.get_parameter(
+                'dictionary').value) as f:
+            self.avaliable_gears = yaml.load(f, Loader=yaml.FullLoader)
+
+        self.create_subscription(msg_type=Telemetry,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
+                                 callback=self.telemetry_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
@@ -37,13 +46,52 @@ class Gears_Lagarto(Node):
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
+    def telemetry_callback(self, telemetry: Telemetry):
+        self.telemetry = telemetry
+
     def control(self, controlador):
-        self.pub_gear.publish(
-            StringStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                data=controlador.target
-            )
-        )
+        try:
+            self.logger.debug(f"Request update gear value to {controlador.target}V")
+            if controlador.target in self.avaliable_gears.keys():
+                target_gear = controlador.target
+                if (self.current_gear in ['D1', 'D2', 'D3', 'D'] and controlador.target in ['R']) \
+                        or (self.current_gear in ['R'] and controlador.target in ['D1', 'D2', 'D3', 'D']) \
+                        or (self.current_gear in ['M'] and controlador.target in ['D1', 'D2', 'D3', 'D', 'R']):
+                    target_gear = 'N'
+                if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'] or (
+                        self.current_gear in ['D1', 'D2', 'D3', 'D'] and target_gear in ['D1', 'D2', 'D3', 'D']))):
+                    self.current_gear = target_gear
+                    self.pub_gear.publish(
+                        StringStamped(
+                            header=Header(stamp=self.get_clock().now().to_msg()),
+                            data=target_gear
+                        )
+                    )
+            else:
+                self.logger.error(f" invalid gear value {controlador.target}V")
+        except Exception as e:
+            self.logger.error(f'Error in gears control: {e}')
+        # Cambiar a este modelo si se consigue sacar la marcha del vehiculo
+        # try:
+        #     self.logger.debug(f"Request update gear value to {controlador.target}V")
+        #     if controlador.target in self.avaliable_gears.keys():
+        #         target_gear = controlador.target
+        #         if (self.current_gear in ['D1', 'D2', 'D3', 'D'] and controlador.target in ['R']) \
+        #                 or (self.current_gear in ['R'] and controlador.target in ['D1', 'D2', 'D3', 'D']) \
+        #                 or (self.current_gear in ['M'] and controlador.target in ['D1', 'D2', 'D3', 'D', 'R']):
+        #             target_gear = 'N'
+        #         if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'] or (
+        #                 self.current_gear in ['D1', 'D2', 'D3', 'D'] and target_gear in ['D1', 'D2', 'D3', 'D']))):
+        #             self.pub_gear.publish(
+        #                 StringStamped(
+        #                     header=Header(stamp=self.get_clock().now().to_msg()),
+        #                     data=target_gear
+        #                 )
+        #             )
+        #     else:
+        #         self.logger.error(f" invalid gear value {controlador.target}V")
+        # except Exception as e:
+        #     self.logger.error(f'Error in gears control: {e}')
 
     def publish_heartbit(self):
         msg = StringStamped(

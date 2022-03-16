@@ -1,0 +1,80 @@
+0x305: # Posicion de giro de volante del sensor de giro de volante
+  0xFFFF:
+    0xFF:
+      name: steering
+      inicio: 0
+      longitud: 16
+      factor: 0.13
+      offset: 0
+      signed: True
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+
+0x236: #cobid # Posicion de giro de volante del imiev
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: steering
+      inicio: 0
+      longitud: 16
+      factor: 0.5
+      offset: -2048
+      signed: True
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+
+0x215: #cobid # Velocidad
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: speed
+      inicio: 0
+      longitud: 16
+      factor: 0.0075
+      offset: 0
+      signed: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+
+0x208: #cobid # Brake value #Falta aplicar mascara 0x0FFF
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: brake
+      inicio: 2
+      longitud: 16
+      factor: 0.25
+      offset: 0
+      signed: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+      mask: 0x0FFF
+
+0x418: #cobid # Gear
+  0xFFFF: #index
+    0xFF: #sub-index
+      name: gear
+      inicio: 0
+      longitud: 8
+      factor: 1
+      offset: 0
+      signed: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+
+#0x306:
+#  0x00:
+#    name: position_actual_value
+#    inicio: 0
+#    longitud: 32
+#    factor: 0.15
+#    offset: 1
+#    signed: True
+#    type: intel #motorola/big_endian    intel/little_endian
+#
+#0x307:
+#  0x00:
+#    name: speed_actual_value
+#    inicio: 0
+#    longitud: 16
+#    factor: 0.17
+#    offset: 0
+#    signed: False
+#    type: intel #motorola/big_endian    intel/little_endian
