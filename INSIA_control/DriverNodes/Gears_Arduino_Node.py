@@ -41,7 +41,7 @@ class ArduinoNode(Node):
 
         try:
             dictionary = self.get_parameter('dictionary').value
-            self.gear_value = load_gears(dictionary=dictionary, big_endian=self.get_parameter('dict_BigEndian').value)
+            self.gear_value = load_gears(dictionary=dictionary, big_endian=self.get_parameter('dictionary').value)
             self.logger.info(f'Loaded dictionary {dictionary}')
             self.logger.debug(f'Valid gears: {list(self.gear_value.keys())}')
         except Exception as e:

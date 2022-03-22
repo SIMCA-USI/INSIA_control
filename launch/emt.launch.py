@@ -4,17 +4,9 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    parameters_file_path = '{}/../conf/lagarto.yaml'.format(
+    parameters_file_path = '{}/../conf/emt.yaml'.format(
         os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
     return LaunchDescription([
-        # Node(
-        #     package='INSIA_control',
-        #     executable='can',
-        #     name='CAN_Vehiculo',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
         Node(
             package='INSIA_control',
             executable='can',
@@ -25,8 +17,32 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
+            executable='can',
+            name='CAN_Gears',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='can',
+            name='CAN_Throttle',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='vehicledecoder',
+            name='VehicleDecoder',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
             executable='maxon',
-            name='EPOS_Volante',
+            name='MCD60_Volante',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
@@ -57,23 +73,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='gears_arduino',
-            name='Arduino_DumpBox',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='vehicledecoder',
-            name='LagartoDecoder',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='brake_lagarto',
+            executable='brake_emt',
             name='Brake',
             parameters=[parameters_file_path],
             output='screen',
@@ -81,7 +81,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='steering_lagarto',
+            executable='steering_emt',
             name='Steering',
             parameters=[parameters_file_path],
             output='screen',
@@ -89,7 +89,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='throttle_lagarto',
+            executable='throttle_emt',
             name='Throttle',
             parameters=[parameters_file_path],
             output='screen',
@@ -97,34 +97,10 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='gears_lagarto',
+            executable='gears_emt',
             name='Gears',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
         ),
-        Node(
-            package='INSIA_control',
-            executable='dumpbox_lagarto',
-            name='DumpBox',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='longitudinal_control',
-        #     name='Longitudinal_Control',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='lateral_control_PID',
-        #     name='Lateral_Control',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
     ])

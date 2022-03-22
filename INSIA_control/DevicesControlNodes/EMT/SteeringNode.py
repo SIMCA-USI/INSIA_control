@@ -39,7 +39,7 @@ class SteeringNode(Node):
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_enable = self.create_publisher(msg_type=BoolStamped,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/EPOS_Volante/Enable',
+                                                topic='/' + vehicle_parameters['id_vehicle'] + '/MCD60_Volante/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='/' + vehicle_parameters[
@@ -59,7 +59,7 @@ class SteeringNode(Node):
         self.pub_enable_steering.publish(EPOSDigital(
             header=Header(stamp=self.get_clock().now().to_msg()),
             enable=self.controller.enable,
-            io_digital=4
+            io_digital=1
         ))
         if self.controller.enable:
             self.pub_target.publish(EPOSConsigna(
@@ -78,7 +78,7 @@ class SteeringNode(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbit.cancel()
-            # Desactivar EPOS4
+            # Desactivar EPOS
             self.pub_enable.publish(BoolStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 data=False
@@ -87,7 +87,7 @@ class SteeringNode(Node):
             self.pub_enable_steering.publish(EPOSDigital(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=False,
-                io_digital=4
+                io_digital=1
             ))
             # Poner target de motor a 0 por si acaso
             self.pub_target.publish(EPOSConsigna(

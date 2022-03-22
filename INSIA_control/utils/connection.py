@@ -213,7 +213,7 @@ class Connection:
     def create_sender_udp(self):
         try:
             self.socket_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket_send.bind(('', 10000))
+            self.socket_send.bind(('', self.port+1))
             self.connected_send = True
             if self.connected_recv:
                 self.connected = True

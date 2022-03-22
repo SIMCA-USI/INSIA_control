@@ -32,7 +32,7 @@ class DumpBoxLagarto(Node):
             'id_vehicle'] + '/Arduino_DumpBox/Consigna', qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=ControladorStr,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + self.get_name(),
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
                                  callback=self.control, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)

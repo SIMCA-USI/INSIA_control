@@ -10,7 +10,7 @@ from yaml.loader import SafeLoader
 from std_msgs.msg import Header
 
 
-class Gears_Lagarto(Node):
+class GearsNode(Node):
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -23,7 +23,7 @@ class Gears_Lagarto(Node):
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
         self.telemetry = Telemetry()
-        self.current_gear = 'N'  # Eliminar cuando se recojan las marchas del vehiculo
+        self.current_gear = 'M'  # Eliminar cuando se recojan las marchas del vehiculo
         with open(os.getenv('ROS_WS') + '/src/INSIA_control/INSIA_control/diccionarios/' + self.get_parameter(
                 'dictionary').value) as f:
             self.avaliable_gears = yaml.load(f, Loader=yaml.FullLoader)
@@ -54,19 +54,19 @@ class Gears_Lagarto(Node):
             self.logger.debug(f"Request update gear value to {controlador.target}")
             if controlador.target in self.avaliable_gears.keys():
                 target_gear = controlador.target
-                if (self.current_gear in ['D1', 'D2', 'D3', 'D'] and controlador.target in ['R']) \
-                        or (self.current_gear in ['R'] and controlador.target in ['D1', 'D2', 'D3', 'D']) \
-                        or (self.current_gear in ['M'] and controlador.target in ['D1', 'D2', 'D3', 'D', 'R']):
+                if (self.current_gear in ['D'] and controlador.target in ['R']) \
+                        or (self.current_gear in ['R'] and controlador.target in ['D']):
                     target_gear = 'N'
-                if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'] or (
-                        self.current_gear in ['D1', 'D2', 'D3', 'D'] and target_gear in ['D1', 'D2', 'D3', 'D']))):
+                if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'])):
                     self.current_gear = target_gear
                     self.pub_gear.publish(
                         StringStamped(
                             header=Header(stamp=self.get_clock().now().to_msg()),
-                            data=target_gear
+                            data=target_gear or (self.current_gear in ['D'] and target_gear in ['D'])
                         )
                     )
+                else:
+                    self.logger.error(f'Can\'t change gear speed:{self.telemetry.speed} t_gear{target_gear}')
             else:
                 self.logger.error(f" invalid gear value {controlador.target}")
         except Exception as e:
@@ -111,7 +111,7 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = Gears_Lagarto()
+        manager = GearsNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('Node: Keyboard interrupt')

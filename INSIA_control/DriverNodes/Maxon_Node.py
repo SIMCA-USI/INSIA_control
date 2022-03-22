@@ -157,7 +157,7 @@ class MaxonNode(Node):
             self.logger.warn(f'Set voltage out of range out: {msg.io_analog} voltage: {msg.voltaje}')
 
     def digital(self, msg: EPOSDigital):
-        if 1 <= msg.io_digital <= 2:
+        if msg.io_digital in self.digital_outputs.keys():
             self.digital_outputs.update({msg.io_digital: msg.enable})
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),

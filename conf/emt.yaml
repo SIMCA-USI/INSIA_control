@@ -1,21 +1,33 @@
-lagarto:
-#  CAN_Vehiculo:
-#    ros__parameters:
-#      log_level: 0
-#      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
-#      connection_mode: udp
-#      ip: 192.168.0.20
-#      port: 20000
-#      extend: True
+emt:
   CAN_Control:
     ros__parameters:
       log_level: 0
       local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
-      connection_mode: udp
-      ip: 192.168.0.10
-      port: 20000
+      connection_mode: tcp
+      ip: 192.168.0.7
+      port: 10001
       extend: True
-  EPOS_Volante:
+  CAN_Gears:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.8
+      port: 10001
+      extend: True
+  CAN_Throttle:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.9
+      port: 10001
+      extend: True
+  VehicleDecoder:
+    ros__parameters:
+      log_level: 0
+      dictionary: emt_dictionary.yaml
+  MCD60_Volante:
     ros__parameters:
       log_level: 0
       cobid: 3
@@ -41,23 +53,13 @@ lagarto:
     ros__parameters:
       log_level: 10
       cobid: 5
-      can: CAN_Control
+      can: CAN_Throttle
   Arduino_Gears:
     ros__parameters:
       log_level: 10
-      cobid: 6
-      can: CAN_Control
-      dictionary: lagarto_gears_dictionary.yaml
-  Arduino_DumpBox:
-    ros__parameters:
-      log_level: 10
-      cobid: 7
-      can: CAN_Control
-      dictionary: lagarto_dump_box_dictionary.yaml
-  LagartoDecoder:
-    ros__parameters:
-      log_level: 0
-      dictionary: lagarto_dictionary.yaml
+      cobid: 8
+      can: CAN_Gears
+      dictionary: emt_gears_dictionary.yaml
   Brake:
     ros__parameters:
       log_level: 0
@@ -70,28 +72,4 @@ lagarto:
   Gears:
     ros__parameters:
       log_level: 0
-      dictionary: lagarto_gears_dictionary.yaml
-  DumpBox:
-    ros__parameters:
-      log_level: 0
-  Longitudinal_Control:
-    ros__parameters:
-      log_level: 10
-      speed_range: [0, 120]
-      throttle:
-        kp: 3
-        ti: 2
-        td: 0
-      brake:
-        kp: 0.5
-        ti: 4
-        td: 0
-  Lateral_Control:
-    ros__parameters:
-      log_level: 10
-      steering_range: [ -630, 630 ]
-      steering:
-        kp: 10
-        ti: 8
-        td: 0.03
-
+      dictionary: emt_gears_dictionary.yaml

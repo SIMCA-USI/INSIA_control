@@ -9,15 +9,14 @@
       signed: True
       type: motorola #motorola/big_endian    intel/little_endian
       can_open: False
-
-0x8CFF0221: #cobid # Posicion de giro de volante del imiev
-  0xFFFF: #index
-    0xFF: #sub-index
+0x609: # Posicion de giro de volante del sensor de giro de volante
+  0xFFFF:
+    0xFF:
       name: speed
       inicio: 4
       longitud: 16
-      factor: 0.00390625
+      factor: 0.01
       offset: 0
       signed: False
-      type: intel #motorola/big_endian    intel/little_endian
-      can_open: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: True
