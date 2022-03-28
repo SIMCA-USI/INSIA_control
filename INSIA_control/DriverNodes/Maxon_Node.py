@@ -4,7 +4,8 @@ import os
 import networkx as nx
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped, EPOSAnalog
+from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped, EPOSAnalog, \
+    EPOSStatus
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -64,6 +65,9 @@ class MaxonNode(Node):
                                              topic='/' + vehicle_parameters['id_vehicle'] + '/' + str(
                                                  self.can_conected), qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.pub_status = self.create_publisher(msg_type=EPOSStatus, topic='/' + vehicle_parameters[
+            'id_vehicle'] + '/' + self.get_name() + '/Status', qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=CAN,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
@@ -100,6 +104,7 @@ class MaxonNode(Node):
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
+        self.timer_status = self.create_timer(0.1, self.publish_status)
         # self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
         self.timer_io = None
         from time import sleep
@@ -111,6 +116,26 @@ class MaxonNode(Node):
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=self.epos.init_device(node=self.cobid, mode=self.op_mode, rpm=self.speed)
         ))
+
+    def publish_status(self):
+        status = self.epos_dictionary.get('Statusword')
+        if status is not None:
+            status = self.epos.status_epos.get(status)
+        operation_mode = self.epos_dictionary.get('Modes_of_operation_display')
+        if operation_mode is not None:
+            operation_mode = self.epos.mode_epos_reverse.get(operation_mode)
+        position = int(self.epos_dictionary.get(
+            'position_actual_value')) if 'position_actual_value' in self.epos_dictionary.keys() else 0
+        following_error = self.epos_dictionary.get('following_error_actual_value')
+        self.pub_status.publish(
+            EPOSStatus(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                status=status if status is not None else '',
+                operation_mode=operation_mode if operation_mode is not None else '',
+                position=position if position is not None else 0,
+                following_error=following_error if following_error is not None else 0
+            )
+        )
 
     def fault_reset(self, data: Header):
         self.update_state(fault_reset=True)

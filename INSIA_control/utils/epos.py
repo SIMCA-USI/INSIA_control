@@ -46,6 +46,15 @@ mode_epos = {
     'CST': 10
 }
 
+mode_epos_reverse = {
+    1: 'PPM',
+    3: 'PVM',
+    6: 'HMM',
+    8: 'CSP',
+    9: 'CSV',
+    10: 'CST',
+}
+
 transitions = {
     1: EPOSCommand.DISABLE_VOLTAGE,
     2: EPOSCommand.SHUTDOWN,
