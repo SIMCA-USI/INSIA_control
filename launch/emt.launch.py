@@ -33,7 +33,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='vehicledecoder',
+            executable='vehicledecoder_base',
             name='VehicleDecoder',
             parameters=[parameters_file_path],
             output='screen',

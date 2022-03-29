@@ -29,7 +29,7 @@ setup(
             'faulhaber = INSIA_control.DriverNodes.FAULHABER_Node:main',
             'gears_arduino = INSIA_control.DriverNodes.Gears_Arduino_Node:main',
             'canadac = INSIA_control.DriverNodes.CANADAC_Node:main',
-            'vehicledecoder = INSIA_control.DriverNodes.Vehicle_Node:main',
+            'vehicledecoder_base = INSIA_control.DriverNodes.Vehicle_Node_Base:main',
             'io_card = INSIA_control.DriverNodes.IO_Card:main',
             'test_can = test.test_CAN_node:main',
             'brake_imiev = INSIA_control.DevicesControlNodes.Imiev.BrakeNode:main',
