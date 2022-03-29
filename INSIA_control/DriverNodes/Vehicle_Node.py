@@ -47,7 +47,7 @@ class VehicleNode(Node):
             if data is not None:
                 setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
         msg.id_plataforma = self.id_plataforma
-        msg.brake = int((int(msg.brake/0.25) &0x0FFF)*0.25)
+        msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
         return msg
 
     def publish_heartbit(self):

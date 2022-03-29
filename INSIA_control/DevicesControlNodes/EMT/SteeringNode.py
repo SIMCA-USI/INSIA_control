@@ -64,7 +64,8 @@ class SteeringNode(Node):
         if self.controller.enable:
             self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                position=int(interp(self.controller.target, (-1, 1), self.device_range))
+                position=int(interp(self.controller.target, (-1, 1), self.device_range)),
+                mode=EPOSConsigna.RELATIVO
             ))
 
     def publish_heartbit(self):
