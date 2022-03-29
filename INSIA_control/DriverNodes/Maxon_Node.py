@@ -50,6 +50,7 @@ class MaxonNode(Node):
         self.target_state = self.EPOSStatus.Switched_on
         self.auto_fault_reset = self.get_parameter('auto_fault_reset').value
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
+        self.factor = self.get_parameter_or('factor', Parameter(name='factor', value=1)).value
         self.last_position_updated = 0
         self.motor_graph = nx.read_graphml(
             os.environ['ROS_WS'] + '/src/INSIA_control/INSIA_control/utils/maxon.graphml')
@@ -204,7 +205,8 @@ class MaxonNode(Node):
             if status == self.EPOSStatus.Operation_enabled:
                 self.pub_CAN.publish(CANGroup(
                     header=Header(stamp=self.get_clock().now().to_msg()),
-                    can_frames=self.epos.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
+                    can_frames=self.epos.set_angle_value(node=self.cobid, angle=msg.position * self.factor,
+                                                         absolute=msg.mode)
                 ))
             else:
                 self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')

@@ -104,10 +104,11 @@ class PID(object):
 
     __slots__ = (
         'Kp', 'Ti', 'Td', 'windup_guard', 'sample_time', 'current_time', 'last_time', 'PTerm', 'ITerm', 'DTerm',
-        'last_error', 'int_error', 'output')
+        'last_error', 'int_error', 'output', 'reseted')
 
     def __init__(self, kp=0.2, ti=0.0, td=0.0, anti_wind_up=0.2):
 
+        self.reseted = True
         self.Kp = kp
         self.Ti = ti
         self.Td = td
@@ -123,6 +124,18 @@ class PID(object):
         self.int_error = 0.0
         self.output = 0.0
 
+    def reset_values(self):
+        if not self.reseted:
+            self.PTerm = 0.0
+            self.ITerm = 0.0
+            self.DTerm = 0.0
+            self.last_error = 0.0
+
+            # Windup Guard
+            self.int_error = 0.0
+            self.output = 0.0
+            self.reseted = True
+
     def calcValue(self, target_value, current_value):
         """Calculates PID value for given reference feedback
 
@@ -135,7 +148,7 @@ class PID(object):
            Test PID with Kp=1.2, Ki=1, Kd=0.001 (test_pid.py)
 
         """
-
+        self.reseted = False
         error = target_value - current_value
 
         self.current_time = time.time()

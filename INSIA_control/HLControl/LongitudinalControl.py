@@ -30,6 +30,7 @@ class LongitudinalControlNode(Node):
         self.control_msg: PetConduccion = PetConduccion()
         self.current_speed = 0.
         self.speed_range = self.get_parameter('speed_range').value
+        self.telemetry = Telemetry()
         th_params = self.get_parameters_by_prefix('throttle')
         br_params = self.get_parameters_by_prefix('brake')
         self.pid_throttle = PID(kp=th_params['kp'].value, ti=th_params['ti'].value, td=th_params['td'].value,
@@ -55,69 +56,97 @@ class LongitudinalControlNode(Node):
 
         self.create_subscription(msg_type=PetConduccion,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
-                                 callback=self.decision, qos_profile=HistoryPolicy.KEEP_LAST)
+                                 callback=self.decision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        # ##### Cliente del servicio de calibración del freno #####
-        self.cli_calibration = self.create_client(BrakeCalibration, 'brake_calibration')
-        while not self.cli_calibration.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
-        self.req_calibration = BrakeCalibration.Request()
+        # # ##### Cliente del servicio de calibración del freno #####
+        # self.cli_calibration = self.create_client(BrakeCalibration, 'brake_calibration')
+        # while not self.cli_calibration.wait_for_service(timeout_sec=1.0):
+        #     self.get_logger().info('service not available, waiting again...')
+        # self.req_calibration = BrakeCalibration.Request()
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_control = self.create_timer(1 / 10, self.control_loop)
 
-    # #### Función request para el servicio de calibración ####
-    def send_request(self):
-        self.req_calibration.bool.data = bool(sys.argv[1])
-        self.future = self.cli_calibration.call_async(self.req_calibration)
+    def telemetry_callback(self, telemetry: Telemetry):
+        self.current_speed = telemetry.speed
+        # self.telemetry = telemetry
+
+    # # #### Función request para el servicio de calibración ####
+    # def send_request(self):
+    #     self.req_calibration.bool.data = bool(sys.argv[1])
+    #     self.future = self.cli_calibration.call_async(self.req_calibration)
 
     def control_loop(self):
         # Normalizar valores
         target_speed_norm = interp(self.control_msg.speed, self.speed_range, [0, 1])
         current_speed_norm = interp(self.current_speed, self.speed_range, [0, 1])
+        self.logger.debug(f'Target speed {round(self.control_msg.speed, 2)}\t{target_speed_norm}')
+        self.logger.debug(f'Target speed {round(self.current_speed, 2)}\t{current_speed_norm}')
         # Calcular pids
-
-        brake = self.pid_brake.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
-        throttle = self.pid_throttle.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
+        if self.control_msg.b_brake:
+            brake = self.pid_brake.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
+        else:
+            self.pid_brake.reset_values()
+            brake = 0
+        if self.control_msg.b_throttle:
+            throttle = self.pid_throttle.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
+        else:
+            self.pid_throttle.reset_values()
+            throttle = 0
+        self.logger.debug(f'PID Brake: {-brake}')
+        self.logger.debug(f'PID Throttle: {throttle}')
         if self.control_msg.speed <= 0.1:
+            self.logger.debug(f'Case frenada a 0')
             if self.current_speed < 0.5:
                 brake_solution = -0.8
                 throttle_solution = 0.
             else:
                 brake_solution = brake
                 throttle_solution = 0.
-        elif self.control_msg.speed - self.current_speed >= -5 and self.control_msg.speed < 5:
-            brake_solution = brake / 2
-            throttle_solution = 0.
-        elif self.control_msg.speed - self.current_speed > -2:
-            brake_solution = 0.
+        elif self.control_msg.speed > self.current_speed:
+            self.logger.debug('Caso aceleración')
             throttle_solution = throttle
-        elif self.control_msg.speed - self.current_speed >= -5:
-            brake_solution = 0
-            throttle_solution = 0.
+            brake_solution=0.
         else:
-            brake_solution = brake
-            throttle_solution = 0.
-        if self.control_msg.b_throttle and self.control_msg.b_brake:
-            self.pub_throttle.publish(ControladorFloat(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=self.control_msg.b_throttle,
-                target=throttle_solution
-            ))
-            self.pub_brake.publish(ControladorFloat(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=self.control_msg.b_brake,
-                target=-brake_solution
-            ))
-        else:
-            self.pub_brake.publish(ControladorFloat(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=self.control_msg.b_brake,
-                target=0.
-            ))
+            self.logger.debug('Caso freno')
+            if 0 >= self.control_msg.speed - self.current_speed >= -5 and self.current_speed > 10:
+                self.logger.debug(f'Case frenada < 5km/h')
+                brake_solution = 0.
+                throttle_solution = 0.
+            else:
+                brake_solution=brake
+                throttle_solution=0.
+
+        # elif self.control_msg.speed - self.current_speed >= -5 and self.control_msg.speed < 5:
+        #     self.logger.debug(f'Case ')
+        #     brake_solution = brake / 2
+        #     throttle_solution = 0.
+        # elif self.control_msg.speed - self.current_speed > -2:
+        #     self.logger.debug(f'Case 3')
+        #     brake_solution = 0.
+        #     throttle_solution = throttle
+        # elif self.control_msg.speed - self.current_speed >= -5:
+        #     self.logger.debug(f'Case 4')
+        #     brake_solution = 0.
+        #     throttle_solution = 0.
+        # else:
+        #     brake_solution = brake
+        #     self.logger.debug(f'Case 5')
+        #     throttle_solution = 0.
+        self.logger.debug(f'\nSolution: \n\tThrottle:\t{throttle_solution}\n\tBrake:\t\t{brake_solution}')
+        self.pub_throttle.publish(ControladorFloat(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            enable=self.control_msg.b_throttle,
+            target=throttle_solution
+        ))
+        self.pub_brake.publish(ControladorFloat(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            enable=self.control_msg.b_brake,
+            target=-brake_solution
+        ))
         # self.logger.debug(f'{self.control_msg.b_brake} Valor freno: {brake_solution}')
 
-    def decision(self, decision):
+    def decision_callback(self, decision):
         self.control_msg = decision
 
     def publish_heartbit(self):
