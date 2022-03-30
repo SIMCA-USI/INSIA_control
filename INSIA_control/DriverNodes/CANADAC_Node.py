@@ -42,10 +42,27 @@ class CANADACNode(Node):
                                  callback=self.consigna, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/EnableRelay',
                                  callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.create_subscription(msg_type=BoolStamped,
+                                 topic='/' + vehicle_parameters[
+                                     'id_vehicle'] + '/' + self.get_name() + '/EnableTension',
+                                 callback=self.enable_tension, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+
+    def enable_tension(self, data):
+        if data.data:
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x01, clock=self.get_clock().now().to_msg())
+        else:
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x00, clock=self.get_clock().now().to_msg())
+        self.pub_CAN.publish(CANGroup(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            can_frames=[
+                msg
+            ]
+        ))
 
     def enable(self, data):
         if data.data:

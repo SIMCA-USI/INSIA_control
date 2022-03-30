@@ -39,7 +39,7 @@ class ThrottleNode(Node):
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_enable_throttle = self.create_publisher(msg_type=BoolStamped, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/CANADAC_Acelerador/Enable', qos_profile=HistoryPolicy.KEEP_LAST)
+            'id_vehicle'] + '/CANADAC_Acelerador/EnableRelay', qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='/' + vehicle_parameters[
             'id_vehicle'] + '/CANADAC_Acelerador/Target', qos_profile=HistoryPolicy.KEEP_LAST)
