@@ -23,17 +23,17 @@ class Decoder:
     def __init__(self, dictionary, cobid=0):
         self.dic_parameters = {}
         with open(os.getenv('ROS_WS') + '/src/INSIA_control/INSIA_control/diccionarios/' + dictionary) as f:
-            imiev_parameters = yaml.load(f, Loader=yaml.FullLoader)
-        for i in imiev_parameters.keys():  # cobid
-            for j in imiev_parameters[i].keys():  # index
+            parameters = yaml.load(f, Loader=yaml.FullLoader)
+        for i in parameters.keys():  # cobid
+            for j in parameters[i].keys():  # index
                 if j == 0xFFFF:
-                    self.dic_parameters.update({f'{i + cobid}': Filter(imiev_parameters[i][j][0xFF])})
+                    self.dic_parameters.update({f'{i + cobid}': Filter(parameters[i][j][0xFF])})
                 else:
-                    for k in imiev_parameters[i][j].keys():
+                    for k in parameters[i][j].keys():
                         if k == 0xFF:
-                            self.dic_parameters.update({f'{i + cobid}:{j}': Filter(imiev_parameters[i][j][k])})
+                            self.dic_parameters.update({f'{i + cobid}:{j}': Filter(parameters[i][j][k])})
                         else:
-                            self.dic_parameters.update({f'{i + cobid}:{j}:{k}': Filter(imiev_parameters[i][j][k])})
+                            self.dic_parameters.update({f'{i + cobid}:{j}:{k}': Filter(parameters[i][j][k])})
 
     def decode(self, msg):
         if f'{msg.cobid}:{msg.index}:{msg.sub_index}' in self.dic_parameters.keys():
@@ -60,7 +60,7 @@ class Filter:
         if 'mask' in parameters:
             self.mask = parameters['mask']
         else:
-            self.mask=None
+            self.mask = None
 
     def decoder(self, data):
         if self.can_open:
@@ -68,14 +68,13 @@ class Filter:
         else:
             data = data.msg_raw[4:]
         deco = dic_byte_order[self.type] + dic_format[(self.signed, self.longitud)]
-        value = struct.unpack(deco, data[self.inicio:int(self.inicio + self.longitud / 8)])[
-                    0]
+        value = struct.unpack(deco, data[self.inicio:int(self.inicio + self.longitud / 8)])[0]
         try:
             if self.mask is not None:
                 value = value & self.mask
         except Exception as e:
             print(f'Error aplying mask {e}')
-        value =  value * self.factor + self.offset
+        value = value * self.factor + self.offset
         return self.name, value
 
 

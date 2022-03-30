@@ -27,6 +27,38 @@ class EPOSStatus(str, Enum):
     Fault = 'Fault'
 
 
+fault_epos = {
+    0x0000: 'No error',
+    0x1000: 'Generic Error',
+    0x2310: 'Over Current Error',
+    0x3210: 'Over Voltage Error',
+    0x3220: 'Under Voltage',
+    0x4210: 'Over Temperature',
+    0x5113: 'Supply Voltage (+5V) too low',
+    0x6100: 'Internal Software Error',
+    0x6320: 'Software Parameter Error',
+    0x7320: 'Sensor Position Error',
+    0x8110: 'CAN Overrun Error (Objects lost)',
+    0x8120: 'CAN Passive Mode Error',
+    0x8130: 'CAN Life Guard Error',
+    0x8150: 'CAN Transmit COB-ID collision',
+    0x81FD: 'CAN Bus Off',
+    0x81FE: 'CAN Rx Queue Overrun',
+    0x81FF: 'CAN Tx Queue Overrun',
+    0x8210: 'CAN Tx Queue Overrun',
+    0x8611: 'Following Error',
+    0xFF01: 'Hall Sensor Error',
+    0xFF02: 'Index Processing Error',
+    0xFF03: 'Encoder Resolution Error',
+    0xFF04: 'Hallsensor not found Error',
+    0xFF06: 'Negative Limit Error',
+    0xFF07: 'Positive Limit Error',
+    0xFF08: 'Hall Angle detection Error',
+    0xFF09: 'Software Position LImit Error',
+    0xFF0A: 'Position Sensor Breach',
+    0xFF0B: 'System Overloaded',
+}
+
 status_epos = {
     0x00: EPOSStatus.Not_ready_to_switch_on,
     0x40: EPOSStatus.Switch_on_disabled,
@@ -142,6 +174,10 @@ def get_status(status_word: int) -> Optional[str]:
             return EPOSStatus.Fault
     else:
         return None
+
+
+def get_fault(error: int):
+    return fault_epos.get(error, fault_epos.get(0x1000))
 
 
 def get_status_from_dict(dictionary: dict) -> str:

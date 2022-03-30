@@ -14,6 +14,7 @@ from yaml.loader import SafeLoader
 
 from INSIA_control.utils.filtro import Decoder
 from INSIA_control.utils.utils import make_can_msg
+import numpy as np
 
 
 class MaxonNode(Node):
@@ -121,7 +122,7 @@ class MaxonNode(Node):
     def publish_status(self):
         status = self.epos_dictionary.get('Statusword')
         if status is not None:
-            status = self.epos.status_epos.get(status)
+            status = self.epos.get_status(status)
         operation_mode = self.epos_dictionary.get('Modes_of_operation_display')
         if operation_mode is not None:
             operation_mode = self.epos.mode_epos_reverse.get(operation_mode)
@@ -241,12 +242,12 @@ class MaxonNode(Node):
                 ))
             self.informed_fault = False
 
-    def msg_can(self, msg):
+    def msg_can(self, msg: CAN):
         try:
             name, value = self.decoder.decode(msg)
             self.epos_dictionary.update({name: value})
             if name == 'Fault':
-                self.logger.warn('Fault')
+                self.logger.warn(f'Fault: {self.epos.get_fault(value)}')
                 self.update_state(fault=True)
             if name == 'Statusword':
                 self.update_state()
@@ -281,7 +282,7 @@ class MaxonNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    manager = None
+    # manager = None
     try:
         manager = MaxonNode()
         rclpy.spin(manager)
@@ -289,8 +290,8 @@ def main(args=None):
         print('EPOS4: Keyboard interrupt')
     except Exception as e:
         print(f'{e}')
-    finally:
-        manager.shutdown()
+    # finally:
+    #     manager.shutdown()
 
 
 if __name__ == '__main__':

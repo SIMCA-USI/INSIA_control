@@ -78,7 +78,7 @@ class VehicleNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    manager = None
+    # manager = None
     try:
         manager = VehicleNode()
         rclpy.spin(manager)
@@ -86,8 +86,8 @@ def main(args=None):
         print('Vehicle Decoder: Keyboard interrupt')
     except Exception as e:
         print(e)
-    finally:
-        manager.shutdown()
+    # finally:
+    #     manager.shutdown()
 
 
 if __name__ == '__main__':

@@ -53,10 +53,10 @@
   0xFFFF:
     0xFF:
       name: Fault
-      inicio: 0
-      longitud: 32
+      inicio: 1
+      longitud: 16
       factor: 1
       offset: 0
-      signed: True
-      type: intel #motorola/big_endian    intel/little_endian
-      can_open: True
+      signed: False
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
