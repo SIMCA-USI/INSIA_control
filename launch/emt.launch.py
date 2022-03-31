@@ -15,22 +15,22 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        Node(
-            package='INSIA_control',
-            executable='can',
-            name='CAN_Gears',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='can',
-            name='CAN_Throttle',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
+        # Node(
+        #     package='INSIA_control',
+        #     executable='can',
+        #     name='CAN_Gears',
+        #     parameters=[parameters_file_path],
+        #     output='screen',
+        #     emulate_tty=True
+        # ),
+        # Node(
+        #     package='INSIA_control',
+        #     executable='can',
+        #     name='CAN_Throttle',
+        #     parameters=[parameters_file_path],
+        #     output='screen',
+        #     emulate_tty=True
+        # ),
         Node(
             package='INSIA_control',
             executable='vehicledecoder_base',
@@ -71,36 +71,36 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='brake_emt',
-        #     name='Brake',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='steering_emt',
-        #     name='Steering',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='throttle_emt',
-        #     name='Throttle',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='gears_emt',
-        #     name='Gears',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
+        Node(
+            package='INSIA_control',
+            executable='brake_emt',
+            name='Brake',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='steering_emt',
+            name='Steering',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='throttle_emt',
+            name='Throttle',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='gears_emt',
+            name='Gears',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
     ])

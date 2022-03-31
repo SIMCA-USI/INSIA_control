@@ -275,6 +275,12 @@ class MaxonNode(Node):
                     header=Header(stamp=self.get_clock().now().to_msg()),
                     can_frames=msg
                 ))
+            for key in self.digital_outputs.keys():
+                self.digital_outputs.update({key: False})
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=self.epos.set_digital(node=self.cobid, outputs=self.digital_outputs)
+            ))
             self.timer_heartbit.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
@@ -290,8 +296,8 @@ def main(args=None):
         print('EPOS4: Keyboard interrupt')
     except Exception as e:
         print(f'{e}')
-    # finally:
-    #     manager.shutdown()
+    finally:
+        manager.shutdown()
 
 
 if __name__ == '__main__':

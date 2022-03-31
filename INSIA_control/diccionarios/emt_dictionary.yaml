@@ -13,7 +13,7 @@
   0xFFFF:
     0xFF:
       name: speed
-      inicio: 4
+      inicio: 2
       longitud: 16
       factor: 0.01
       offset: 0
