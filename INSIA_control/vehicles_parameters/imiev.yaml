@@ -1,0 +1,12 @@
+id_vehicle: imiev
+
+steering:
+  # sensor_error: 0
+  # conversion: 6500
+  range: [-2000, 2000]#[-10000, 10000] # Tension salida
+
+brake:
+  range: [0, -150000]
+  
+throttle:
+  range: [1.0, 4.5]

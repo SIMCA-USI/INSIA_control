@@ -5,7 +5,7 @@ import time
 
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped
+from insia_msg.msg import CAN, CANGroup, StringStamped, ControladorFloat
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -41,6 +41,9 @@ class CanNode(Node):
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.pub_status = self.create_publisher(msg_type=ControladorFloat, topic='/' + vehicle_parameters[
+            'id_vehicle'] + '/' + self.get_name() + '/Status', qos_profile=HistoryPolicy.KEEP_LAST)
         if self.local:
             self.logger.info(f'Running in local mode')
             self.connection = None
@@ -65,6 +68,11 @@ class CanNode(Node):
         )
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbit.publish(msg)
+        msg_status = ControladorFloat(
+            enable=self.connection.connected,
+            target=float(len(self.queue.queue))
+        )
+        self.pub_status.publish(msg_status)
 
     def save_msg(self, data: CANGroup):
         if not self.local:

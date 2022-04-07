@@ -137,12 +137,12 @@ class LongitudinalControlNode(Node):
         self.pub_throttle.publish(ControladorFloat(
             header=Header(stamp=self.get_clock().now().to_msg()),
             enable=self.control_msg.b_throttle,
-            target=throttle_solution
+            target=float(throttle_solution)
         ))
         self.pub_brake.publish(ControladorFloat(
             header=Header(stamp=self.get_clock().now().to_msg()),
             enable=self.control_msg.b_brake,
-            target=-brake_solution
+            target=float(-brake_solution)
         ))
         # self.logger.debug(f'{self.control_msg.b_brake} Valor freno: {brake_solution}')
 

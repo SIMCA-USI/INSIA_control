@@ -28,7 +28,7 @@ class ThrottleNode(Node):
         params = vehicle_parameters.get('throttle')
         self.device_range = params['range']
         self.telemetry = Telemetry()
-        self.controller = None
+        self.controller = ControladorFloat()
 
         self.create_subscription(msg_type=ControladorFloat,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
@@ -39,17 +39,20 @@ class ThrottleNode(Node):
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_enable_throttle = self.create_publisher(msg_type=EPOSDigital,
-                                                         topic='/' + vehicle_parameters['id_vehicle'] + '/iodigital',
+                                                         topic='/' + vehicle_parameters[
+                                                             'id_vehicle'] + '/io_card/iodigital',
                                                          qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_target = self.create_publisher(msg_type=IOAnalogue,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/ioanalogue',
+                                                topic='/' + vehicle_parameters['id_vehicle'] + '/io_card/ioanalogue',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_send = self.create_timer(10, self.controller_update)
 
-    def controller_update(self, data):
-        self.controller = data
+    def controller_update(self, data=None):
+        if data is not None:
+            self.controller = data
         self.pub_enable_throttle.publish(EPOSDigital(
             header=Header(stamp=self.get_clock().now().to_msg()),
             enable=self.controller.enable,

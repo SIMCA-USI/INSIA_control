@@ -1,0 +1,13 @@
+id_vehicle: emt
+
+steering:
+  # sensor_error: 0
+  # conversion: 6500
+  range: [-1100000,1100000 ] # Posicion [-590, 590]
+  wheel_range: [-590, 590]
+
+brake:
+  range: [0, 275000]
+  
+throttle:
+  range: [4.03, 0.92] #V

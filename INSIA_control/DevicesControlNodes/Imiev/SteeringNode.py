@@ -42,9 +42,8 @@ class SteeringNode(Node):
                                                 topic='/' + vehicle_parameters['id_vehicle'] + '/EPOS4_Volante/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital,
-                                                         topic='/' + vehicle_parameters['id_vehicle'] + '/iodigital',
-                                                         qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='/' + vehicle_parameters[
+            'id_vehicle'] + '/io_card/iodigital', qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_target = self.create_publisher(msg_type=IntStamped, topic='/' + vehicle_parameters[
             'id_vehicle'] + '/EPOS4_Volante/TargetTorque', qos_profile=HistoryPolicy.KEEP_LAST)

@@ -56,8 +56,8 @@ class LateralControlPIDNode(Node):
 
     def control_loop(self):
         # Normalizar valores
-        target_steering_norm = interp(self.control_msg.steering, self.steering_range, [-1, 1])
-        current_steering_norm = interp(self.current_steering, self.steering_range, [-1, 1])
+        target_steering_norm = interp(self.control_msg.steering, self.steering_range, [-1., 1.])
+        current_steering_norm = interp(self.current_steering, self.steering_range, [-1., 1.])
         # Calcular pids
         pid_params = self.get_parameters_by_prefix('steering')
         steering = -self.pid_steering.calcValue(target_value=target_steering_norm, current_value=current_steering_norm,
@@ -68,7 +68,7 @@ class LateralControlPIDNode(Node):
             self.pub_steering.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=self.control_msg.b_throttle,
-                target=steering
+                target=float(steering)
             ))
         else:
             self.pub_steering.publish(ControladorFloat(
