@@ -22,9 +22,9 @@ class Node_Class(Node):
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
 
-        self.pub_telemetry = self.create_publisher(msg_type=Telemetry,
-                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
-                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
+                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
+                                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=CAN,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
@@ -41,7 +41,7 @@ class Node_Class(Node):
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_telemetry.cancel()
+            self.timer_heartbit.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

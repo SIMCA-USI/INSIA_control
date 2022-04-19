@@ -1,0 +1,161 @@
+import os
+
+import rclpy
+import yaml
+from insia_msg.msg import StringStamped, PetConduccion, BoolStamped
+from rclpy.node import Node
+from rclpy.parameter import Parameter
+from rclpy.qos import HistoryPolicy
+from yaml.loader import SafeLoader
+import time
+
+
+class DecisionNode(Node):
+    def __init__(self):
+        with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
+            vehicle_parameters = yaml.load(f, Loader=SafeLoader)
+        super().__init__(node_name='Node', namespace=vehicle_parameters['id_vehicle'],
+                         start_parameter_services=True, allow_undeclared_parameters=False,
+                         automatically_declare_parameters_from_overrides=True)
+        self.id_plataforma = vehicle_parameters['id_vehicle']
+        self.logger = self.get_logger()
+        self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
+        self.logger.set_level(self._log_level.value)
+        self.shutdown_flag = False
+        self.default_ttl = 1
+        self.lidar_priority = self.get_parameter_or('lidar_priority', Parameter(name='lidar_priority', value=-1)).value
+        self.force_use = None
+        self.danger_obstacle = False
+        self.override = False
+
+        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
+                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
+                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.pub_decision = self.create_publisher(msg_type=PetConduccion,
+                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
+                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=BoolStamped,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/DangerObstacle',
+                                 callback=self.darger_obs_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=BoolStamped,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Override',
+                                 callback=self.override_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=BoolStamped,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/ForceLidar',
+                                 callback=self.force_use_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        subscribers = self.get_parameters_by_prefix('subscribers')
+        print(subscribers)
+        self.ttl = {}
+        self.create_subscribers(subscribers)
+        self.dict_PetConduccion = {}
+
+        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_decision = self.create_timer(0.1, self.publish_decision)
+
+    def darger_obs_callback(self, data):
+        self.danger_obstacle = data.data
+
+    def override_callback(self, data):
+        self.override = data.data
+
+    def create_subscribers(self, subscribers: dict):
+        for sub in subscribers:
+            if 'topic' in sub:
+                priority = sub.split('.')[0]
+                self.create_subscription(msg_type=PetConduccion,
+                                         topic='/' + self.id_plataforma + '/' + self.get_name() + subscribers[
+                                             sub].value,
+                                         callback=lambda pet, priority_l=priority: self.update_PetConduccion(priority_l,
+                                                                                                             pet),
+                                         qos_profile=HistoryPolicy.KEEP_LAST)
+                self.logger.debug(
+                    f'Created sub /{self.id_plataforma}/{self.get_name()}{subscribers[sub].value} with priority {sub}')
+            elif 'ttl' in sub:
+                priority = sub.split('.')[0]
+                self.ttl.update({priority: subscribers[sub]})
+                self.logger.debug(f'Modified default_ttl for priority {priority}: {subscribers[sub].value}')
+
+    def update_PetConduccion(self, priority, pet):
+        self.dict_PetConduccion.update({priority: pet})
+        self.publish_decision()
+        self.timer_decision.reset()
+
+    def is_alive(self, key):
+        try:
+            msg: PetConduccion = self.dict_PetConduccion.get(key)
+            t = msg.header.stamp.sec
+            if t != 0:
+                ttl = self.ttl.get(key).value if key in self.ttl else self.default_ttl
+                t_alive = (time.time() - t)
+                if t_alive > ttl:
+                    return False
+            return True
+        except Exception as e:
+            self.logger.error(e)
+
+    def publish_decision(self):
+        msg_final = None
+        if '0' in self.dict_PetConduccion.keys() and self.is_alive('0'):  # Caso de teclado
+            msg_final = self.dict_PetConduccion.get('0')
+        elif self.danger_obstacle and not self.override:
+            msg_final = PetConduccion()  # Valores por defecto
+        elif self.force_use is not None:  # Caso en el que se solicita forzar el uso de cierta prioridad
+            if self.force_use in self.dict_PetConduccion.keys() and self.is_alive(self.force_use):
+                msg_final = self.dict_PetConduccion.get(str(self.force_use))
+        elif msg_final is None:  # Otro caso
+            msg_final = PetConduccion()
+            for key in sorted(self.dict_PetConduccion.keys()):
+                if key != '0':
+                    msg: PetConduccion = self.dict_PetConduccion.get(key)
+                    if self.is_alive(key):
+                        msg_final = msg
+                        self.logger.debug(f'Priority {key} will be published')
+                        break
+                    else:
+                        self.dict_PetConduccion.pop(key)
+                        self.logger.debug(f'Popped PetConduccion {key}')
+        msg_final.header.stamp = self.get_clock().now().to_msg()
+        self.pub_decision.publish(msg_final)
+
+    def force_use_callback(self, data):
+        if self.lidar_priority > 0:
+            if data.data:
+                self.force_use = 2
+            else:
+                self.force_use = None
+
+    def publish_heartbit(self):
+        msg = StringStamped(
+            data=self.get_name()
+        )
+        msg.header.stamp = self.get_clock().now().to_msg()
+        self.pub_heartbit.publish(msg)
+
+    def shutdown(self):
+        try:
+            self.shutdown_flag = True
+        except Exception as e:
+            self.logger.error(f'Exception in shutdown: {e}')
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    manager = None
+    try:
+        manager = DecisionNode()
+        rclpy.spin(manager)
+    except KeyboardInterrupt:
+        print(f'{manager.get_name()}: Keyboard interrupt')
+    except Exception as e:
+        print(e)
+    finally:
+        manager.shutdown()
+
+
+if __name__ == '__main__':
+    main()

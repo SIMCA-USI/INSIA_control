@@ -86,3 +86,15 @@ emt:
         kp: 0.5
         ti: 4
         td: 0
+  Decision:
+    ros__parameters:
+      log_level: 10
+      lidar_priority: 2 # Prioridad en la que está el lidar
+      subscribers:
+        0:
+          topic: /Keyboard
+          ttl: 1 #secs
+        1:
+          topic: /CSIC
+        2:
+          topic: /Lidar
