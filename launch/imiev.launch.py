@@ -95,4 +95,12 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
+        Node(
+            package='INSIA_control',
+            executable='decision',
+            name='Decision',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
     ])
