@@ -76,9 +76,9 @@ imiev:
       log_level: 10
       steering:
         # A6
-        kp: 10
-        ti: 8
-        td: 0.03
+#        kp: 10
+#        ti: 8
+#        td: 0.03
         # Pista
 #        kp: 0.3
 #        ti: 0.2
