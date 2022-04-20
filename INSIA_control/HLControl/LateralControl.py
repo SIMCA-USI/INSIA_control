@@ -19,8 +19,7 @@ class LateralControlNode(Node):
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
         self.id_plataforma = vehicle_parameters['id_vehicle']
-        params = vehicle_parameters.get('steering')
-        self.wheel_range = params['wheel_range']
+        self.wheel_range = vehicle_parameters['steering']['range_steering_wheel']
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)

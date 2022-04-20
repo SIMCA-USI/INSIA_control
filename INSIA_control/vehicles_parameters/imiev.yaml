@@ -3,7 +3,9 @@ id_vehicle: imiev
 steering:
   # sensor_error: 0
   # conversion: 6500
-  range: [-2000, 2000]#[-10000, 10000] # Tension salida
+  range: [-2000, 2000] # [-10000, 10000] # Tension salida
+  wheel_range: [-630, 630]
+  sensor_error: 0
 
 brake:
   range: [0, -150000]

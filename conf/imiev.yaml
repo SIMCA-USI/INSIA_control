@@ -74,7 +74,6 @@ imiev:
   Lateral_Control:
     ros__parameters:
       log_level: 10
-      steering_range: [ -630, 630 ]
       steering:
         # A6
         kp: 10
@@ -84,4 +83,11 @@ imiev:
 #        kp: 0.3
 #        ti: 0.2
 #        td: 0.1
-
+  Decision:
+    ros__parameters:
+      log_level: 10
+      lidar_priority: 2 # Prioridad en la que está el lidar
+      subscribers:
+        0:
+          topic: /Joy
+          ttl: 1 #secs

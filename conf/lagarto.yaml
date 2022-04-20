@@ -89,7 +89,7 @@ lagarto:
   Lateral_Control:
     ros__parameters:
       log_level: 10
-      steering_range: [ -630, 630 ]
+      # steering_range: [ -630, 630 ]
       steering:
         kp: 10
         ti: 8

@@ -27,7 +27,7 @@ class LateralControlPIDNode(Node):
         self.shutdown_flag = False
         self.control_msg: PetConduccion = PetConduccion()
         self.current_steering = 0.
-        self.steering_range = self.get_parameter('steering_range').value
+        self.steering_range = vehicle_parameters['steering']['range_steering_wheel']
         pid_params = self.get_parameters_by_prefix('steering')
         self.pid_steering = PIDF(kp=pid_params['kp'].value, ti=pid_params['ti'].value, td=pid_params['td'].value,
                                  anti_wind_up=0.1)
