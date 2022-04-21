@@ -27,7 +27,7 @@ class LateralControlPIDNode(Node):
         self.shutdown_flag = False
         self.control_msg: PetConduccion = PetConduccion()
         self.current_steering = 0.
-        self.steering_range = vehicle_parameters['steering']['range_steering_wheel']
+        self.steering_range = vehicle_parameters['steering']['wheel_range']
         pid_params = self.get_parameters_by_prefix('steering')
         self.pid_steering = PIDF(kp=pid_params['kp'].value, ti=pid_params['ti'].value, td=pid_params['td'].value,
                                  anti_wind_up=0.1)
@@ -56,21 +56,27 @@ class LateralControlPIDNode(Node):
 
     def control_loop(self):
         if self.control_msg.b_steering:
+            self.logger.debug('Steering enabled')
+            self.logger.error(f'{type(self.steering_range[0])}')
             # Normalizar valores
             target_steering_norm = interp(self.control_msg.steering, self.steering_range, [-1., 1.])
             current_steering_norm = interp(self.current_steering, self.steering_range, [-1., 1.])
+            self.logger.debug(f'Steering range {self.steering_range}')
+            self.logger.debug(f'Target steering {self.control_msg.steering} {target_steering_norm}')
+            self.logger.debug(f'Current steering {self.current_steering} {current_steering_norm}')
             # Calcular pids
             pid_params = self.get_parameters_by_prefix('steering')
             steering = -self.pid_steering.calcValue(target_value=target_steering_norm,
                                                     current_value=current_steering_norm, kp=pid_params['kp'].value,
                                                     ti=pid_params['ti'].value, td=pid_params['td'].value)
-
+            self.logger.debug(f'PID result {steering}')
             self.pub_steering.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=self.control_msg.b_steering,
                 target=float(steering)
             ))
         else:
+            self.logger.debug('Steering disabled')
             self.pid_steering.reset_values()
             self.pub_steering.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),

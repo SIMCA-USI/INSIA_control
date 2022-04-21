@@ -27,6 +27,7 @@ class DecisionNode(Node):
         self.force_use = None
         self.danger_obstacle = False
         self.override = False
+        self.last_decision = None
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
@@ -48,6 +49,10 @@ class DecisionNode(Node):
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/ForceLidar',
                                  callback=self.force_use_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.create_subscription(msg_type=PetConduccion,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
+                                 callback=self.decision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
         subscribers = self.get_parameters_by_prefix('subscribers')
         print(subscribers)
         self.ttl = {}
@@ -62,6 +67,9 @@ class DecisionNode(Node):
 
     def override_callback(self, data):
         self.override = data.data
+
+    def decision_callback(self, data):
+        self.last_decision = data
 
     def create_subscribers(self, subscribers: dict):
         for sub in subscribers:
@@ -103,12 +111,12 @@ class DecisionNode(Node):
         if '0' in self.dict_PetConduccion.keys() and self.is_alive('0'):  # Caso de teclado
             msg_final = self.dict_PetConduccion.get('0')
         elif self.danger_obstacle and not self.override:
-            msg_final = PetConduccion()  # Valores por defecto
+            msg_final = self.brake_decision(self.last_decision)  # Valores por defecto
         elif self.force_use is not None:  # Caso en el que se solicita forzar el uso de cierta prioridad
             if self.force_use in self.dict_PetConduccion.keys() and self.is_alive(self.force_use):
                 msg_final = self.dict_PetConduccion.get(str(self.force_use))
         elif msg_final is None:  # Otro caso
-            msg_final = PetConduccion()
+            msg_final = self.brake_decision(self.last_decision)
             for key in sorted(self.dict_PetConduccion.keys()):
                 if key != '0':
                     msg: PetConduccion = self.dict_PetConduccion.get(key)
@@ -121,6 +129,14 @@ class DecisionNode(Node):
                         self.logger.debug(f'Popped PetConduccion {key}')
         msg_final.header.stamp = self.get_clock().now().to_msg()
         self.pub_decision.publish(msg_final)
+
+    def brake_decision(self, last_decision: PetConduccion):
+        if last_decision is None:
+            return PetConduccion()
+        else:
+            last_decision.speed = 0.
+            last_decision.steering = 0.
+            return last_decision
 
     def force_use_callback(self, data):
         if self.lidar_priority > 0:
