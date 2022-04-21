@@ -73,7 +73,7 @@ def main(args=None):
         manager = DumpBoxLagarto()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('Node: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(e)
     finally:

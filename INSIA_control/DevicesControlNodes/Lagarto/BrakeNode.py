@@ -97,7 +97,7 @@ def main(args=None):
         manager = BrakeNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('Brake Node: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         format_exc()
         print(e)

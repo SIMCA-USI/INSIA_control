@@ -86,7 +86,7 @@ def main(args=None):
         manager = FAULHABERNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('EPOS4: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(f'{e}')
     finally:

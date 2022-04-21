@@ -5,6 +5,7 @@ steering:
   # conversion: 6500
   range: [-658833, 658833] # Posicion [-590, 590]
   wheel_range: [-590, 590]
+  sensor_error: 0
 
 brake:
   range: [0, 223334]

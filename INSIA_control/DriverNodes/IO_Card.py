@@ -111,7 +111,7 @@ def main(args=None):
         manager = IOCard()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('IOCard: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(e)
     finally:

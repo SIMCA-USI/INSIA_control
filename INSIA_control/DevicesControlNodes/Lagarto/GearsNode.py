@@ -49,26 +49,34 @@ class Gears_Lagarto(Node):
     def telemetry_callback(self, telemetry: Telemetry):
         self.telemetry = telemetry
 
-    def control(self, controlador):
+    def control(self, controlador: ControladorStr):
         try:
-            self.logger.debug(f"Request update gear value to {controlador.target}")
-            if controlador.target in self.avaliable_gears.keys():
-                target_gear = controlador.target
-                if (self.current_gear in ['D1', 'D2', 'D3', 'D'] and controlador.target in ['R']) \
-                        or (self.current_gear in ['R'] and controlador.target in ['D1', 'D2', 'D3', 'D']) \
-                        or (self.current_gear in ['M'] and controlador.target in ['D1', 'D2', 'D3', 'D', 'R']):
-                    target_gear = 'N'
-                if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'] or (
-                        self.current_gear in ['D1', 'D2', 'D3', 'D'] and target_gear in ['D1', 'D2', 'D3', 'D']))):
-                    self.current_gear = target_gear
-                    self.pub_gear.publish(
-                        StringStamped(
-                            header=Header(stamp=self.get_clock().now().to_msg()),
-                            data=target_gear
+            if controlador.enable:
+                self.logger.debug(f"Request update gear value to {controlador.target}")
+                if controlador.target in self.avaliable_gears.keys():
+                    target_gear = controlador.target
+                    if (self.current_gear in ['D1', 'D2', 'D3', 'D'] and controlador.target in ['R']) \
+                            or (self.current_gear in ['R'] and controlador.target in ['D1', 'D2', 'D3', 'D']) \
+                            or (self.current_gear in ['M'] and controlador.target in ['D1', 'D2', 'D3', 'D', 'R']):
+                        target_gear = 'N'
+                    if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'] or (
+                            self.current_gear in ['D1', 'D2', 'D3', 'D'] and target_gear in ['D1', 'D2', 'D3', 'D']))):
+                        self.current_gear = target_gear
+                        self.pub_gear.publish(
+                            StringStamped(
+                                header=Header(stamp=self.get_clock().now().to_msg()),
+                                data=target_gear
+                            )
                         )
-                    )
+                else:
+                    self.logger.error(f"Invalid gear value {controlador.target}")
             else:
-                self.logger.error(f" invalid gear value {controlador.target}")
+                self.pub_gear.publish(
+                    StringStamped(
+                        header=Header(stamp=self.get_clock().now().to_msg()),
+                        data='M'
+                    )
+                )
         except Exception as e:
             self.logger.error(f'Error in gears control: {e}')
         # Cambiar a este modelo si se consigue sacar la marcha del vehiculo
@@ -114,7 +122,7 @@ def main(args=None):
         manager = Gears_Lagarto()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('Node: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(e)
     finally:

@@ -126,7 +126,7 @@ class CanNode(Node):
                 else:
                     self.connection.send(msg)
             sleep(1. / self.write_timer_period)
-        while len(self.queue.queue) > 0:
+        while len(self.queue.queue) > 0 and self.is_connected():
             self.logger.info(f'waiting to close q len:{len(self.queue.queue)}')
             self.write()
             time.sleep(0.1)
@@ -166,7 +166,7 @@ def main(args=None):
         manager = CanNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('CAN: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(e)
     finally:

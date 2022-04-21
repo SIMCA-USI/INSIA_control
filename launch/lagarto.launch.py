@@ -65,7 +65,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='vehicledecoder_base',
+            executable='telemetry_lagarto',
             name='LagartoDecoder',
             parameters=[parameters_file_path],
             output='screen',
@@ -111,20 +111,36 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='longitudinal_control',
-        #     name='Longitudinal_Control',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='lateral_control_PID',
-        #     name='Lateral_Control',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
+        Node(
+            package='INSIA_control',
+            executable='longitudinal_control',
+            name='Longitudinal_Control',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='lateral_control',
+            name='Lateral_Control',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='gears_control',
+            name='Gears_Control',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='decision',
+            name='Decision',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
     ])

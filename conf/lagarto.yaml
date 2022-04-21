@@ -39,18 +39,18 @@ lagarto:
       digital_outputs: 4
   CANADAC_Acelerador:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       cobid: 5
       can: CAN_Control
   Arduino_Gears:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       cobid: 6
       can: CAN_Control
       dictionary: lagarto_gears_dictionary.yaml
   Arduino_DumpBox:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       cobid: 7
       can: CAN_Control
       dictionary: lagarto_dump_box_dictionary.yaml
@@ -76,7 +76,7 @@ lagarto:
       log_level: 0
   Longitudinal_Control:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       speed_range: [0, 120]
       throttle:
         kp: 3
@@ -88,10 +88,21 @@ lagarto:
         td: 0
   Lateral_Control:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       # steering_range: [ -630, 630 ]
       steering:
         kp: 10
         ti: 8
         td: 0.03
+  Gears_Control:
+    ros__parameters:
+      log_level: 0
+  Decision:
+    ros__parameters:
+      log_level: 0
+      lidar_priority: 2 # Prioridad en la que está el lidar
+      subscribers:
+        0:
+          topic: /Joy
+          ttl: 1 #secs
 

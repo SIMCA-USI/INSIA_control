@@ -288,12 +288,12 @@ class MaxonNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    # manager = None
+    manager = None
     try:
         manager = MaxonNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('EPOS4: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(f'{e}')
     finally:

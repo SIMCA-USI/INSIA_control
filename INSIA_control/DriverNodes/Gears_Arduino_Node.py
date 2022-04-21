@@ -98,7 +98,7 @@ def main(args=None):
         manager = ArduinoNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('Arduino Marchas: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         format_exc()
         print(e)

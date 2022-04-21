@@ -108,7 +108,7 @@ def main(args=None):
         manager = CANADACNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print('CANADAC: Keyboard interrupt')
+        print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         format_exc()
         print(e)
