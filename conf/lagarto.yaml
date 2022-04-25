@@ -1,12 +1,12 @@
 lagarto:
-#  CAN_Vehiculo:
-#    ros__parameters:
-#      log_level: 0
-#      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
-#      connection_mode: udp
-#      ip: 192.168.0.20
-#      port: 20000
-#      extend: True
+  CAN_Vehiculo:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: udp
+      ip: 192.168.0.20
+      port: 20000
+      extend: True
   CAN_Control:
     ros__parameters:
       log_level: 0
@@ -22,7 +22,7 @@ lagarto:
       driver_type: epos
       mode: PPM #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
       auto_fault_reset: True
-      speed: 2000
+      speed: 5000
       dictionary: epos_dictionary.yaml
       can: CAN_Control
       digital_outputs: 4
@@ -33,7 +33,7 @@ lagarto:
       driver_type: epos
       mode: PPM #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
       auto_fault_reset: True
-      speed: 2000
+      speed: 5000
       dictionary: epos_dictionary.yaml
       can: CAN_Control
       digital_outputs: 4
