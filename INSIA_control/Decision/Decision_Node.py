@@ -2,7 +2,7 @@ import os
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, PetConduccion, BoolStamped
+from insia_msg.msg import StringStamped, PetConduccion, BoolStamped, MasterSwitch
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -28,6 +28,7 @@ class DecisionNode(Node):
         self.danger_obstacle = False
         self.override = False
         self.last_decision = None
+        self.master_switch = MasterSwitch()
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
@@ -36,6 +37,10 @@ class DecisionNode(Node):
         self.pub_decision = self.create_publisher(msg_type=PetConduccion,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=MasterSwitch,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/MasterSwitch',
+                                 callback=self.master_switch_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/DangerObstacle',
@@ -62,6 +67,12 @@ class DecisionNode(Node):
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
         self.timer_decision = self.create_timer(0.1, self.publish_decision)
 
+    def master_switch_callback(self, data: MasterSwitch):
+        if self.master_switch.b_gear != data.b_gear or self.master_switch.b_brake != data.b_brake or self.master_switch.b_steering != data.b_steering or self.master_switch.b_throttle != data.b_throttle:
+            self.master_switch = data
+            self.logger.debug(
+                f'Changed MS: Brake: {data.b_brake} Throttle: {data.b_throttle} Steering: {data.b_steering} Gears: {data.b_gear}')
+
     def darger_obs_callback(self, data):
         self.danger_obstacle = data.data
 
@@ -82,11 +93,11 @@ class DecisionNode(Node):
                                                                                                              pet),
                                          qos_profile=HistoryPolicy.KEEP_LAST)
                 self.logger.debug(
-                    f'Created sub /{self.id_plataforma}/{self.get_name()}{subscribers[sub].value} with priority {sub}')
+                    f'Created sub /{self.id_plataforma}/{self.get_name()}{subscribers[sub].value} with priority {sub[0]}')
             elif 'ttl' in sub:
                 priority = sub.split('.')[0]
                 self.ttl.update({priority: subscribers[sub]})
-                self.logger.debug(f'Modified default_ttl for priority {priority}: {subscribers[sub].value}')
+                self.logger.debug(f'Modified default_ttl for priority {priority}: {subscribers[sub].value} sec')
 
     def update_PetConduccion(self, priority, pet):
         self.dict_PetConduccion.update({priority: pet})
@@ -128,6 +139,10 @@ class DecisionNode(Node):
                         self.dict_PetConduccion.pop(key)
                         self.logger.debug(f'Popped PetConduccion {key}')
         msg_final.header.stamp = self.get_clock().now().to_msg()
+        msg_final.b_brake = msg_final.b_brake and self.master_switch.b_brake
+        msg_final.b_throttle = msg_final.b_throttle and self.master_switch.b_throttle
+        msg_final.b_steering = msg_final.b_steering and self.master_switch.b_steering
+        msg_final.b_gear = msg_final.b_gear and self.master_switch.b_gear
         self.pub_decision.publish(msg_final)
 
     def brake_decision(self, last_decision: PetConduccion):

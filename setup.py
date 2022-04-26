@@ -45,6 +45,7 @@ setup(
             'throttle_emt = INSIA_control.DevicesControlNodes.EMT.ThrottleNode:main',
             'steering_emt = INSIA_control.DevicesControlNodes.EMT.SteeringNode:main',
             'gears_emt = INSIA_control.DevicesControlNodes.EMT.GearsNode:main',
+            'telemetry_emt = INSIA_control.DevicesControlNodes.EMT.Telemetry_Basic:main',
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
             'lateral_control = INSIA_control.HLControl.LateralControl:main',

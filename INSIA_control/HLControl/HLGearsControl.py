@@ -47,7 +47,7 @@ class GearsControlNode(Node):
                                  callback=self.decision, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
-        self.timer_control = self.create_timer(1 / 50, self.control_loop)
+        self.timer_control = self.create_timer(1 / 2, self.control_loop)
 
     def telemetry_callback(self, telemetry: Telemetry):
         self.current_speed = telemetry.speed

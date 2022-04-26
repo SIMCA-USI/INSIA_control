@@ -51,24 +51,32 @@ class GearsNode(Node):
 
     def control(self, controlador):
         try:
-            self.logger.debug(f"Request update gear value to {controlador.target}")
-            if controlador.target in self.avaliable_gears.keys():
-                target_gear = controlador.target
-                if (self.current_gear in ['D'] and controlador.target in ['R']) \
-                        or (self.current_gear in ['R'] and controlador.target in ['D']):
-                    target_gear = 'N'
-                if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'])):
-                    self.current_gear = target_gear
-                    self.pub_gear.publish(
-                        StringStamped(
-                            header=Header(stamp=self.get_clock().now().to_msg()),
-                            data=target_gear or (self.current_gear in ['D'] and target_gear in ['D'])
+            if controlador.enable:
+                self.logger.debug(f"Request update gear value to {controlador.target}")
+                if controlador.target in self.avaliable_gears.keys():
+                    target_gear = controlador.target
+                    if (self.current_gear in ['D'] and controlador.target in ['R']) \
+                            or (self.current_gear in ['R'] and controlador.target in ['D']):
+                        target_gear = 'N'
+                    if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'])):
+                        self.current_gear = target_gear
+                        self.pub_gear.publish(
+                            StringStamped(
+                                header=Header(stamp=self.get_clock().now().to_msg()),
+                                data=target_gear or (self.current_gear in ['D'] and target_gear in ['D'])
+                            )
                         )
-                    )
+                    else:
+                        self.logger.error(f'Can\'t change gear speed:{self.telemetry.speed} t_gear{target_gear}')
                 else:
-                    self.logger.error(f'Can\'t change gear speed:{self.telemetry.speed} t_gear{target_gear}')
+                    self.logger.error(f" invalid gear value {controlador.target}")
             else:
-                self.logger.error(f" invalid gear value {controlador.target}")
+                self.pub_gear.publish(
+                    StringStamped(
+                        header=Header(stamp=self.get_clock().now().to_msg()),
+                        data='M'
+                    )
+                )
         except Exception as e:
             self.logger.error(f'Error in gears control: {e}')
         # Cambiar a este modelo si se consigue sacar la marcha del vehiculo
