@@ -48,7 +48,14 @@ class SteeringNode(Node):
         self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='/' + vehicle_parameters[
             'id_vehicle'] + '/MCD60_Volante/TargetPosition', qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.create_subscription(msg_type=Telemetry,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
+                                 callback=self.telemetry_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+
+    def telemetry_callback(self, data):
+        self.telemetry = data
 
     def controller_update(self, data):
         self.controller = data
@@ -61,7 +68,7 @@ class SteeringNode(Node):
             enable=self.controller.enable,
             io_digital=4
         ))
-        if self.controller.enable:
+        if self.controller.enable and self.telemetry.brake < 50:
             self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 position=int(interp(self.controller.target, (-1, 1), self.device_range)),

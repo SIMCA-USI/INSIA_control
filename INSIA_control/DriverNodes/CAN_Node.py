@@ -126,6 +126,7 @@ class CanNode(Node):
                 else:
                     self.connection.send(msg)
             sleep(1. / self.write_timer_period)
+        sleep(0.5)
         while len(self.queue.queue) > 0 and self.is_connected():
             self.logger.info(f'waiting to close q len:{len(self.queue.queue)}')
             self.write()
@@ -151,9 +152,9 @@ class CanNode(Node):
 
     def shutdown(self):
         try:
+            self.shutdown_flag = True
             for _ in range(3):
                 rclpy.spin_once(self)
-            self.shutdown_flag = True
             self.timer_heartbit.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')

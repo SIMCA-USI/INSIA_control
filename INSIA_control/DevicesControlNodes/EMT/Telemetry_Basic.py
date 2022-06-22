@@ -2,8 +2,7 @@ import os
 
 import rclpy
 import yaml
-from insia_msg.msg import CAN, Telemetry
-from insia_msg.msg import StringStamped
+from insia_msg.msg import CAN, Telemetry, StringStamped, EPOSStatus
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -11,6 +10,8 @@ from yaml.loader import SafeLoader
 
 from INSIA_control.utils.filtro import Decoder
 from INSIA_control.utils.utils import convert_types
+
+from numpy import interp
 
 
 class VehicleNode(Node):
@@ -22,6 +23,9 @@ class VehicleNode(Node):
                          automatically_declare_parameters_from_overrides=True)
         self.id_plataforma = vehicle_parameters['id_vehicle']
         self.steering_sensor_error = vehicle_parameters['steering']['sensor_error']
+        self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
+        self.brake_range = vehicle_parameters['brake']['range']
+        self.position_brake = 0
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
@@ -37,8 +41,14 @@ class VehicleNode(Node):
         self.create_subscription(msg_type=CAN,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=EPOSStatus,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/MCD60_Freno/Status',
+                                 callback=self.get_status_brake, qos_profile=HistoryPolicy.KEEP_LAST)
         self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+
+    def get_status_brake(self, status: EPOSStatus):
+        self.position_brake = status.position
 
     def create_msg(self):
         msg = Telemetry()
@@ -48,8 +58,11 @@ class VehicleNode(Node):
             if data is not None:
                 setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
         msg.id_plataforma = self.id_plataforma
-        msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
-        msg.steering = (msg.steering - self.steering_sensor_error) *-1
+        # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
+        msg.brake = int(interp(self.position_brake, self.brake_range, (0, 100)))
+        msg.steering = (msg.steering - self.steering_sensor_error)
+        if self.steering_sensor_inverted:
+            msg.steering *= -1
         return msg
 
     def publish_heartbit(self):

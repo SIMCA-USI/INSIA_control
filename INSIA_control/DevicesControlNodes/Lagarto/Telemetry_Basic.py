@@ -22,6 +22,7 @@ class VehicleNode(Node):
                          automatically_declare_parameters_from_overrides=True)
         self.id_plataforma = vehicle_parameters['id_vehicle']
         self.steering_sensor_error = vehicle_parameters['steering']['sensor_error']
+        self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
@@ -49,7 +50,9 @@ class VehicleNode(Node):
                 setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
         msg.id_plataforma = self.id_plataforma
         msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
-        msg.steering = msg.steering - self.steering_sensor_error
+        msg.steering = (msg.steering - self.steering_sensor_error)
+        if self.steering_sensor_inverted:
+            msg.steering *= -1
         return msg
 
     def publish_heartbit(self):

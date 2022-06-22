@@ -53,12 +53,18 @@ class BrakeNode(Node):
         self.controller = data
         self.pub_enable.publish(BoolStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
-            data=self.controller.enable
+            data=True
         ))
         if self.controller.enable:
             self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 position=int(interp(self.controller.target, (0, 1), self.device_range)),
+                mode=EPOSConsigna.ABSOLUTO
+            ))
+        else:
+            self.pub_target.publish(EPOSConsigna(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                position=0,
                 mode=EPOSConsigna.ABSOLUTO
             ))
 
@@ -85,6 +91,15 @@ class BrakeNode(Node):
     def shutdown(self):
         try:
             self.shutdown_flag = True
+            self.pub_target.publish(EPOSConsigna(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                position=0,
+                mode=EPOSConsigna.ABSOLUTO
+            ))
+            # self.pub_enable.publish(BoolStamped(
+            #     header=Header(stamp=self.get_clock().now().to_msg()),
+            #     data=False
+            # ))
             self.timer_heartbit.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')

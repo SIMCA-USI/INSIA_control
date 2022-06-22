@@ -268,13 +268,15 @@ class MaxonNode(Node):
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            msg = self.epos.set_state(node=self.cobid, target_state=self.EPOSStatus.Switched_on, graph=self.motor_graph,
-                                      status_word=self.epos_dictionary.get('Statusword'))
-            if msg is not None:
-                self.pub_CAN.publish(CANGroup(
-                    header=Header(stamp=self.get_clock().now().to_msg()),
-                    can_frames=msg
-                ))
+            for _ in range(2):
+                rclpy.spin_once(self)
+            # msg = self.epos.set_state(node=self.cobid, target_state=self.EPOSStatus.Switched_on, graph=self.motor_graph,
+            #                           status_word=self.epos_dictionary.get('Statusword'))
+            # if msg is not None:
+            #     self.pub_CAN.publish(CANGroup(
+            #         header=Header(stamp=self.get_clock().now().to_msg()),
+            #         can_frames=msg
+            #     ))
             for key in self.digital_outputs.keys():
                 self.digital_outputs.update({key: False})
             self.pub_CAN.publish(CANGroup(
