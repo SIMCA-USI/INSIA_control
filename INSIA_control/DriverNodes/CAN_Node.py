@@ -5,11 +5,12 @@ import time
 
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped, ControladorFloat
+from insia_msg.msg import CAN, CANGroup, StringStamped, ControladorFloat, CANEthStatus
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from yaml.loader import SafeLoader
+from numpy import interp
 
 from INSIA_control.utils.connection import Connection
 from INSIA_control.utils.utils import decoder_can
@@ -34,7 +35,12 @@ class CanNode(Node):
         self.extended = self.get_parameter('extend').value
         self.local = self.get_parameter('local').value
         self.queue = queue.Queue()
-        self.write_timer_period = 100
+        self.min_frec_writer = self.get_parameter_or('min_frec', Parameter(name='min_frec', value=100)).value
+        self.min_frec_writer_default = 100
+        self.max_frec_writer = self.get_parameter_or('max_frec', Parameter(name='max_frec', value=400)).value
+        self.max_frec_writer_default = 400
+        self.flag_dinamic_frec = self.get_parameter_or('dinamic_frec', Parameter(name='dinamic_frec', value=True)).value
+        self.current_frec = 0
 
         self.pub_CAN = self.create_publisher(msg_type=CAN, topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                              qos_profile=HistoryPolicy.KEEP_LAST)
@@ -42,8 +48,9 @@ class CanNode(Node):
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_status = self.create_publisher(msg_type=ControladorFloat, topic='/' + vehicle_parameters[
+        self.pub_status = self.create_publisher(msg_type=CANEthStatus, topic='/' + vehicle_parameters[
             'id_vehicle'] + '/' + self.get_name() + '/Status', qos_profile=HistoryPolicy.KEEP_LAST)
+
         if self.local:
             self.logger.info(f'Running in local mode')
             self.connection = None
@@ -68,10 +75,12 @@ class CanNode(Node):
         )
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbit.publish(msg)
-        msg_status = ControladorFloat(
-            enable=self.connection.connected,
-            target=float(len(self.queue.queue))
+        msg_status = CANEthStatus(
+            connected=self.connection.connected,
+            queue_lenth=len(self.queue.queue),
+            frequency=self.current_frec,
         )
+        msg_status.header.stamp = self.get_clock().now().to_msg()
         self.pub_status.publish(msg_status)
 
     def save_msg(self, data: CANGroup):
@@ -111,26 +120,35 @@ class CanNode(Node):
     def write_th(self):
         from time import sleep
         while not self.shutdown_flag:
+            # Update frequency parameter
+            try:
+                self.flag_dinamic_frec = self.get_parameter('dinamic_frec').value
+                self.min_frec_writer = max(int(self.get_parameter('min_frec').value), self.min_frec_writer_default)
+                self.max_frec_writer = min(int(self.get_parameter('max_frec').value), self.max_frec_writer_default)
+            except Exception as e:
+                self.logger.error(
+                    f'Error in CAN parameters Flag:{self.flag_dinamic_frec} '
+                    f'Min:{self.min_frec_writer} Max:{self.max_frec_writer}')
+                self.logger.debug(f'{e}')
+                self.flag_dinamic_frec = True
+                self.min_frec_writer = self.min_frec_writer_default
+                self.max_frec_writer = self.max_frec_writer_default
+            if not self.flag_dinamic_frec:
+                timer_period = self.max_frec_writer
+            else:
+                timer_period = int(
+                    interp(len(self.queue.queue), (10, 50), (self.min_frec_writer, self.max_frec_writer)))
             # Write
-            if self.is_connected():
-                msg = None
-                try:
-                    msg = self.queue.get_nowait()
-                    assert len(msg) == 13
-                except AssertionError:
-                    self.logger.error('Error in message length')
-                except queue.Empty:
-                    pass
-                except Exception as e:
-                    self.logger.error(f'Not managed exception: {e} {msg}')
-                else:
-                    self.connection.send(msg)
-            sleep(1. / self.write_timer_period)
-        sleep(0.5)
+            self.write()
+            self.current_frec = timer_period
+            sleep(1 / timer_period)
+
+        # Shutdown state
+        sleep(0.5)  # Sleep for waiting last messages
         while len(self.queue.queue) > 0 and self.is_connected():
             self.logger.info(f'waiting to close q len:{len(self.queue.queue)}')
             self.write()
-            time.sleep(0.1)
+            time.sleep(1. / 100)
         self.connection.shutdown()
 
     def decode_can(self, can_frame):
