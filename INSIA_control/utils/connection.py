@@ -6,6 +6,16 @@ import datetime
 from rclpy.logging import get_logger
 
 
+class Local_Connection:
+    connected = True
+
+    def send(self, msg):
+        pass
+
+    def shutdown(self):
+        self.connected = False
+
+
 class Connection:
     def __init__(self, name='unknown connection', mode: str = 'tcp', ip='', port=0, send_t=1, recv_t=1,
                  read_len=13, deco_function=None, alarms=None, log_level=10):
@@ -213,7 +223,7 @@ class Connection:
     def create_sender_udp(self):
         try:
             self.socket_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket_send.bind(('', self.port+1))
+            self.socket_send.bind(('', self.port + 1))
             self.connected_send = True
             if self.connected_recv:
                 self.connected = True

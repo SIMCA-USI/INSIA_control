@@ -99,7 +99,10 @@ class CanNode(Node):
                 for frame in data.can_frames]
 
     def is_connected(self):
-        return self.connection.connected
+        if self.local:
+            return True
+        else:
+            return self.connection.connected
 
     def write(self):
         # Write

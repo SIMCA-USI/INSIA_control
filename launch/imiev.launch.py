@@ -25,22 +25,6 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='maxon',
-            name='EPOS4_Volante',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='faulhaber',
-            name='FAULHABER_Freno',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
             executable='io_card',
             name='io_card',
             parameters=[parameters_file_path],
@@ -51,6 +35,22 @@ def generate_launch_description():
             package='INSIA_control',
             executable='vehicledecoder_base',
             name='ImievDecoder',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='maxon',
+            name='EPOS4_Volante',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='faulhaber',
+            name='FAULHABER_Freno',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

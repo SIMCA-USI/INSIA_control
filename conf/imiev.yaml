@@ -15,6 +15,18 @@ imiev:
       ip: 192.168.0.8
       port: 10001
       extend: False
+  io_card:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.7
+      port_dio: 4601
+      port_aio: 4600
+  ImievDecoder:
+    ros__parameters:
+      log_level: 0
+      dictionary: imiev_dictionary.yaml
   EPOS4_Volante:
     ros__parameters:
       log_level: 0
@@ -31,25 +43,13 @@ imiev:
       log_level: 0
       cobid: 1
       can: CAN_7
-  io_card:
-    ros__parameters:
-      log_level: 0
-      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
-      connection_mode: tcp
-      ip: 192.168.0.7
-      port_dio: 4601
-      port_aio: 4600
-  ImievDecoder:
-    ros__parameters:
-      log_level: 0
-      dictionary: imiev_dictionary.yaml
-#  Arduino_Gears:
-#    ros__parameters:
-#      log_level: 10
-#      cobid: 8
-#      can: CAN_7
-#      dictionary: emt_gears_dictionary.yaml
-#      dict_BigEndian: True # True si es big endian False si está en little endian
+  #  Arduino_Gears:
+  #    ros__parameters:
+  #      log_level: 10
+  #      cobid: 8
+  #      can: CAN_7
+  #      dictionary: emt_gears_dictionary.yaml
+  #      dict_BigEndian: True # True si es big endian False si está en little endian
   Brake:
     ros__parameters:
       log_level: 0
@@ -62,7 +62,7 @@ imiev:
   Longitudinal_Control:
     ros__parameters:
       log_level: 0
-      speed_range: [0, 120]
+      speed_range: [ 0, 120 ]
       throttle:
         kp: 3
         ti: 2
@@ -73,12 +73,12 @@ imiev:
         td: 0
   Lateral_Control:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       steering:
         # A6
-#        kp: 10
-#        ti: 8
-#        td: 0.03
+        #        kp: 10
+        #        ti: 8
+        #        td: 0.03
         # Pista
         kp: 0.3
         ti: 0.2
@@ -89,5 +89,5 @@ imiev:
       lidar_priority: 2 # Prioridad en la que está el lidar
       subscribers:
         0:
-          topic: /Joy
+          topic: /WP
           ttl: 1 #secs
