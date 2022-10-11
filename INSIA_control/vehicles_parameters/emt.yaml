@@ -9,7 +9,7 @@ steering:
   inverted: True
 
 brake:
-  range: [ 0, 275000 ]
+  range: [ 0, 400000 ]
 
 throttle:
   range: [ 4.03, 0.92 ] #V
