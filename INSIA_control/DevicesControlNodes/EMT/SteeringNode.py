@@ -11,6 +11,7 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from example_interfaces.msg import Bool
 from yaml.loader import SafeLoader
+from rclpy import timer
 
 
 class SteeringNode(Node):
@@ -28,10 +29,13 @@ class SteeringNode(Node):
         self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
         self.device_range = params['range']
+        self.delay_turn = self.get_parameter_or('delay_turn', Parameter(name='delay_turn', value=0.5))
+        self.timer_delay: timer = None
         self.telemetry = Telemetry()
-        self.controller = None
+        self.controller: ControladorFloat = None
         # Bloquea el giro para poder probar la activación del electroiman
         self.lock_turn = False
+        self.prev_lock_turn = False
 
         self.create_subscription(msg_type=ControladorFloat,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
@@ -62,12 +66,30 @@ class SteeringNode(Node):
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def lock_turn_update(self, data: Bool):
-        self.lock_turn = data.data
+        if self.timer_delay is None:
+            # Si no hay timer actuar directamente
+            self.lock_turn = data.data
+        # Si hay timer actuar solo sobre prev para que lo cargue al finalizar
+        self.prev_lock_turn = data.data
 
     def telemetry_callback(self, data):
         self.telemetry = data
 
-    def controller_update(self, data):
+    def delay_callback(self):
+        self.lock_turn = self.prev_lock_turn
+        self.timer_delay.cancel()
+        self.timer_delay = None
+
+    def controller_update(self, data: ControladorFloat):
+        if not self.controller.enable and data.enable:
+            # Solo en el caso que pasemos de deshabilitado a habilitado
+            self.prev_lock_turn = self.lock_turn
+            self.lock_turn = True
+            if self.timer_delay is None:
+                self.timer_delay = self.create_timer(self.get_parameter('delay_turn').value, self.delay_callback)
+            else:
+                self.timer_delay: timer
+                self.timer_delay.reset()
         self.controller = data
         self.pub_enable.publish(BoolStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
