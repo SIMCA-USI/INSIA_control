@@ -47,6 +47,7 @@ setup(
             'gears_emt = INSIA_control.DevicesControlNodes.EMT.GearsNode:main',
             'telemetry_emt = INSIA_control.DevicesControlNodes.EMT.Telemetry_Basic:main',
             'joy_transformer = INSIA_control.DevicesControlNodes.JKU.JoyTransformerNode:main',
+            'joy_transformer_pet = INSIA_control.DevicesControlNodes.JKU.JoyTransformerPetNode:main',
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
             'lateral_control = INSIA_control.HLControl.LateralControl:main',
