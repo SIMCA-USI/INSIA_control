@@ -12,13 +12,28 @@ from sensor_msgs.msg import Joy as JoyController
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
+dict_buttons_sony = {
+    'x': 0,
+    'circle': 1,
+    'triangle': 2,
+    'square': 3,
+    'l1': 4,
+    'r1': 5,
+    'l2': 6,
+    'r2': 7,
+    'lb': 8,
+    'rb': 9,
+    'l3': 10,
+    'r3': 11,
+}
+
 
 class JoyTransformerPetNode(Node):
 
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
-        super().__init__(node_name='SteeringNode', namespace=vehicle_parameters['id_vehicle'],
+        super().__init__(node_name='JoyTransformerPetNode', namespace=vehicle_parameters['id_vehicle'],
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
 
@@ -27,13 +42,14 @@ class JoyTransformerPetNode(Node):
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
-        self.device_range_steering = params['range']
+        self.device_range_steering = params['wheel_range']
         params = vehicle_parameters.get('speed')
         self.device_range_speed = params['range']
         self.b_steering = False
         self.b_brake = False
         self.b_throttle = False
-        self.last_msg = JoyController()
+        self.b_gears = False
+        self.last_msg = None
 
         self.create_subscription(msg_type=JoyController, topic=self.get_name(), callback=self.controller_update,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -46,32 +62,53 @@ class JoyTransformerPetNode(Node):
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
+    def check_button(self, msg: JoyController, button: str, master: bool = False) -> bool:
+        if button in dict_buttons_sony.keys():
+            b = dict_buttons_sony[button]
+            if master:
+                return msg.buttons[b]
+            return msg.buttons[b] != self.last_msg.buttons[b] and msg.buttons[b]
+        else:
+            self.logger.error(f'Wrong def in code button: {button}')
+            return False
+
     def controller_update(self, msg: JoyController):
+        if self.last_msg is None:
+            self.last_msg = msg
         try:
-            # Cambiar de estado cada b al pulsar el boton
-            if msg.buttons[0] != self.last_msg.buttons[0] and msg.buttons[0]:
-                self.b_steering = not self.b_steering
-            if msg.buttons[1] != self.last_msg.buttons[1] and msg.buttons[1]:
-                self.b_throttle = not self.b_throttle
-            if msg.buttons[2] != self.last_msg.buttons[2] and msg.buttons[2]:
-                self.b_brake = not self.b_brake
-            # Activar all
-            if msg.buttons[3] != self.last_msg.buttons[3] and msg.buttons[3]:
-                self.b_steering = True
-                self.b_throttle = True
-                self.b_brake = True
             # Desactivar all
-            if msg.buttons[4] != self.last_msg.buttons[4] and msg.buttons[4]:
+            if self.check_button(msg, 'l1', master=True):
+                print('entering')
                 self.b_steering = False
                 self.b_throttle = False
                 self.b_brake = False
+                self.b_gears = False
+            else:
+                # Activar all
+                if self.check_button(msg, 'r1', master=True):
+                    self.b_steering = True
+                    self.b_throttle = True
+                    self.b_brake = True
+                    self.b_gears = True
+                else:
+                    # Cambiar de estado cada b al pulsar el boton
+                    if self.check_button(msg, 'circle'):
+                        self.b_steering = not self.b_steering
+                    if self.check_button(msg, 'x'):
+                        self.b_throttle = not self.b_throttle
+                    if self.check_button(msg, 'square'):
+                        self.b_brake = not self.b_brake
+                    if self.check_button(msg, 'triangle'):
+                        self.b_gears = not self.b_gears
+
             self.pub_joy.publish(PetConduccion(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 b_steering=self.b_steering,
                 b_throttle=self.b_throttle,
                 b_brake=self.b_brake,
-                speed=interp(msg.axes[1], (0, 1), self.device_range_steering),
-                steering=interp(msg.axes[3], (-1, 1), self.device_range_speed)
+                b_gear=self.b_gears,
+                speed=interp(msg.axes[1], (0, 1), self.device_range_speed),
+                steering=interp(msg.axes[3], (-1, 1), self.device_range_steering)
             ))
             self.last_msg = msg
         except Exception as e:
@@ -82,7 +119,7 @@ class JoyTransformerPetNode(Node):
                 b_throttle=False,
                 b_brake=False,
                 speed=0.,
-                steering=0
+                steering=0.
             ))
 
     def publish_heartbeat(self):
