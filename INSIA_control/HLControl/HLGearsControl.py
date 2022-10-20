@@ -3,14 +3,11 @@ import os
 import rclpy
 import yaml
 from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorStr
-from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from yaml.loader import SafeLoader
 from std_msgs.msg import Header
-
-from INSIA_control.utils.pid import PIDF
+from yaml.loader import SafeLoader
 
 
 class GearsControlNode(Node):
@@ -20,6 +17,7 @@ class GearsControlNode(Node):
         super().__init__(node_name='GearsControlNode', namespace=vehicle_parameters['id_vehicle'],
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
+
         self.id_plataforma = vehicle_parameters['id_vehicle']
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
@@ -30,23 +28,17 @@ class GearsControlNode(Node):
         self.steering_range = vehicle_parameters['steering']['wheel_range']
         self.default_gear = self.get_parameters_by_prefix('default')
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.pub_gears = self.create_publisher(msg_type=ControladorStr,
-                                               topic='/' + vehicle_parameters['id_vehicle'] + '/Gears',
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_gears = self.create_publisher(msg_type=ControladorStr, topic='Gears',
                                                qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=Telemetry,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
-                                 callback=self.telemetry_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.decision,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=PetConduccion,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
-                                 callback=self.decision, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_control = self.create_timer(1 / 2, self.control_loop)
 
     def telemetry_callback(self, telemetry: Telemetry):
@@ -71,12 +63,12 @@ class GearsControlNode(Node):
     def decision(self, decision):
         self.control_msg = decision
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:

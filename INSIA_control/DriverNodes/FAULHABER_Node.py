@@ -1,20 +1,16 @@
-import importlib
 import os
+from time import sleep
 
-import networkx as nx
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped, EPOSAnalog
+from insia_msg.msg import CANGroup, StringStamped, EPOSConsigna
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
-from INSIA_control.utils.filtro import Decoder
-from INSIA_control.utils.utils import make_can_msg
 import INSIA_control.utils.FAULHABER as FAULHABER
-from time import sleep
 
 
 class FAULHABERNode(Node):
@@ -32,22 +28,18 @@ class FAULHABERNode(Node):
         self.cobid = self.get_parameter('cobid').value
         self.can_conected = self.get_parameter('can').value
 
-        #self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
+        # self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value, cobid=self.cobid)
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_CAN = self.create_publisher(msg_type=CANGroup,
-                                             topic='/' + vehicle_parameters['id_vehicle'] + '/' + str(
-                                                 self.can_conected), qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_CAN = self.create_publisher(msg_type=CANGroup, topic=str(self.can_conected),
+                                             qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=EPOSConsigna,
-                                 topic='/' + vehicle_parameters[
-                                     'id_vehicle'] + '/' + self.get_name() + '/TargetPosition',
+        self.create_subscription(msg_type=EPOSConsigna, topic=self.get_name() + '/TargetPosition',
                                  callback=self.target_position_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
         sleep(1)
         self.init_device()
@@ -64,17 +56,17 @@ class FAULHABERNode(Node):
             can_frames=FAULHABER.set_angle_value(node=self.cobid, angle=msg.position, absolute=msg.mode)
         ))
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

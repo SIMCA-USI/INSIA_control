@@ -31,24 +31,22 @@ class SteeringNode(Node):
         self.controller = None
 
         self.create_subscription(msg_type=ControladorFloat,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
+                                 topic=self.get_name(),
                                  callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable = self.create_publisher(msg_type=BoolStamped,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/EPOS4_Volante/Enable',
+        self.pub_enable = self.create_publisher(msg_type=BoolStamped, topic='EPOS4_Volante/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/io_card/iodigital', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='io_card/iodigital',
+                                                         qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=IntStamped, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/EPOS4_Volante/TargetTorque', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_target = self.create_publisher(msg_type=IntStamped, topic='EPOS4_Volante/TargetTorque',
+                                                qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def controller_update(self, data):
         self.controller = data
@@ -67,17 +65,17 @@ class SteeringNode(Node):
                 data=int(interp(self.controller.target, (-1, 1), self.device_range))
             ))
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
             # Desactivar EPOS4
             self.pub_enable.publish(BoolStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),

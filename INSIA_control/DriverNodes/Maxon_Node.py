@@ -14,7 +14,6 @@ from yaml.loader import SafeLoader
 
 from INSIA_control.utils.filtro import Decoder
 from INSIA_control.utils.utils import make_can_msg
-import numpy as np
 
 
 class MaxonNode(Node):
@@ -59,52 +58,39 @@ class MaxonNode(Node):
 
         self.status_freq = self.get_parameter_or('status_freq', Parameter(name='status_freq', value=2)).value
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_CAN = self.create_publisher(msg_type=CANGroup,
-                                             topic='/' + vehicle_parameters['id_vehicle'] + '/' + str(
-                                                 self.can_conected), qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_CAN = self.create_publisher(msg_type=CANGroup, topic=str(self.can_conected),
+                                             qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_status = self.create_publisher(msg_type=EPOSStatus, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/' + self.get_name() + '/Status', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_status = self.create_publisher(msg_type=EPOSStatus, topic=self.get_name() + '/Status',
+                                                qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=CAN,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
-                                 callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=EPOSConsigna,
-                                 topic='/' + vehicle_parameters[
-                                     'id_vehicle'] + '/' + self.get_name() + '/TargetPosition',
+        self.create_subscription(msg_type=EPOSConsigna, topic=self.get_name() + '/TargetPosition',
                                  callback=self.target_position_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/TargetTorque',
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/TargetTorque',
                                  callback=self.target_torque_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=EPOSDigital,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Digital',
-                                 callback=self.digital, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=EPOSDigital, topic=self.get_name() + '/Digital', callback=self.digital,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=EPOSAnalog,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Analog',
-                                 callback=self.analog, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=EPOSAnalog, topic=self.get_name() + '/Analog', callback=self.analog,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/Enable',
-                                 callback=self.enable, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Enable', callback=self.enable,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=Header,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/FaultReset',
-                                 callback=self.fault_reset, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Header, topic=self.get_name() + '/FaultReset', callback=self.fault_reset,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped,
-                                 topic='/' + vehicle_parameters[
-                                     'id_vehicle'] + '/' + self.get_name() + '/ResetPosition',
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/ResetPosition',
                                  callback=self.reset_position, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
         self.timer_status = self.create_timer(0.1, self.publish_status)
         # self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
@@ -258,12 +244,12 @@ class MaxonNode(Node):
         except Exception as e:
             self.logger.debug(f'{e}')
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
@@ -283,7 +269,7 @@ class MaxonNode(Node):
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 can_frames=self.epos.set_digital(node=self.cobid, outputs=self.digital_outputs)
             ))
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

@@ -6,28 +6,37 @@ from yaml.loader import SafeLoader
 
 
 def generate_launch_description():
-    parameters_file_path = '{}/../conf/emt.yaml'.format(
+    parameters_file_path = '{}/../conf/jku.yaml'.format(
         os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
     with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
         vehicle_parameters = yaml.load(f, Loader=SafeLoader)
     return LaunchDescription([
-        # Node(
-        #     package='INSIA_control',
-        #     executable='can',
-        #     name='CAN_Control',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='car_actuators_controller',
-        #     executable='car_state_listener_node',
-        # ),
+        # Car listener node to connect with openpilot
+        Node(
+            package='car_actuators_controller',
+            executable='joy_control_node',
+            output='screen',
+            emulate_tty=True
+        ),
+        # Telemetry node to get data from openpilot
+        Node(
+            package='INSIA_control',
+            executable='telemetry_jku',
+            name='VehicleDecoder',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # Convert joy data to PetConduction
         Node(
             package='INSIA_control',
             executable='joy_transformer_pet',
-            name='Joy'
+            name='Joy',
+            output='screen',
+            emulate_tty=True
+
         ),
+        # Get data from joy and send it into correct topic
         Node(
             package='joy',
             executable='joy_node',
@@ -35,5 +44,50 @@ def generate_launch_description():
             remappings=[
                 ('/joy', '/' + vehicle_parameters['id_vehicle'] + '/Joy'),
             ]
+        ),
+        # Accel node to transform Controller msgs to openpilot msgs
+        Node(
+            package='INSIA_control',
+            executable='accel_jku',
+            name='Speed',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # Steering node to transform Controller msgs to openpilot msgs
+        Node(
+            package='INSIA_control',
+            executable='steering_jku',
+            name='Steering',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # Lateral control PID
+        Node(
+            package='INSIA_control',
+            executable='lateral_control_PID',
+            name='Lateral_Control',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # Longitudinal control PID
+        Node(
+            package='INSIA_control',
+            executable='longitudinal_control_PID',
+            name='Longitudinal_Control',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # Decision system
+        Node(
+            package='INSIA_control',
+            executable='decision',
+            name='Decision',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
         ),
     ])

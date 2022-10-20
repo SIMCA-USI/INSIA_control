@@ -3,14 +3,13 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, EPOSConsigna
+from insia_msg.msg import StringStamped, BoolStamped, Telemetry, ControladorFloat, EPOSConsigna
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
-from insia_msg.srv import BrakeCalibration
 
 
 class BrakeNode(Node):
@@ -31,23 +30,23 @@ class BrakeNode(Node):
         self.controller = None
 
         self.create_subscription(msg_type=ControladorFloat,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
+                                 topic=self.get_name(),
                                  callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped,
+                                                   topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_enable = self.create_publisher(msg_type=BoolStamped,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/MCD60_Freno/Enable',
+                                                topic='MCD60_Freno/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/MCD60_Freno/TargetPosition', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='MCD60_Freno/TargetPosition',
+                                                qos_profile=HistoryPolicy.KEEP_LAST)
 
         # Servicio para la calibración del freno
         # self.srv_brake_calibration = self.create_service(BrakeCalibration, 'brake_calibration', self.enable_calibration)
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def controller_update(self, data):
         self.controller = data
@@ -81,12 +80,12 @@ class BrakeNode(Node):
         # TODO: Crear proceso de calibracion
         pass
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
@@ -100,7 +99,7 @@ class BrakeNode(Node):
             #     header=Header(stamp=self.get_clock().now().to_msg()),
             #     data=False
             # ))
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

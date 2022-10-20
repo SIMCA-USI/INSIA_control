@@ -3,8 +3,7 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, EPOSDigital, Joy
-from numpy import interp
+from insia_msg.msg import StringStamped, Joy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -28,37 +27,44 @@ class JoyTransformerNode(Node):
         self.shutdown_flag = False
 
         self.create_subscription(msg_type=JoyController,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
+                                 topic=self.get_name(),
                                  callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_joy = self.create_publisher(msg_type=Joy,
-                                             topic='/' + vehicle_parameters['id_vehicle'] + '/Joy_transformed',
-                                             qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_joy = self.create_publisher(msg_type=Joy, topic='Joy_transformed', qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def controller_update(self, msg: JoyController):
-        self.pub_joy.publish(Joy(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            acceleration=4 * msg.axes[1],
-            steering=msg.axes[3]
-        ))
+        try:
+            self.pub_joy.publish(Joy(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                acceleration=float(msg.axes[1]),
+                steering=float(msg.axes[3])
+            ))
+        except Exception:
+            # In case that msg is empty or any other problem
+            self.pub_joy.publish(
+                Joy(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    acceleration=-1.,
+                    steering=0.
+                )
+            )
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

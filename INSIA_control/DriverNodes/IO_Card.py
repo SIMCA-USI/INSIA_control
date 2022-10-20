@@ -1,5 +1,4 @@
 import os
-import queue
 
 import rclpy
 import yaml
@@ -43,12 +42,10 @@ class IOCard(Node):
                                       ip=self.ip, port=4600, deco_function=self.deco_function,
                                       log_level=self._log_level.value)
 
-        self.create_subscription(msg_type=IOAnalogue,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/ioanalogue',
+        self.create_subscription(msg_type=IOAnalogue, topic=self.get_name() + '/ioanalogue',
                                  callback=self.callback_analog, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=EPOSDigital,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/iodigital',
+        self.create_subscription(msg_type=EPOSDigital, topic=self.get_name() + '/iodigital',
                                  callback=self.callback_digital, qos_profile=HistoryPolicy.KEEP_LAST)
 
     def deco_function(self, data):

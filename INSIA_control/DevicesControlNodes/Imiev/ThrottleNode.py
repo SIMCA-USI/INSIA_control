@@ -3,8 +3,7 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, FloatStamped, \
-    EPOSDigital, IOAnalogue
+from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, EPOSDigital, IOAnalogue
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -30,24 +29,19 @@ class ThrottleNode(Node):
         self.telemetry = Telemetry()
         self.controller = ControladorFloat()
 
-        self.create_subscription(msg_type=ControladorFloat,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
-                                 callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=ControladorFloat, topic=self.get_name(), callback=self.controller_update,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable_throttle = self.create_publisher(msg_type=EPOSDigital,
-                                                         topic='/' + vehicle_parameters[
-                                                             'id_vehicle'] + '/io_card/iodigital',
+        self.pub_enable_throttle = self.create_publisher(msg_type=EPOSDigital, topic='io_card/iodigital',
                                                          qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=IOAnalogue,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/io_card/ioanalogue',
+        self.pub_target = self.create_publisher(msg_type=IOAnalogue, topic='io_card/ioanalogue',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_send = self.create_timer(10, self.controller_update)
 
     def controller_update(self, data=None):
@@ -65,17 +59,17 @@ class ThrottleNode(Node):
                 voltage=interp(self.controller.target, (0, 1), self.device_range)
             ))
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
             # Desactivar EPOS4
             # Desactivar reles
             self.pub_enable_throttle.publish(EPOSDigital(

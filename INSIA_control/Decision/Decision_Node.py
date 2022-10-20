@@ -30,32 +30,32 @@ class DecisionNode(Node):
         self.last_decision = None
         self.master_switch = MasterSwitch()
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped,
+                                                   topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_decision = self.create_publisher(msg_type=PetConduccion,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
+                                                  topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=MasterSwitch,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/MasterSwitch',
+                                 topic='MasterSwitch',
                                  callback=self.master_switch_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/DangerObstacle',
+                                 topic='DangerObstacle',
                                  callback=self.darger_obs_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Override',
+                                 topic='Decision/Override',
                                  callback=self.override_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/ForceLidar',
+                                 topic='Decision/ForceLidar',
                                  callback=self.force_use_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=PetConduccion,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
+                                 topic='Decision/Output',
                                  callback=self.decision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         subscribers = self.get_parameters_by_prefix('subscribers')
@@ -64,7 +64,7 @@ class DecisionNode(Node):
         self.create_subscribers(subscribers)
         self.dict_PetConduccion = {}
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_decision = self.create_timer(0.1, self.publish_decision)
 
     def master_switch_callback(self, data: MasterSwitch):
@@ -160,12 +160,12 @@ class DecisionNode(Node):
             else:
                 self.force_use = None
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
