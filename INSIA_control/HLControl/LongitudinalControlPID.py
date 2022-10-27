@@ -52,14 +52,16 @@ class LongitudinalControlPIDNode(Node):
         if self.control_msg.b_throttle:
             self.logger.debug('Steering enabled')
             # Normalizar valores
-            target_speed_norm = interp(self.control_msg.speed, self.speed_range, [-1., 1.])
-            current_speed_norm = interp(self.current_speed, self.speed_range, [-1., 1.])
+            target_speed_norm = interp(self.control_msg.speed, self.speed_range, [0, 1.])
+            self.logger.debug(f'{target_speed_norm =}')
+            current_speed_norm = interp(self.current_speed, self.speed_range, [0., 1.])
+            self.logger.debug(f'{current_speed_norm =}')
             # Calcular pids
 
             pid_params = self.get_parameters_by_prefix('speed')
-            target = -self.pid.calcValue(target_value=target_speed_norm,
-                                         current_value=current_speed_norm, kp=pid_params['kp'].value,
-                                         ti=pid_params['ti'].value, td=pid_params['td'].value)
+            target = self.pid.calcValue(target_value=target_speed_norm,
+                                        current_value=current_speed_norm, kp=pid_params['kp'].value,
+                                        ti=pid_params['ti'].value, td=pid_params['td'].value)
             self.logger.debug(f'PID result {target}')
             self.pub_speed.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),

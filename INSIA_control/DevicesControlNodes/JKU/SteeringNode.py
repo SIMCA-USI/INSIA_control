@@ -52,10 +52,11 @@ class SteeringNode(Node):
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 data=data.target
             ))
-        self.pub_target.publish(FloatStamped(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            data=0.
-        ))
+        else:
+            self.pub_target.publish(FloatStamped(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                data=0.
+            ))
 
     def publish_heartbeat(self):
         msg = StringStamped(

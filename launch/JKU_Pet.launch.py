@@ -12,12 +12,12 @@ def generate_launch_description():
         vehicle_parameters = yaml.load(f, Loader=SafeLoader)
     return LaunchDescription([
         # Car listener node to connect with openpilot
-        Node(
-            package='car_actuators_controller',
-            executable='joy_control_node',
-            output='screen',
-            emulate_tty=True
-        ),
+        # Node(
+        #     package='car_actuators_controller',
+        #     executable='joy_control_node',
+        #     output='screen',
+        #     emulate_tty=True
+        # ),
         # Telemetry node to get data from openpilot
         Node(
             package='INSIA_control',
@@ -33,8 +33,11 @@ def generate_launch_description():
             executable='joy_transformer_pet',
             name='Joy',
             output='screen',
-            emulate_tty=True
-
+            emulate_tty=True,
+            remappings=[
+                ('/'+vehicle_parameters['id_vehicle'] + '/Joy_transformed_Pet',
+                 '/' + vehicle_parameters['id_vehicle'] + '/Decision/Joy'),
+            ]
         ),
         # Get data from joy and send it into correct topic
         Node(

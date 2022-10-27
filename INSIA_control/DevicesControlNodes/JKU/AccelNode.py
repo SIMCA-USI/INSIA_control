@@ -47,15 +47,17 @@ class AccelNode(Node):
         :return: None
         """
         self.controller = data
+        self.logger.debug(f'{self.controller.enable =}')
         if self.controller.enable:
             self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 data=4 * data.target
             ))
-        self.pub_target.publish(FloatStamped(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            data=-1.
-        ))
+        else:
+            self.pub_target.publish(FloatStamped(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                data=-1.
+            ))
 
     def publish_heartbeat(self):
         msg = StringStamped(
