@@ -29,10 +29,13 @@ class SteeringNode(Node):
         self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
         self.device_range = params['range']
-        self.delay_turn = self.get_parameter_or('delay_turn', Parameter(name='delay_turn', value=0.5))
+        if not self.has_parameter('delay_turn'):
+            self.declare_parameter('delay_turn', 2.)
+
+        self.delay_turn = self.get_parameter('delay_turn')
         self.timer_delay: timer = None
         self.telemetry = Telemetry()
-        self.controller: ControladorFloat = None
+        self.controller: ControladorFloat = ControladorFloat()
         # Bloquea el giro para poder probar la activación del electroiman
         self.lock_turn = False
         self.prev_lock_turn = False
@@ -95,7 +98,8 @@ class SteeringNode(Node):
             enable=self.controller.enable,
             io_digital=4
         ))
-        if self.controller.enable and self.telemetry.brake < 50 and not self.lock_turn:
+        # if self.controller.enable and self.telemetry.brake < 50 and not self.lock_turn:
+        if self.controller.enable and not self.lock_turn:
             self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 position=int(interp(self.controller.target, (-1, 1), self.device_range)),
