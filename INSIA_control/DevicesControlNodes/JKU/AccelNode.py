@@ -69,7 +69,6 @@ class AccelNode(Node):
             ))
 
     def publish_heartbeat(self):
-        self.logger.debug('smdokbgnoaszvn')
         msg = StringStamped(
             data=self.get_name()
         )

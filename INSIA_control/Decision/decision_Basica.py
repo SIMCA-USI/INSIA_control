@@ -1,19 +1,35 @@
+import os
+import time
 from traceback import format_exc
-from numpy import interp
 
 import rclpy
+import yaml
+from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision
+from mdef_a2sat.msg import PetConduccion, EstadoMision
+from numpy import interp
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
+from std_msgs.msg import UInt8
+from yaml.loader import SafeLoader
+from std_msgs.msg import Header
+from copy import deepcopy
 
-from std_msgs.msg import Float64, Bool, String, UInt8
-from mdef_a2sat.msg import RespConduccion, PetConduccion, EstadoMision, ModoMision
 
-
-# noinspection PyBroadException
 class Decision(Node):
+
+    def parameters_callback(self, params):
+        print(params)
+        for param in params:
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+        return SetParametersResult(successful=True)
+
     def __init__(self, name: str = 'unknown_control'):
-        super().__init__(node_name=name, namespace='control', start_parameter_services=True,
+        with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
+            vehicle_parameters = yaml.load(f, Loader=SafeLoader)
+        super().__init__(node_name='Node', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
                          allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
 
@@ -23,163 +39,131 @@ class Decision(Node):
         self.logger.set_level(self._log_level.value)
 
         self.id_plataforma = self.get_parameter('id_platform').value
+        self.add_on_set_parameters_callback(self.parameters_callback)
 
-        self.TeleOperacion = None
-        self.wp = None
-        self.mode = 2  # Teleoperacion
-        self.estado_wp = 0
-        self.rango_volante = self.get_parameter('rango_volante').value
+        self.master_switch = MasterSwitch()
+        self.tele_msg = None
+        self.tele_ttl = self.get_parameter_or('tele_ttl', Parameter(name='tele_ttl', value=1))
+        self.wp_msg = None
+        self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
+        self.mode = ModoMision.TELE_OPERADO
 
-        self.lidar_obs = 0
-
-        self.create_subscription(msg_type=PetConduccion, topic='/' + self.id_plataforma + '/Decision',
-                                 callback=self.sub_pet_conduccion_wp, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=PetConduccion, topic='/TeleOperacion',
-                                 callback=self.sub_pet_conduccion, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=ModoMision, topic='/Misiones/Modo',
-                                 callback=self.modo_mision, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=UInt8, topic='/' + self.id_plataforma + '/Lidar/Obstaculo',
-                                 callback=self.sub_lidar_obs, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=UInt8, topic='/' + self.id_plataforma + '/WP_Status',
-                                 callback=self.sub_wp_status, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped,
+                                                   topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_decision = self.create_publisher(msg_type=PetConduccion,
-                                                  topic='/' + self.id_plataforma + '/TeleOperacion',
+                                                  topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_estado = self.create_publisher(msg_type=EstadoMision,
                                                 topic='/Misiones/Estado',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.create_subscription(msg_type=MasterSwitch,
+                                 topic='MasterSwitch',
+                                 callback=self.master_switch_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=PetConduccion, topic='WP',
+                                 callback=self.sub_wp, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=PetConduccion, topic='TeleOperacion',
+                                 callback=self.sub_tele, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=ModoMision, topic='Mode',
+                                 callback=self.modo_mision, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.timer_control = self.create_timer(1 / 10, self.decision)
-        self.timer_estado_mision = self.create_timer(1, self.estado_mision)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.parada_emergencia = False
 
-    # Subscribers test
-
-    def sub_lidar_obs(self, data):
-        self.lidar_obs = data.data
-
-    def sub_wp_status(self, data):
-        self.estado_wp = data.data
+    def master_switch_callback(self, data: MasterSwitch):
+        if self.master_switch.b_gear != data.b_gear or self.master_switch.b_brake != data.b_brake or \
+                self.master_switch.b_steering != data.b_steering or self.master_switch.b_throttle != data.b_throttle:
+            self.master_switch = data
+            self.logger.debug(
+                f'Changed MS: Brake: {data.b_brake} Throttle: {data.b_throttle} Steering: {data.b_steering} Gears: {data.b_gear}')
 
     def modo_mision(self, data):
-        if data.id_plataforma == self.id_plataforma:
-            self.logger.debug(f'Modo {data.modo_mision}')
-            self.mode = int(data.modo_mision)
-        else:
-            self.logger.debug(f'ID incorrecto: {data.id_plataforma}')
+        self.logger.debug(f'Modo {data.modo_mision}')
+        self.mode = data.modo_mision
 
-    def sub_pet_conduccion(self, data):
-        if data.id_plataforma == self.id_plataforma:
-            if self.get_parameter('100_volante_conduccion').value:
-                data.direccion = interp(data.direccion, (-100, 100), (-self.rango_volante, self.rango_volante))
-            else:
-                if not self.get_parameter('operador_angulo_volante-rueda').value:
-                    data.direccion *= self.get_parameter('steering_wheels_conversion').value
-            if self.TeleOperacion != data:
-                self.TeleOperacion = data
-                if self.mode == 2:
-                    self.timer_control.reset()
-                    self.decision()
-        else:
-            self.logger.debug(f'Mensaje TeleOperación con destino: {self.TeleOperacion.id_plataforma}')
+    def sub_tele(self, data):
+        self.tele_msg = data
+        if self.mode == ModoMision.TELE_OPERADO:
+            self.timer_control.reset()
+            self.decision()
 
-    def sub_pet_conduccion_wp(self, data):
-        if self.wp != data:
-            self.wp = data
-            if self.mode == 1:
-                self.timer_control.reset()
-                self.decision()
+    def sub_wp(self, data):
+        self.wp_msg = data
+        if self.mode == ModoMision.AUTONOMO:
+            self.timer_control.reset()
+            self.decision()
 
-    def estado_mision(self):
-        self.pub_estado.publish(
-            EstadoMision(
-                id_plataforma=self.id_plataforma,
-                modo_mision=self.mode,
-                estado_mision=self.estado_wp
-            )
+    def manual(self) -> PetConduccion:
+        return PetConduccion(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            id_plataforma=self.id_plataforma,
+            b_velocidad=False,
+            b_direccion=False,
+            b_marchas=False
         )
 
-    def decision(self):
-        if self.mode == 0:  # Manual
-            self.logger.debug(f'Modo manual')
-            self.pub_decision.publish(
-                PetConduccion(
-                    id_plataforma=self.id_plataforma,
-                    b_velocidad=False,
-                    b_direccion=False,
-                    b_marchas=False
-                )
-            )
-        elif self.mode == 1:  # Waypoints
-            self.logger.debug(f'Modo Waypoints')
-            if self.wp is not None:
-                if self.lidar_obs == 2:
-                    self.parada_emergencia = True
-                    self.pub_decision.publish(
-                        PetConduccion(id_plataforma=self.TeleOperacion.id_plataforma,
-                                      direccion=self.TeleOperacion.direccion,
-                                      velocidad=self.TeleOperacion.velocidad,
-                                      marchas=self.TeleOperacion.marchas,
-                                      desact_parada_emergencia=True,
-                                      override=self.TeleOperacion.override,
-                                      b_velocidad=self.TeleOperacion.b_velocidad,
-                                      b_direccion=self.TeleOperacion.b_direccion,
-                                      b_marchas=self.TeleOperacion.b_marchas)
-                    )
-                else:
-                    self.pub_decision.publish(self.wp)
+    def is_valid(self, msg: PetConduccion, ttl) -> bool:
+        t = msg.header.stamp.sec
+        if t != 0:
+            t_alive = (time.time() - t)
+            if t_alive > ttl:
+                return False
             else:
-                self.pub_decision.publish(
-                    PetConduccion(id_plataforma="No teleOperacion", direccion=0., velocidad=0., marchas="N",
-                                  desact_parada_emergencia=self.parada_emergencia, override=False,
-                                  b_velocidad=False,
-                                  b_direccion=False, b_marchas=False))
+                return True
+        else:
+            self.logger.debug(f'Msg with stamp = 0 {msg}')
+            return True
 
-        elif self.mode == 2:  # Teleoperado
-            self.logger.debug(f'Modo Teleoperado')
-            if self.TeleOperacion is not None:
-                if self.lidar_obs == 2 and not self.TeleOperacion.override:
-                    self.parada_emergencia = True
-                    self.pub_decision.publish(
-                        PetConduccion(id_plataforma=self.TeleOperacion.id_plataforma,
-                                      direccion=self.TeleOperacion.direccion,
-                                      velocidad=self.TeleOperacion.velocidad,
-                                      marchas=self.TeleOperacion.marchas,
-                                      desact_parada_emergencia=True,
-                                      override=self.TeleOperacion.override,
-                                      b_velocidad=self.TeleOperacion.b_velocidad,
-                                      b_direccion=self.TeleOperacion.b_direccion,
-                                      b_marchas=self.TeleOperacion.b_marchas))
-                else:
-                    teleoperacion = self.TeleOperacion
-                    if self.TeleOperacion.desact_parada_emergencia:
-                        teleoperacion.desact_parada_emergencia = False
-                        self.parada_emergencia = False
-                    else:
-                        teleoperacion.desact_parada_emergencia = self.parada_emergencia
-                    self.pub_decision.publish(teleoperacion)
+    def decision(self):
+        msg = None
+        if self.mode == ModoMision.MANUAL:  # Manual
+
+            self.logger.debug(f'Modo manual')
+            msg = self.manual()
+
+        elif self.mode == ModoMision.AUTONOMO:  # Waypoints
+
+            self.logger.debug(f'Modo Waypoints')
+            if self.is_valid(self.wp_msg, self.wp_ttl):
+                msg = self.wp_msg
             else:
-                if self.lidar_obs:
-                    self.parada_emergencia = True
-                    self.pub_decision.publish(
-                        PetConduccion(id_plataforma="No teleOperacion", direccion=0., velocidad=0., marchas="N",
-                                      desact_parada_emergencia=True, override=False, b_velocidad=False,
-                                      b_direccion=False,
-                                      b_marchas=False))
-                else:
-                    self.pub_decision.publish(
-                        PetConduccion(id_plataforma="No teleOperacion", direccion=0., velocidad=0., marchas="N",
-                                      desact_parada_emergencia=self.parada_emergencia, override=False,
-                                      b_velocidad=False,
-                                      b_direccion=False, b_marchas=False))
+                self.logger.debug(f'Msg wp is not valid, change to manual')
+                msg = self.manual()
+
+        elif self.mode == ModoMision.TELE_OPERADO:  # Teleoperado
+
+            self.logger.debug(f'Modo Teleoperado')
+            if self.is_valid(self.tele_msg, self.tele_ttl):
+                msg = self.tele_msg
+            else:
+                self.logger.debug(f'Msg tele is not valid, change to manual')
+                msg = self.manual()
         else:
             self.logger.error(f'Error in mode: {self.mode}')
+            msg = self.manual()
+
+        msg_final = deepcopy(msg)
+        # Se hace la comprobación del master switch
+        msg_final.header.stamp = self.get_clock().now().to_msg()
+        msg_final.b_brake = msg_final.b_brake and self.master_switch.b_brake
+        msg_final.b_throttle = msg_final.b_throttle and self.master_switch.b_throttle
+        msg_final.b_steering = msg_final.b_steering and self.master_switch.b_steering
+        msg_final.b_gear = msg_final.b_gear and self.master_switch.b_gear
+        self.pub_decision.publish(msg_final)
+
+    def publish_heartbeat(self):
+        msg = StringStamped(
+            data=self.get_name()
+        )
+        msg.header.stamp = self.get_clock().now().to_msg()
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         self.timer_control.cancel()
