@@ -65,7 +65,7 @@ class VehicleNode(Node):
         """
         self.pub_telemetry.publish(Telemetry(
             id_plataforma=self.id_plataforma,
-            speed=data.vego / 3.6,
+            speed=data.vegoraw * 3.6,  # TODO: Revisar si realmente esta en ms o kmh
             steering=(data.steeringangledeg - self.steering_sensor_error) * (
                 -1 if self.steering_sensor_inverted else 1),
             throttle=int(interp(data.gas, self.throttle_range, (0, 100))),
