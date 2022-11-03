@@ -9,7 +9,7 @@ from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from yaml.loader import SafeLoader
 
-from INSIA_control.utils.connection import Connection
+from INSIA_control.utils.connection import Connection, Local_Connection
 
 
 class IOCard(Node):
@@ -28,12 +28,12 @@ class IOCard(Node):
         self.connection_mode = 'tcp'
         self.ip = '192.168.0.7'
         # self.port = self.get_parameter('port').value
-        self.local = False
+        self.local = self.get_parameter('local').value
 
         if self.local:
             self.logger.info(f'Running in local mode')
-            self.cli_DIO = None
-            self.cli_AIO = None
+            self.cli_DIO = Local_Connection()
+            self.cli_AIO = Local_Connection()
         else:
             self.logger.info(f'Running in remote mode')
             self.cli_DIO = Connection(name=f'Connection {self.ip}:4601', mode=self.connection_mode,
@@ -94,12 +94,11 @@ class IOCard(Node):
 
     def shutdown(self):
         try:
+            self.shutdown_flag = True
             for _ in range(3):
                 rclpy.spin_once(self)
-            self.shutdown_flag = True
-            if not self.local:
-                self.cli_AIO.shutdown()
-                self.cli_DIO.shutdown()
+            self.cli_AIO.shutdown()
+            self.cli_DIO.shutdown()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

@@ -35,11 +35,22 @@ class CanNode(Node):
         self.extended = self.get_parameter('extend').value
         self.local = self.get_parameter('local').value
         self.queue = queue.Queue()
-        self.min_frec_writer = self.get_parameter_or('min_frec', Parameter(name='min_frec', value=100)).value
-        self.min_frec_writer_default = 100
-        self.max_frec_writer = self.get_parameter_or('max_frec', Parameter(name='max_frec', value=400)).value
-        self.max_frec_writer_default = 400
-        self.flag_dinamic_frec = self.get_parameter_or('dinamic_frec', Parameter(name='dinamic_frec', value=True)).value
+        self.min_frec_writer = self.min_frec_writer_default = 100
+        self.max_frec_writer = self.max_frec_writer_default = 400
+        if self.has_parameter('min_frec'):
+            self.min_frec_writer = self.get_parameter('min_frec').value
+        else:
+            self.declare_parameter('min_frec', self.min_frec_writer_default)
+
+        if self.has_parameter('max_frec'):
+            self.max_frec_writer = self.get_parameter('max_frec').value
+        else:
+            self.declare_parameter('max_frec', self.max_frec_writer_default)
+
+        if self.has_parameter('dinamic_frec'):
+            self.flag_dinamic_frec = self.get_parameter('dinamic_frec').value
+        else:
+            self.declare_parameter('dinamic_frec', True)
         self.current_frec = 0
 
         self.pub_CAN = self.create_publisher(msg_type=CAN, topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
@@ -99,7 +110,10 @@ class CanNode(Node):
                 for frame in data.can_frames]
 
     def is_connected(self):
-        return self.connection.connected
+        if self.local:
+            return True
+        else:
+            return self.connection.connected
 
     def write(self):
         # Write
@@ -129,7 +143,7 @@ class CanNode(Node):
                 self.logger.error(
                     f'Error in CAN parameters Flag:{self.flag_dinamic_frec} '
                     f'Min:{self.min_frec_writer} Max:{self.max_frec_writer}')
-                self.logger.debug(f'{e}')
+                self.logger.error(f'{e}')
                 self.flag_dinamic_frec = True
                 self.min_frec_writer = self.min_frec_writer_default
                 self.max_frec_writer = self.max_frec_writer_default

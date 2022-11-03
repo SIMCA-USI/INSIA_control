@@ -11,6 +11,7 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from example_interfaces.msg import Bool
 from yaml.loader import SafeLoader
+from rclpy import timer
 
 
 class SteeringNode(Node):
@@ -28,18 +29,16 @@ class SteeringNode(Node):
         self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
         self.device_range = params['range']
+        if not self.has_parameter('delay_turn'):
+            self.declare_parameter('delay_turn', 2.)
+
+        self.delay_turn = self.get_parameter('delay_turn')
+        self.timer_delay: timer = None
         self.telemetry = Telemetry()
-        self.controller = None
+        self.controller: ControladorFloat = ControladorFloat()
         # Bloquea el giro para poder probar la activación del electroiman
         self.lock_turn = False
-
-        self.create_subscription(msg_type=ControladorFloat,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
-                                 callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=Bool,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/LockTurn',
-                                 callback=self.lock_turn_update, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.prev_lock_turn = False
 
         self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
@@ -55,6 +54,14 @@ class SteeringNode(Node):
         self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='/' + vehicle_parameters[
             'id_vehicle'] + '/MCD60_Volante/TargetPosition', qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.create_subscription(msg_type=ControladorFloat,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
+                                 callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=Bool,
+                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/LockTurn',
+                                 callback=self.lock_turn_update, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=Telemetry,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
                                  callback=self.telemetry_callback, qos_profile=HistoryPolicy.KEEP_LAST)
@@ -62,12 +69,30 @@ class SteeringNode(Node):
         self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
 
     def lock_turn_update(self, data: Bool):
-        self.lock_turn = data.data
+        if self.timer_delay is None:
+            # Si no hay timer actuar directamente
+            self.lock_turn = data.data
+        # Si hay timer actuar solo sobre prev para que lo cargue al finalizar
+        self.prev_lock_turn = data.data
 
     def telemetry_callback(self, data):
         self.telemetry = data
 
-    def controller_update(self, data):
+    def delay_callback(self):
+        self.lock_turn = self.prev_lock_turn
+        self.timer_delay.cancel()
+        self.timer_delay = None
+
+    def controller_update(self, data: ControladorFloat):
+        if not self.controller.enable and data.enable:
+            # Solo en el caso que pasemos de deshabilitado a habilitado
+            self.prev_lock_turn = self.lock_turn
+            self.lock_turn = True
+            if self.timer_delay is None:
+                self.timer_delay = self.create_timer(self.get_parameter('delay_turn').value, self.delay_callback)
+            else:
+                self.timer_delay: timer
+                self.timer_delay.reset()
         self.controller = data
         self.pub_enable.publish(BoolStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -78,7 +103,8 @@ class SteeringNode(Node):
             enable=self.controller.enable,
             io_digital=4
         ))
-        if self.controller.enable and self.telemetry.brake < 50 and not self.lock_turn:
+        # if self.controller.enable and self.telemetry.brake < 50 and not self.lock_turn:
+        if self.controller.enable and not self.lock_turn:
             self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 position=int(interp(self.controller.target, (-1, 1), self.device_range)),

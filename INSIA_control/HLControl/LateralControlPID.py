@@ -57,7 +57,6 @@ class LateralControlPIDNode(Node):
     def control_loop(self):
         if self.control_msg.b_steering:
             self.logger.debug('Steering enabled')
-            self.logger.error(f'{type(self.steering_range[0])}')
             # Normalizar valores
             target_steering_norm = interp(self.control_msg.steering, self.steering_range, [-1., 1.])
             current_steering_norm = interp(self.current_steering, self.steering_range, [-1., 1.])

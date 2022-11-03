@@ -62,7 +62,9 @@ def make_can_msg(node, index=0x0000, sub_index=0, data=0, write=True, clock=None
     )
 
 
-def convert_types(ros2_type, data):
+def convert_types(ros2_type: str, data):
+    if 'int' in ros2_type:
+        ros2_type = 'int'
     function = ros2_types.get(ros2_type)
     if function is not None:
         return function(data)
@@ -72,6 +74,6 @@ def convert_types(ros2_type, data):
 
 ros2_types = {
     'string': str,
-    'int32': int,
+    'int': int,
     'double': float
 }
