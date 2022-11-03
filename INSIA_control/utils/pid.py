@@ -46,18 +46,26 @@ class PIDF(object):
             i = 0
             self.prev_i = 0
 
-        if use[1] and self.ti != 0:
-            i = self.prev_i + (((kp * self.h) / ti) * self.error)
-            i = self.antiwindup(i=i)
-            self.prev_i = i
-        else:
+        try:
+            if use[1] and ti != 0:
+                i = self.prev_i + (((kp * self.h) / ti) * self.error)
+                i = self.antiwindup(i=i)
+                self.prev_i = i
+            else:
+                i = 0
+        except:
+            print(f'Exception ti pid {ti =}')
             i = 0
 
-        if use[2] and self.td != 0:
-            d = ((td / (td + (self.n * self.h)) * self.prev_d) - (
-                    ((kp * td * self.n) / (td + (self.n * self.h))) * (current_value - self.prev_value)))
-            self.prev_d = d
-        else:
+        try:
+            if use[2] and td != 0:
+                d = ((td / (td + (self.n * self.h)) * self.prev_d) - (
+                        ((kp * td * self.n) / (td + (self.n * self.h))) * (current_value - self.prev_value)))
+                self.prev_d = d
+            else:
+                d = 0
+        except:
+            print(f'Exception td pid')
             d = 0
 
         self.prev_value = current_value
