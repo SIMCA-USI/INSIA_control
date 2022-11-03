@@ -4,6 +4,7 @@ import rclpy
 import yaml
 from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorFloat
 from numpy import interp
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -14,6 +15,14 @@ from INSIA_control.utils.pid import PIDF
 
 
 class LongitudinalControlPIDNode(Node):
+
+    def parameters_callback(self, params):
+        print(params)
+        for param in params:
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+        return SetParametersResult(successful=True)
+
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -21,6 +30,7 @@ class LongitudinalControlPIDNode(Node):
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
         self.id_plataforma = vehicle_parameters['id_vehicle']
+        self.add_on_set_parameters_callback(self.parameters_callback)
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
@@ -28,7 +38,7 @@ class LongitudinalControlPIDNode(Node):
         self.control_msg: PetConduccion = PetConduccion()
         self.current_speed = 0.
         self.speed_range = vehicle_parameters['speed']['range']
-        pid_params = self.get_parameters_by_prefix('speed')
+        pid_params: dict = self.get_parameters_by_prefix('speed')
         self.pid = PIDF(kp=pid_params['kp'].value, ti=pid_params['ti'].value, td=pid_params['td'].value,
                         anti_wind_up=0.1)
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
@@ -59,15 +69,19 @@ class LongitudinalControlPIDNode(Node):
             # Calcular pids
 
             pid_params = self.get_parameters_by_prefix('speed')
-            target = self.pid.calcValue(target_value=target_speed_norm,
-                                        current_value=current_speed_norm, kp=pid_params['kp'].value,
-                                        ti=pid_params['ti'].value, td=pid_params['td'].value)
-            self.logger.debug(f'PID result {target}')
-            self.pub_speed.publish(ControladorFloat(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=self.control_msg.b_throttle,
-                target=float(target)
-            ))
+            try:
+                target = self.pid.calcValue(target_value=target_speed_norm,
+                                            current_value=current_speed_norm, kp=pid_params['kp'].value,
+                                            ti=pid_params['ti'].value, td=pid_params['td'].value)
+            except Exception as e:
+                self.logger.error(f'Error calc pid: {e}')
+            else:
+                self.logger.debug(f'PID result {target}')
+                self.pub_speed.publish(ControladorFloat(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    enable=self.control_msg.b_throttle,
+                    target=float(target)
+                ))
         else:
             self.logger.debug('Speed disabled')
             self.pid.reset_values()
