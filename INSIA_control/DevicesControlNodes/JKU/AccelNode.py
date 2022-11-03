@@ -4,6 +4,7 @@ from traceback import format_exc
 import rclpy
 import yaml
 from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, FloatStamped
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -12,6 +13,13 @@ from yaml.loader import SafeLoader
 
 
 class AccelNode(Node):
+
+    def parameters_callback(self, params):
+        print(params)
+        for param in params:
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+        return SetParametersResult(successful=True)
 
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
@@ -28,6 +36,7 @@ class AccelNode(Node):
         self.device_range = params['range']
         self.telemetry = Telemetry()
         self.controller = None
+        self.add_on_set_parameters_callback(self.parameters_callback)
 
         self.create_subscription(msg_type=ControladorFloat, topic=self.get_name(), callback=self.controller_update,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -60,6 +69,7 @@ class AccelNode(Node):
             ))
 
     def publish_heartbeat(self):
+        self.logger.debug('smdokbgnoaszvn')
         msg = StringStamped(
             data=self.get_name()
         )

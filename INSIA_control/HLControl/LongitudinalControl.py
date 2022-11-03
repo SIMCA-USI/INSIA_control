@@ -29,8 +29,8 @@ class LongitudinalControlNode(Node):
         self.current_speed = 0.
         self.speed_range = self.get_parameter('speed_range').value
         self.telemetry = Telemetry()
-        th_params = self.get_parameters_by_prefix('throttle')
-        br_params = self.get_parameters_by_prefix('brake')
+        th_params: dict = self.get_parameters_by_prefix('throttle')
+        br_params: dict = self.get_parameters_by_prefix('brake')
         self.pid_throttle = PID(kp=th_params['kp'].value, ti=th_params['ti'].value, td=th_params['td'].value,
                                 anti_wind_up=0.1)
         self.pid_brake = PID(kp=br_params['kp'].value, ti=br_params['ti'].value, td=br_params['td'].value,
