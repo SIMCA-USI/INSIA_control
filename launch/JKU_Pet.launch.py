@@ -36,7 +36,7 @@ def generate_launch_description():
             emulate_tty=True,
             remappings=[
                 ('/'+vehicle_parameters['id_vehicle'] + '/Joy_transformed_Pet',
-                 '/' + vehicle_parameters['id_vehicle'] + '/Decision/Joy'),
+                 '/' + vehicle_parameters['id_vehicle'] + '/TeleOperacion'),
             ]
         ),
         # Get data from joy and send it into correct topic
@@ -87,8 +87,17 @@ def generate_launch_description():
         # Decision system
         Node(
             package='INSIA_control',
-            executable='decision',
+            executable='decision_low',
             name='Decision',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # PathPlanning system
+        Node(
+            package='INSIA_control',
+            executable='pathplanning_basic',
+            name='PathPlanning',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

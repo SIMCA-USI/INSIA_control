@@ -62,7 +62,11 @@ setup(
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
             'lateral_control = INSIA_control.HLControl.LateralControl:main',
             'gears_control = INSIA_control.HLControl.HLGearsControl:main',
+
             'decision = INSIA_control.Decision.Decision_Node:main',
+            'decision_low = INSIA_control.Decision.decision_low:main',
+
+            'pathplanning_basic = INSIA_control.PathPlanning.PathPlanning_Basic:main',
         ],
     },
 )

@@ -11,13 +11,6 @@ def generate_launch_description():
     with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
         vehicle_parameters = yaml.load(f, Loader=SafeLoader)
     return LaunchDescription([
-        # Car listener node to connect with openpilot
-        # Node(
-        #     package='car_actuators_controller',
-        #     executable='joy_control_node',
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
         # Telemetry node to get data from openpilot
         Node(
             package='INSIA_control',
@@ -66,8 +59,17 @@ def generate_launch_description():
         # Decision system
         Node(
             package='INSIA_control',
-            executable='decision',
+            executable='decision_low',
             name='Decision',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # PathPlanning system
+        Node(
+            package='INSIA_control',
+            executable='pathplanning_basic',
+            name='PathPlanning',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

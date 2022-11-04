@@ -1,26 +1,22 @@
 import os
 import time
+from copy import deepcopy
 from traceback import format_exc
 
 import rclpy
 import yaml
 from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision
-from mdef_a2sat.msg import PetConduccion, EstadoMision
-from numpy import interp
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from std_msgs.msg import UInt8
-from yaml.loader import SafeLoader
 from std_msgs.msg import Header
-from copy import deepcopy
+from yaml.loader import SafeLoader
 
 
 class Decision(Node):
 
     def parameters_callback(self, params):
-        print(params)
         for param in params:
             if param.name == "log_level":
                 self.logger.set_level(param.value)
@@ -38,7 +34,7 @@ class Decision(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
 
-        self.id_plataforma = self.get_parameter('id_platform').value
+        self.id_plataforma = vehicle_parameters['id_vehicle']
         self.add_on_set_parameters_callback(self.parameters_callback)
 
         self.master_switch = MasterSwitch()
@@ -56,15 +52,11 @@ class Decision(Node):
                                                   topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_estado = self.create_publisher(msg_type=EstadoMision,
-                                                topic='/Misiones/Estado',
-                                                qos_profile=HistoryPolicy.KEEP_LAST)
-
         self.create_subscription(msg_type=MasterSwitch,
                                  topic='MasterSwitch',
                                  callback=self.master_switch_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=PetConduccion, topic='WP',
+        self.create_subscription(msg_type=PetConduccion, topic='PathPlanning',
                                  callback=self.sub_wp, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=PetConduccion, topic='TeleOperacion',
@@ -75,7 +67,6 @@ class Decision(Node):
 
         self.timer_control = self.create_timer(1 / 10, self.decision)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
-        self.parada_emergencia = False
 
     def master_switch_callback(self, data: MasterSwitch):
         if self.master_switch.b_gear != data.b_gear or self.master_switch.b_brake != data.b_brake or \
@@ -104,22 +95,28 @@ class Decision(Node):
         return PetConduccion(
             header=Header(stamp=self.get_clock().now().to_msg()),
             id_plataforma=self.id_plataforma,
-            b_velocidad=False,
-            b_direccion=False,
-            b_marchas=False
+            b_throttle=False,
+            b_brake=False,
+            b_steering=False,
+            b_gear=False,
+            steering=0.,
+            speed=0.
         )
 
     def is_valid(self, msg: PetConduccion, ttl) -> bool:
-        t = msg.header.stamp.sec
-        if t != 0:
-            t_alive = (time.time() - t)
-            if t_alive > ttl:
-                return False
+        if msg is not None:
+            t = msg.header.stamp.sec
+            if t != 0:
+                t_alive = (time.time() - t)
+                if t_alive > ttl:
+                    return False
+                else:
+                    return True
             else:
+                self.logger.debug(f'Msg with stamp = 0 {msg}')
                 return True
         else:
-            self.logger.debug(f'Msg with stamp = 0 {msg}')
-            return True
+            return False
 
     def decision(self):
         msg = None
