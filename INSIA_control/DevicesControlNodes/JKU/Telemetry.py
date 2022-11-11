@@ -2,15 +2,26 @@ import os
 
 import rclpy
 import yaml
-from insia_msg.msg import CAN, Telemetry
-from insia_msg.msg import StringStamped
+from insia_msg.msg import Telemetry, StringStamped
+from numpy import interp
+from openpilot_msgs.msg import CarState
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from yaml.loader import SafeLoader
 
-from INSIA_control.utils.filtro import Decoder
-from INSIA_control.utils.utils import convert_types
+dict_gears = {
+    0: 'U',
+    1: 'P',
+    2: 'D',
+    3: 'N',
+    4: 'R',
+    5: 'S',
+    6: 'L',
+    7: 'B',
+    8: 'E',
+    9: 'M'
+}
 
 
 class VehicleNode(Node):
@@ -23,36 +34,21 @@ class VehicleNode(Node):
         self.id_plataforma = vehicle_parameters['id_vehicle']
         self.steering_sensor_error = vehicle_parameters['steering']['sensor_error']
         self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
+        self.throttle_range = vehicle_parameters['throttle']['range']
+        self.brake_range = vehicle_parameters['brake']['range']
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
-        self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
-        self.vehicle_state = {}
 
-        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CarState, topic='carState', callback=self.publish_telemetry,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
         self.pub_telemetry = self.create_publisher(msg_type=Telemetry, topic='Telemetry',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
-
-    def create_msg(self):
-        msg = Telemetry()
-        fields = msg.get_fields_and_field_types()
-        for field in fields.keys():
-            data = self.vehicle_state.get(field)
-            if data is not None:
-                setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
-        msg.id_plataforma = self.id_plataforma
-        msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
-        msg.steering = (msg.steering - self.steering_sensor_error)
-        if self.steering_sensor_inverted:
-            msg.steering *= -1
-        return msg
 
     def publish_heartbeat(self):
         msg = StringStamped(
@@ -61,28 +57,32 @@ class VehicleNode(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
 
-    def publish_telemetry(self):
-        self.pub_telemetry.publish(msg=self.create_msg())
-
-    def msg_can(self, msg):
-        try:
-            name, value = self.decoder.decode(msg)
-            self.vehicle_state.update({name: value})
-            # self.logger.debug(f'Decoded {name}: {value}')
-        except ValueError as e:
-            self.logger.debug(f'{e}')
+    def publish_telemetry(self, data: CarState):
+        """
+        Receive openpilot msg and translate it to telemetry msg
+        :param data: openpilot/CarState
+        :return: Publish on Telemetry
+        """
+        self.pub_telemetry.publish(Telemetry(
+            id_plataforma=self.id_plataforma,
+            speed=data.vegoraw * 3.6,  # TODO: Revisar si realmente esta en ms o kmh
+            steering=(data.steeringangledeg - self.steering_sensor_error) * (
+                -1 if self.steering_sensor_inverted else 1),
+            throttle=int(interp(data.gas, self.throttle_range, (0, 100))),
+            brake=int(interp(data.brake, self.brake_range, (0, 100))),
+            gears=dict_gears.get(data.gearshifter, 'U')
+        ))
 
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_telemetry.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 
 
 def main(args=None):
     rclpy.init(args=args)
-    # manager = None
+    manager = None
     try:
         manager = VehicleNode()
         rclpy.spin(manager)
@@ -90,8 +90,8 @@ def main(args=None):
         print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(e)
-    # finally:
-    #     manager.shutdown()
+    finally:
+        manager.shutdown()
 
 
 if __name__ == '__main__':

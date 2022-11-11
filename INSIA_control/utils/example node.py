@@ -22,26 +22,26 @@ class Node_Class(Node):
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped,
+                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbeat',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=CAN,
                                  topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
                                  callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

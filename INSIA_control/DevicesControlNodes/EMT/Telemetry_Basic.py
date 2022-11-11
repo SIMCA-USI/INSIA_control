@@ -32,20 +32,18 @@ class VehicleNode(Node):
         self.shutdown_flag = False
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
         self.vehicle_state = {}
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
-        self.pub_telemetry = self.create_publisher(msg_type=Telemetry,
-                                                   topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
+
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
-        self.create_subscription(msg_type=CAN,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
-                                 callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
-        self.create_subscription(msg_type=EPOSStatus,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/MCD60_Freno/Status',
-                                 callback=self.get_status_brake, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_telemetry = self.create_publisher(msg_type=Telemetry, topic='Telemetry',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=EPOSStatus, topic='MCD60_Freno/Status', callback=self.get_status_brake,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def get_status_brake(self, status: EPOSStatus):
         self.position_brake = status.position
@@ -65,12 +63,12 @@ class VehicleNode(Node):
             msg.steering *= -1
         return msg
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def publish_telemetry(self):
         self.pub_telemetry.publish(msg=self.create_msg())

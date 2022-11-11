@@ -1,0 +1,18 @@
+id_vehicle: JKU_car
+
+steering:
+  # sensor_error: 0
+  # conversion: 6500
+  range: [ -1100000, 1100000 ] # Posicion [-590, 590]
+  wheel_range: [ -590, 590 ]
+  sensor_error: 0
+  inverted: True
+
+speed:
+  range: [ 0, 50 ]
+
+brake:
+  range: [ 0, 1 ]
+
+throttle:
+  range: [ 0, 1 ]

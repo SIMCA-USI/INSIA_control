@@ -32,25 +32,41 @@ setup(
             'vehicledecoder_base = INSIA_control.DriverNodes.Vehicle_Node_Base:main',
             'io_card = INSIA_control.DriverNodes.IO_Card:main',
             'test_can = test.test_CAN_node:main',
+
             'brake_imiev = INSIA_control.DevicesControlNodes.Imiev.BrakeNode:main',
             'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
             'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
+
             'brake_lagarto = INSIA_control.DevicesControlNodes.Lagarto.BrakeNode:main',
             'throttle_lagarto = INSIA_control.DevicesControlNodes.Lagarto.ThrottleNode:main',
             'steering_lagarto = INSIA_control.DevicesControlNodes.Lagarto.SteeringNode:main',
             'gears_lagarto = INSIA_control.DevicesControlNodes.Lagarto.GearsNode:main',
             'telemetry_lagarto = INSIA_control.DevicesControlNodes.Lagarto.Telemetry_Basic:main',
+
             'dumpbox_lagarto = INSIA_control.DevicesControlNodes.Lagarto.DumpBoxNode:main',
             'brake_emt = INSIA_control.DevicesControlNodes.EMT.BrakeNode:main',
             'throttle_emt = INSIA_control.DevicesControlNodes.EMT.ThrottleNode:main',
             'steering_emt = INSIA_control.DevicesControlNodes.EMT.SteeringNode:main',
             'gears_emt = INSIA_control.DevicesControlNodes.EMT.GearsNode:main',
             'telemetry_emt = INSIA_control.DevicesControlNodes.EMT.Telemetry_Basic:main',
+
+            'joy_transformer = INSIA_control.DevicesControlNodes.JKU.JoyTransformerNode:main',
+            'joy_transformer_pet = INSIA_control.DevicesControlNodes.JKU.JoyTransformerPetNode:main',
+
+            'accel_jku = INSIA_control.DevicesControlNodes.JKU.AccelNode:main',
+            'steering_jku = INSIA_control.DevicesControlNodes.JKU.SteeringNode:main',
+            'telemetry_jku = INSIA_control.DevicesControlNodes.JKU.Telemetry:main',
+
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
+            'longitudinal_control_PID = INSIA_control.HLControl.LongitudinalControlPID:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
             'lateral_control = INSIA_control.HLControl.LateralControl:main',
             'gears_control = INSIA_control.HLControl.HLGearsControl:main',
+
             'decision = INSIA_control.Decision.Decision_Node:main',
+            'decision_low = INSIA_control.Decision.decision_low:main',
+
+            'pathplanning_basic = INSIA_control.PathPlanning.PathPlanning_Basic:main',
         ],
     },
 )

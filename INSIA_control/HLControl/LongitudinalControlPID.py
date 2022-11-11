@@ -14,7 +14,7 @@ from yaml.loader import SafeLoader
 from INSIA_control.utils.pid import PIDF
 
 
-class LateralControlPIDNode(Node):
+class LongitudinalControlPIDNode(Node):
 
     def parameters_callback(self, params):
         print(params)
@@ -36,54 +36,58 @@ class LateralControlPIDNode(Node):
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
         self.control_msg: PetConduccion = PetConduccion()
-        self.current_steering = 0.
-        self.steering_range = vehicle_parameters['steering']['wheel_range']
-        pid_params: dict = self.get_parameters_by_prefix('steering')
-        self.pid_steering = PIDF(kp=pid_params['kp'].value, ti=pid_params['ti'].value, td=pid_params['td'].value,
-                                 anti_wind_up=0.1)
-
+        self.current_speed = 0.
+        self.speed_range = vehicle_parameters['speed']['range']
+        pid_params: dict = self.get_parameters_by_prefix('speed')
+        self.pid = PIDF(kp=pid_params['kp'].value, ti=pid_params['ti'].value, td=pid_params['td'].value,
+                        anti_wind_up=0.1)
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
-        self.pub_steering = self.create_publisher(msg_type=ControladorFloat, topic='Steering',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.pub_speed = self.create_publisher(msg_type=ControladorFloat, topic='Speed',
+                                               qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.decision,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
-
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_control = self.create_timer(1 / 50, self.control_loop)
 
     def telemetry_callback(self, telemetry: Telemetry):
-        self.current_steering = telemetry.steering
+        self.current_speed = telemetry.speed
 
     def control_loop(self):
-        if self.control_msg.b_steering:
+        if self.control_msg.b_throttle:
             self.logger.debug('Steering enabled')
             # Normalizar valores
-            target_steering_norm = interp(self.control_msg.steering, self.steering_range, [-1., 1.])
-            current_steering_norm = interp(self.current_steering, self.steering_range, [-1., 1.])
-            self.logger.debug(f'Steering range {self.steering_range}')
-            self.logger.debug(f'Target steering {self.control_msg.steering} {target_steering_norm}')
-            self.logger.debug(f'Current steering {self.current_steering} {current_steering_norm}')
+            target_speed_norm = interp(self.control_msg.speed, self.speed_range, [0, 1.])
+            self.logger.debug(f'{target_speed_norm =}')
+            current_speed_norm = interp(self.current_speed, self.speed_range, [0., 1.])
+            self.logger.debug(f'{current_speed_norm =}')
             # Calcular pids
-            pid_params = self.get_parameters_by_prefix('steering')
-            steering = -self.pid_steering.calcValue(target_value=target_steering_norm,
-                                                    current_value=current_steering_norm, kp=pid_params['kp'].value,
-                                                    ti=pid_params['ti'].value, td=pid_params['td'].value)
-            self.logger.debug(f'PID result {steering}')
-            self.pub_steering.publish(ControladorFloat(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=self.control_msg.b_steering,
-                target=float(steering)
-            ))
+
+            pid_params = self.get_parameters_by_prefix('speed')
+            try:
+                target = self.pid.calcValue(target_value=target_speed_norm,
+                                            current_value=current_speed_norm, kp=pid_params['kp'].value,
+                                            ti=pid_params['ti'].value, td=pid_params['td'].value)
+            except Exception as e:
+                self.logger.error(f'Error calc pid: {e}')
+            else:
+                self.logger.debug(f'PID result {target}')
+                self.pub_speed.publish(ControladorFloat(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    enable=self.control_msg.b_throttle,
+                    target=float(target)
+                ))
         else:
-            self.logger.debug('Steering disabled')
-            self.pid_steering.reset_values()
-            self.pub_steering.publish(ControladorFloat(
+            self.logger.debug('Speed disabled')
+            self.pid.reset_values()
+            self.pub_speed.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=self.control_msg.b_steering,
+                enable=self.control_msg.b_throttle,
                 target=0.
             ))
 
@@ -92,9 +96,9 @@ class LateralControlPIDNode(Node):
 
     def publish_heartbeat(self):
         msg = StringStamped(
+            header=Header(stamp=self.get_clock().now().to_msg()),
             data=self.get_name()
         )
-        msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
@@ -108,7 +112,7 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = LateralControlPIDNode()
+        manager = LongitudinalControlPIDNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print(f'{manager.get_name()}: Keyboard interrupt')

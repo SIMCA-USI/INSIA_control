@@ -1,16 +1,14 @@
 import os
-import sys
 
 import rclpy
 import yaml
 from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorFloat
-from insia_msg.srv import BrakeCalibration
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from yaml.loader import SafeLoader
 from std_msgs.msg import Header
+from yaml.loader import SafeLoader
 
 from INSIA_control.utils.pid import PID
 
@@ -31,32 +29,24 @@ class LongitudinalControlNode(Node):
         self.current_speed = 0.
         self.speed_range = self.get_parameter('speed_range').value
         self.telemetry = Telemetry()
-        th_params = self.get_parameters_by_prefix('throttle')
-        br_params = self.get_parameters_by_prefix('brake')
+        th_params: dict = self.get_parameters_by_prefix('throttle')
+        br_params: dict = self.get_parameters_by_prefix('brake')
         self.pid_throttle = PID(kp=th_params['kp'].value, ti=th_params['ti'].value, td=th_params['td'].value,
                                 anti_wind_up=0.1)
         self.pid_brake = PID(kp=br_params['kp'].value, ti=br_params['ti'].value, td=br_params['td'].value,
                              anti_wind_up=0.2)
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.pub_brake = self.create_publisher(msg_type=ControladorFloat,
-                                               topic='/' + vehicle_parameters['id_vehicle'] + '/Brake',
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_brake = self.create_publisher(msg_type=ControladorFloat, topic='Brake',
                                                qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.pub_throttle = self.create_publisher(msg_type=ControladorFloat,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Throttle',
+        self.pub_throttle = self.create_publisher(msg_type=ControladorFloat, topic='Throttle',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=Telemetry,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
-                                 callback=self.telemetry_callback, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=PetConduccion,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
-                                 callback=self.decision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.decision_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         # # ##### Cliente del servicio de calibración del freno #####
         # self.cli_calibration = self.create_client(BrakeCalibration, 'brake_calibration')
@@ -64,7 +54,7 @@ class LongitudinalControlNode(Node):
         #     self.get_logger().info('service not available, waiting again...')
         # self.req_calibration = BrakeCalibration.Request()
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_control = self.create_timer(1 / 10, self.control_loop)
 
     def telemetry_callback(self, telemetry: Telemetry):
@@ -106,7 +96,7 @@ class LongitudinalControlNode(Node):
         elif self.control_msg.speed > self.current_speed:
             self.logger.debug('Caso aceleración')
             throttle_solution = throttle
-            brake_solution=0.
+            brake_solution = 0.
         else:
             self.logger.debug('Caso freno')
             if 0 >= self.control_msg.speed - self.current_speed >= -5 and self.current_speed > 10:
@@ -114,8 +104,8 @@ class LongitudinalControlNode(Node):
                 brake_solution = 0.
                 throttle_solution = 0.
             else:
-                brake_solution=brake
-                throttle_solution=0.
+                brake_solution = brake
+                throttle_solution = 0.
 
         # elif self.control_msg.speed - self.current_speed >= -5 and self.control_msg.speed < 5:
         #     self.logger.debug(f'Case ')
@@ -149,12 +139,12 @@ class LongitudinalControlNode(Node):
     def decision_callback(self, decision):
         self.control_msg = decision
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:

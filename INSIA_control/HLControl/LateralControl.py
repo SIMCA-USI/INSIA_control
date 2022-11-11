@@ -2,13 +2,13 @@ import os
 
 import rclpy
 import yaml
-from insia_msg.msg import CAN, Telemetry, StringStamped, PetConduccion, ControladorFloat
+from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorFloat
+from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from yaml.loader import SafeLoader
 from std_msgs.msg import Header
-from numpy import interp, clip
+from yaml.loader import SafeLoader
 
 
 class LateralControlNode(Node):
@@ -27,24 +27,18 @@ class LateralControlNode(Node):
         self.telemetry = Telemetry()
         self.pet_conduccion = PetConduccion()
 
-        self.create_subscription(msg_type=PetConduccion,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Decision/Output',
-                                 callback=self.decision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.decision_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=Telemetry,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
-                                 callback=self.telemetry_callback, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.pub_steering = self.create_publisher(msg_type=ControladorFloat,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Steering',
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_steering = self.create_publisher(msg_type=ControladorFloat, topic='Steering',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_control = self.create_timer(1 / 10, self.control)
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def control(self):
         if self.pet_conduccion.b_steering:
@@ -74,12 +68,12 @@ class LateralControlNode(Node):
     def telemetry_callback(self, telemetry: Telemetry):
         self.telemetry = telemetry
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:

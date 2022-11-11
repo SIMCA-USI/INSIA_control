@@ -3,8 +3,8 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, EPOSDigital, IOAnalogue
-from numpy import interp
+from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, FloatStamped
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -12,22 +12,31 @@ from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
 
-class ThrottleNode(Node):
+class AccelNode(Node):
+
+    def parameters_callback(self, params):
+        print(params)
+        for param in params:
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+        return SetParametersResult(successful=True)
 
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
-        super().__init__(node_name='ThrottleNode', namespace=vehicle_parameters['id_vehicle'],
+        super().__init__(node_name='SpeedNode', namespace=vehicle_parameters['id_vehicle'],
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
+
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
-        params = vehicle_parameters.get('throttle')
+        params = vehicle_parameters.get('steering')
         self.device_range = params['range']
         self.telemetry = Telemetry()
-        self.controller = ControladorFloat()
+        self.controller = None
+        self.add_on_set_parameters_callback(self.parameters_callback)
 
         self.create_subscription(msg_type=ControladorFloat, topic=self.get_name(), callback=self.controller_update,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -35,28 +44,28 @@ class ThrottleNode(Node):
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable_throttle = self.create_publisher(msg_type=EPOSDigital, topic='io_card/iodigital',
-                                                         qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.pub_target = self.create_publisher(msg_type=IOAnalogue, topic='io_card/ioanalogue',
+        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='Accel',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
-        self.timer_send = self.create_timer(10, self.controller_update)
 
-    def controller_update(self, data=None):
-        if data is not None:
-            self.controller = data
-        self.pub_enable_throttle.publish(EPOSDigital(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            enable=self.controller.enable,
-            io_digital=8
-        ))
+    def controller_update(self, data: ControladorFloat):
+        """
+        Receive data from HL LongitudinalControlPID and transform it in Float stamped
+        :param data: Controlador Float +-1
+        :return: None
+        """
+        self.controller = data
+        self.logger.debug(f'{self.controller.enable =}')
         if self.controller.enable:
-            self.pub_target.publish(IOAnalogue(
+            self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                channel=3,
-                voltage=interp(self.controller.target, (0, 1), self.device_range)
+                data=4 * data.target
+            ))
+        else:
+            self.pub_target.publish(FloatStamped(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                data=-1.
             ))
 
     def publish_heartbeat(self):
@@ -70,18 +79,10 @@ class ThrottleNode(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbeat.cancel()
-            # Desactivar EPOS4
-            # Desactivar reles
-            self.pub_enable_throttle.publish(EPOSDigital(
+            # Full brake in case of finishing
+            self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=False,
-                io_digital=8
-            ))
-            # Poner target de motor a 0 por si acaso
-            self.pub_target.publish(IOAnalogue(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                channel=3,
-                voltage=interp(0, (0, 1), self.device_range)
+                data=-1.
             ))
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
@@ -91,7 +92,7 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = ThrottleNode()
+        manager = AccelNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print(f'{manager.get_name()}: Keyboard interrupt')

@@ -5,12 +5,12 @@ import time
 
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped, ControladorFloat, CANEthStatus
+from insia_msg.msg import CAN, CANGroup, StringStamped, CANEthStatus
+from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from yaml.loader import SafeLoader
-from numpy import interp
 
 from INSIA_control.utils.connection import Connection
 from INSIA_control.utils.utils import decoder_can
@@ -21,8 +21,7 @@ class CanNode(Node):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
         super().__init__(node_name='CAN', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
-                         allow_undeclared_parameters=False,
-                         automatically_declare_parameters_from_overrides=True)
+                         allow_undeclared_parameters=False, automatically_declare_parameters_from_overrides=True)
 
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
@@ -53,14 +52,12 @@ class CanNode(Node):
             self.declare_parameter('dinamic_frec', True)
         self.current_frec = 0
 
-        self.pub_CAN = self.create_publisher(msg_type=CAN, topic='/' + vehicle_parameters['id_vehicle'] + '/CAN',
-                                             qos_profile=HistoryPolicy.KEEP_LAST)
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_CAN = self.create_publisher(msg_type=CAN, topic='CAN', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_status = self.create_publisher(msg_type=CANEthStatus, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/' + self.get_name() + '/Status', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_status = self.create_publisher(msg_type=CANEthStatus, topic=self.get_name() + '/Status',
+                                                qos_profile=HistoryPolicy.KEEP_LAST)
 
         if self.local:
             self.logger.info(f'Running in local mode')
@@ -71,21 +68,20 @@ class CanNode(Node):
                                          ip=self.ip, port=self.port, deco_function=self.decode_can,
                                          log_level=self._log_level.value)
 
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_write = threading.Thread(target=self.write_th, daemon=False, name=f'Writer {self.get_name()}')
         if not self.local:
             self.timer_write.start()
 
-        self.create_subscription(msg_type=CANGroup,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
-                                 callback=self.save_msg, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CANGroup, topic=self.get_name(), callback=self.save_msg,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
         msg_status = CANEthStatus(
             connected=self.connection.connected,
             queue_lenth=len(self.queue.queue),
@@ -187,7 +183,7 @@ class CanNode(Node):
             self.shutdown_flag = True
             for _ in range(3):
                 rclpy.spin_once(self)
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
 

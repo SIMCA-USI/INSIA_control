@@ -3,15 +3,15 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, EPOSDigital, EPOSConsigna
+from example_interfaces.msg import Bool
+from insia_msg.msg import StringStamped, BoolStamped, Telemetry, ControladorFloat, EPOSDigital, EPOSConsigna
 from numpy import interp
+from rclpy import timer
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
-from example_interfaces.msg import Bool
 from yaml.loader import SafeLoader
-from rclpy import timer
 
 
 class SteeringNode(Node):
@@ -40,33 +40,28 @@ class SteeringNode(Node):
         self.lock_turn = False
         self.prev_lock_turn = False
 
-        self.pub_heartbit = self.create_publisher(msg_type=StringStamped,
-                                                  topic='/' + vehicle_parameters['id_vehicle'] + '/Heartbit',
-                                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=ControladorFloat, topic=self.get_name(), callback=self.controller_update,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable = self.create_publisher(msg_type=BoolStamped,
-                                                topic='/' + vehicle_parameters['id_vehicle'] + '/MCD60_Volante/Enable',
+        self.create_subscription(msg_type=Bool, topic=self.get_name() + '/LockTurn', callback=self.lock_turn_update,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.pub_enable = self.create_publisher(msg_type=BoolStamped, topic='MCD60_Volante/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/MCD60_Volante/Digital', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='MCD60_Volante/Digital',
+                                                         qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='/' + vehicle_parameters[
-            'id_vehicle'] + '/MCD60_Volante/TargetPosition', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='MCD60_Volante/TargetPosition',
+                                                qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=ControladorFloat,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name(),
-                                 callback=self.controller_update, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=Bool,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/' + self.get_name() + '/LockTurn',
-                                 callback=self.lock_turn_update, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=Telemetry,
-                                 topic='/' + vehicle_parameters['id_vehicle'] + '/Telemetry',
-                                 callback=self.telemetry_callback, qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.timer_heartbit = self.create_timer(1, self.publish_heartbit)
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def lock_turn_update(self, data: Bool):
         if self.timer_delay is None:
@@ -111,17 +106,17 @@ class SteeringNode(Node):
                 mode=EPOSConsigna.RELATIVO
             ))
 
-    def publish_heartbit(self):
+    def publish_heartbeat(self):
         msg = StringStamped(
             data=self.get_name()
         )
         msg.header.stamp = self.get_clock().now().to_msg()
-        self.pub_heartbit.publish(msg)
+        self.pub_heartbeat.publish(msg)
 
     def shutdown(self):
         try:
             self.shutdown_flag = True
-            self.timer_heartbit.cancel()
+            self.timer_heartbeat.cancel()
             # Desactivar EPOS
             self.pub_enable.publish(BoolStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
