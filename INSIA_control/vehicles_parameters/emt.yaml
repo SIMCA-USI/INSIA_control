@@ -6,7 +6,7 @@ steering:
   range: [ -1100000, 1100000 ] # Posicion [-590, 590]
   wheel_range: [ -590, 590 ]
   sensor_error: -202
-  steering_wheel_conversion: 20. # Relacion 1º rueda x volante
+  steering_wheel_conversion: 23.6 # Relacion 1º rueda x volante
   inverted: True
 
 brake:
