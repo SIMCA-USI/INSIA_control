@@ -23,6 +23,7 @@ class VehicleNode(Node):
                          automatically_declare_parameters_from_overrides=True)
         self.id_plataforma = vehicle_parameters['id_vehicle']
         self.steering_sensor_error = vehicle_parameters['steering']['sensor_error']
+        self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
         self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
         self.brake_range = vehicle_parameters['brake']['range']
         self.position_brake = 0
@@ -59,6 +60,7 @@ class VehicleNode(Node):
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
         msg.brake = int(interp(self.position_brake, self.brake_range, (0, 100)))
         msg.steering = (msg.steering - self.steering_sensor_error)
+        msg.steering_deg = msg.steering / self.steering_wheel_conversion
         if self.steering_sensor_inverted:
             msg.steering *= -1
         return msg

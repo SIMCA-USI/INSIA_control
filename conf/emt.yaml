@@ -99,7 +99,7 @@ emt:
       log_level: 0
   Decision:
     ros__parameters:
-      log_level: 10
+      log_level: 0
       wp:
         mode: 'wheels'
         ttl: 1
