@@ -3,14 +3,13 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from example_interfaces.msg import Bool
 from insia_msg.msg import StringStamped, BoolStamped, Telemetry, ControladorFloat, EPOSDigital, EPOSConsigna
 from numpy import interp
 from rclpy import timer
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Bool
 from yaml.loader import SafeLoader
 
 

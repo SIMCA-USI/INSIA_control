@@ -129,8 +129,16 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='decision',
+            executable='decision_low',
             name='Decision',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='pathplanning_basic',
+            name='PathPlanning',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

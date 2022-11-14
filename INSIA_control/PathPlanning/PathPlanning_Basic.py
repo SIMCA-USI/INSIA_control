@@ -45,9 +45,9 @@ class PathPlanning(Node):
         self.create_subscription(msg_type=PetConduccion, topic='Lidar',
                                  callback=self.sub_lidar, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=PetConduccion, topic='WP',
+        self.create_subscription(msg_type=PetConduccion, topic='WP/Result',
                                  callback=self.sub_wp, qos_profile=HistoryPolicy.KEEP_LAST)
-
+        # Flag para seleccionar lidar o wp
         self.create_subscription(msg_type=BoolStamped, topic='PFlag',
                                  callback=self.sub_flag, qos_profile=HistoryPolicy.KEEP_LAST)
 

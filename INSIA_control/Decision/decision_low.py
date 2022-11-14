@@ -35,26 +35,31 @@ class Decision(Node):
         self.logger.set_level(self._log_level.value)
 
         self.id_plataforma = vehicle_parameters['id_vehicle']
+        self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
         self.add_on_set_parameters_callback(self.parameters_callback)
 
-        self.master_switch = MasterSwitch()
+        # Se permite por defecto funcionar a los sistemas, en caso de que se quiera
+        # inhabilitar uno se hace con el master switch
+        self.master_switch = MasterSwitch(b_steering=True, b_throttle=True, b_brake=True, b_gear=True)
         self.tele_msg = None
-        self.tele_ttl = self.get_parameter_or('tele_ttl', Parameter(name='tele_ttl', value=1))
+        # self.tele_ttl = self.get_parameter_or('tele_ttl', Parameter(name='tele_ttl', value=1))
         self.wp_msg = None
-        self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
-        self.mode = ModoMision.TELE_OPERADO
+        # self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
 
-        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped,
-                                                   topic='Heartbeat',
+        self.wp_ttl, self.wp_mode = self.get_p(self.get_parameters_by_prefix('wp'))
+        self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
+
+        # Arranca en modo manual
+        self.mode = ModoMision.MANUAL
+
+        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_decision = self.create_publisher(msg_type=PetConduccion,
-                                                  topic='Decision/Output',
+        self.pub_decision = self.create_publisher(msg_type=PetConduccion, topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=MasterSwitch,
-                                 topic='MasterSwitch',
-                                 callback=self.master_switch_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=MasterSwitch, topic='MasterSwitch', callback=self.master_switch_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=PetConduccion, topic='PathPlanning',
                                  callback=self.sub_wp, qos_profile=HistoryPolicy.KEEP_LAST)
@@ -68,6 +73,20 @@ class Decision(Node):
         self.timer_control = self.create_timer(1 / 10, self.decision)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
+    def get_p(self, d_params: dict):
+        if 'ttl' in d_params.keys():
+            ttl = d_params['ttl'].value
+        else:
+            ttl = 1
+        if 'mode' in d_params.keys():
+            mode = d_params['mode'].value
+            if mode not in ['wheels', 'steering_wheel']:
+                self.logger.error(f'Error getting params , not valid: {mode}')
+                mode = 'wheels'
+        else:
+            mode = 'wheels'
+        return ttl, mode
+
     def master_switch_callback(self, data: MasterSwitch):
         if self.master_switch.b_gear != data.b_gear or self.master_switch.b_brake != data.b_brake or \
                 self.master_switch.b_steering != data.b_steering or self.master_switch.b_throttle != data.b_throttle:
@@ -80,12 +99,16 @@ class Decision(Node):
         self.mode = data.modo_mision
 
     def sub_tele(self, data):
+        if self.tele_mode == 'wheels':
+            data.steering *= self.steering_wheel_conversion
         self.tele_msg = data
         if self.mode == ModoMision.TELE_OPERADO:
             self.timer_control.reset()
             self.decision()
 
-    def sub_wp(self, data):
+    def sub_wp(self, data: PetConduccion):
+        if self.wp_mode == 'wheels':
+            data.steering *= self.steering_wheel_conversion
         self.wp_msg = data
         if self.mode == ModoMision.AUTONOMO:
             self.timer_control.reset()
