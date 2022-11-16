@@ -144,7 +144,7 @@ class PID(object):
             self.output = 0.0
             self.reseted = True
 
-    def calcValue(self, target_value, current_value):
+    def calcValue(self, target_value, current_value, kp=None, td=None, ti=None):
         """Calculates PID value for given reference feedback
 
         .. math::
@@ -156,6 +156,9 @@ class PID(object):
            Test PID with Kp=1.2, Ki=1, Kd=0.001 (test_pid.py)
 
         """
+        kp = kp if kp is not None else self.Kp
+        td = td if td is not None else self.Td
+        ti = ti if ti is not None else self.Ti
         self.reseted = False
         error = target_value - current_value
 
@@ -163,24 +166,21 @@ class PID(object):
         delta_time = self.current_time - self.last_time
         delta_error = error - self.last_error
 
-        self.PTerm = self.Kp * error
+        self.PTerm = kp * error
         self.ITerm += error * delta_time
-
-        if self.ITerm < -self.windup_guard:
-            self.ITerm = -self.windup_guard
-        elif self.ITerm > self.windup_guard:
-            self.ITerm = self.windup_guard
+        self.ITerm = max(min(self.ITerm * ti, self.windup_guard), -self.windup_guard)
 
         self.DTerm = 0.0
         if delta_time > 0:
             self.DTerm = delta_error / delta_time
+        self.DTerm *= td
 
         # Remember last time and last error for next calculation
         self.last_time = self.current_time
         self.last_error = error
 
-        self.output = self.PTerm + (self.Ti * self.ITerm) + (self.Td * self.DTerm)
-        return self.output
+        self.output = self.PTerm + self.ITerm + self.DTerm
+        return self.output, (float(self.PTerm), float(self.ITerm), float(self.DTerm))
 
     def setWindup(self, windup):
         """Integral windup, also known as integrator windup or reset windup,
