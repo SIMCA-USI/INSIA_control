@@ -1,5 +1,8 @@
 id_vehicle: emt
 
+speed:
+  range: [ 0, 40 ]
+
 steering:
   # sensor_error: 0
   # conversion: 6500

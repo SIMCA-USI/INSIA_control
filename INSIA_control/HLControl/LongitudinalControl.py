@@ -57,7 +57,7 @@ class LongitudinalControlNode(Node):
         self.shutdown_flag = False
         self.control_msg: PetConduccion = PetConduccion()
         self.current_speed = 0.
-        self.speed_range = self.get_parameter('speed_range').value
+        self.speed_range = vehicle_parameters['speed']['range']
         self.telemetry = Telemetry()
         self.th_params = PID_params(self.get_parameters_by_prefix('throttle'))
         self.br_params = PID_params(self.get_parameters_by_prefix('brake'))
