@@ -1,14 +1,17 @@
 id_vehicle: imiev
 
+speed:
+  range: [ 0, 120 ]
+
 steering:
   # sensor_error: 0
   # conversion: 6500
-  range: [-20000, 20000] # [-10000, 10000] # Tension salida
-  wheel_range: [-630, 630]
+  range: [ -20000, 20000 ] # [-10000, 10000] # Tension salida
+  wheel_range: [ -630, 630 ]
   sensor_error: 0
 
 brake:
-  range: [0, -150000]
-  
+  range: [ 0, -150000 ]
+
 throttle:
-  range: [1.0, 4.5]
+  range: [ 1.0, 4.5 ]

@@ -1,5 +1,8 @@
 id_vehicle: lagarto
 
+speed:
+  range: [ 0, 120 ]
+
 steering:
   # sensor_error: 0
   # conversion: 6500
