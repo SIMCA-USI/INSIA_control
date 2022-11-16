@@ -27,7 +27,6 @@ class LongitudinalControlNode(Node):
     def parameters_callback(self, params):
         print(params)
         for param in params:
-            self.logger.error(param.name)
             if param.name == "log_level":
                 self.logger.set_level(param.value)
             elif param.name == 'throttle.kp':
