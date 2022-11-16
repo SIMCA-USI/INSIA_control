@@ -2,8 +2,10 @@ import os
 
 import rclpy
 import yaml
+from geometry_msgs.msg import Vector3
 from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorFloat
 from numpy import interp
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -13,7 +15,35 @@ from yaml.loader import SafeLoader
 from INSIA_control.utils.pid import PID
 
 
+class PID_params:
+    def __init__(self, params):
+        self.kp = params['kp'].value
+        self.ti = params['ti'].value
+        self.td = params['td'].value
+
+
 class LongitudinalControlNode(Node):
+
+    def parameters_callback(self, params):
+        print(params)
+        for param in params:
+            self.logger.error(param.name)
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+            elif param.name == 'throttle.kp':
+                self.th_params.kp = param.value
+            elif param.name == 'throttle.ti':
+                self.th_params.ti = param.value
+            elif param.name == 'throttle.td':
+                self.th_params.td = param.value
+            elif param.name == 'brake.kp':
+                self.br_params.kp = param.value
+            elif param.name == 'brake.ti':
+                self.br_params.ti = param.value
+            elif param.name == 'brake.td':
+                self.br_params.td = param.value
+        return SetParametersResult(successful=True)
+
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -21,6 +51,7 @@ class LongitudinalControlNode(Node):
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
         self.id_plataforma = vehicle_parameters['id_vehicle']
+        self.add_on_set_parameters_callback(self.parameters_callback)
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
@@ -29,12 +60,10 @@ class LongitudinalControlNode(Node):
         self.current_speed = 0.
         self.speed_range = self.get_parameter('speed_range').value
         self.telemetry = Telemetry()
-        th_params: dict = self.get_parameters_by_prefix('throttle')
-        br_params: dict = self.get_parameters_by_prefix('brake')
-        self.pid_throttle = PID(kp=th_params['kp'].value, ti=th_params['ti'].value, td=th_params['td'].value,
-                                anti_wind_up=0.1)
-        self.pid_brake = PID(kp=br_params['kp'].value, ti=br_params['ti'].value, td=br_params['td'].value,
-                             anti_wind_up=0.2)
+        self.th_params = PID_params(self.get_parameters_by_prefix('throttle'))
+        self.br_params = PID_params(self.get_parameters_by_prefix('brake'))
+        self.pid_throttle = PID(kp=self.th_params.kp, ti=self.th_params.ti, td=self.th_params.td, anti_wind_up=0.1)
+        self.pid_brake = PID(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td, anti_wind_up=0.2)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
@@ -42,6 +71,10 @@ class LongitudinalControlNode(Node):
                                                qos_profile=HistoryPolicy.KEEP_LAST)
         self.pub_throttle = self.create_publisher(msg_type=ControladorFloat, topic='Throttle',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_pid_values_th = self.create_publisher(msg_type=Vector3, topic=f'{self.get_name()}/PID_throttle_values',
+                                                       qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_pid_values_br = self.create_publisher(msg_type=Vector3, topic=f'{self.get_name()}/PID_brake_values',
+                                                       qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -74,12 +107,19 @@ class LongitudinalControlNode(Node):
         self.logger.debug(f'Target speed {round(self.current_speed, 2)}\t{current_speed_norm}')
         # Calcular pids
         if self.control_msg.b_brake:
-            brake = self.pid_brake.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
+            brake, br_pid_values = self.pid_brake.calcValue(target_value=target_speed_norm,
+                                                            current_value=current_speed_norm, kp=self.br_params.kp,
+                                                            ti=self.br_params.ti, td=self.br_params.td)
+            self.pub_pid_values_br.publish(Vector3(x=br_pid_values[0], y=br_pid_values[1], z=br_pid_values[2]))
         else:
             self.pid_brake.reset_values()
             brake = 0
         if self.control_msg.b_throttle:
-            throttle = self.pid_throttle.calcValue(target_value=target_speed_norm, current_value=current_speed_norm)
+            throttle, th_pid_values = self.pid_throttle.calcValue(target_value=target_speed_norm,
+                                                                  current_value=current_speed_norm,
+                                                                  kp=self.th_params.kp, ti=self.th_params.ti,
+                                                                  td=self.th_params.td)
+            self.pub_pid_values_th.publish(Vector3(x=th_pid_values[0], y=th_pid_values[1], z=th_pid_values[2]))
         else:
             self.pid_throttle.reset_values()
             throttle = 0
