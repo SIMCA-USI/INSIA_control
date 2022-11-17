@@ -2,6 +2,7 @@ import os
 
 import rclpy
 import yaml
+from std_msgs.msg import Float64
 from insia_msg.msg import CAN, Telemetry, StringStamped, EPOSStatus
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -33,11 +34,15 @@ class VehicleNode(Node):
         self.shutdown_flag = False
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
         self.vehicle_state = {}
+        self.gps_speed = 0.
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
         self.pub_telemetry = self.create_publisher(msg_type=Telemetry, topic='Telemetry',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=Float64, topic='/gps/speed', callback=self.gps_speed_callback,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
         self.create_subscription(msg_type=EPOSStatus, topic='MCD60_Freno/Status', callback=self.get_status_brake,
@@ -45,6 +50,9 @@ class VehicleNode(Node):
 
         self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+
+    def gps_speed_callback(self, data: Float64):
+        self.gps_speed = data.data
 
     def get_status_brake(self, status: EPOSStatus):
         self.position_brake = status.position
@@ -61,6 +69,7 @@ class VehicleNode(Node):
         msg.brake = int(interp(self.position_brake, self.brake_range, (0, 100)))
         msg.steering = (msg.steering - self.steering_sensor_error)
         msg.steering_deg = msg.steering / self.steering_wheel_conversion
+        msg.speed = self.gps_speed
         if self.steering_sensor_inverted:
             msg.steering *= -1
         return msg
