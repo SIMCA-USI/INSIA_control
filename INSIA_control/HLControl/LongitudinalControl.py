@@ -61,8 +61,8 @@ class LongitudinalControlNode(Node):
         self.telemetry = Telemetry()
         self.th_params = PID_params(self.get_parameters_by_prefix('throttle'))
         self.br_params = PID_params(self.get_parameters_by_prefix('brake'))
-        self.pid_throttle = PID(kp=self.th_params.kp, ti=self.th_params.ti, td=self.th_params.td, anti_wind_up=0.1)
-        self.pid_brake = PID(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td, anti_wind_up=0.2)
+        self.pid_throttle = PID(kp=self.th_params.kp, ti=self.th_params.ti, td=self.th_params.td, anti_wind_up=0.3)
+        self.pid_brake = PID(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td, anti_wind_up=0.65)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
