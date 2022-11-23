@@ -6,7 +6,7 @@ from yaml.loader import SafeLoader
 
 
 def generate_launch_description():
-    parameters_file_path = '{}/../conf/jku.yaml'.format(
+    parameters_file_path = '{}/../conf/JKU_Car.yaml'.format(
         os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
     with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
         vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -21,7 +21,7 @@ def generate_launch_description():
         # Telemetry node to get data from openpilot
         Node(
             package='INSIA_control',
-            executable='telemetry_jku',
+            executable='telemetry_jku_car',
             name='VehicleDecoder',
             parameters=[parameters_file_path],
             output='screen',
@@ -51,7 +51,7 @@ def generate_launch_description():
         # Accel node to transform Controller msgs to openpilot msgs
         Node(
             package='INSIA_control',
-            executable='accel_jku',
+            executable='accel_jku_car',
             name='Speed',
             parameters=[parameters_file_path],
             output='screen',
@@ -60,7 +60,7 @@ def generate_launch_description():
         # Steering node to transform Controller msgs to openpilot msgs
         Node(
             package='INSIA_control',
-            executable='steering_jku',
+            executable='steering_jku_car',
             name='Steering',
             parameters=[parameters_file_path],
             output='screen',

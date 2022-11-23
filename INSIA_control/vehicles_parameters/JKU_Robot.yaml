@@ -1,4 +1,4 @@
-id_vehicle: JKU_car
+id_vehicle: JKU_Robot
 
 steering:
   # sensor_error: 0
@@ -6,6 +6,7 @@ steering:
   range: [ -1100000, 1100000 ] # Posicion [-590, 590]
   wheel_range: [ -590, 590 ]
   sensor_error: 0
+  steering_wheel_conversion: 1 # Relacion 1º rueda x volante
   inverted: True
 
 speed:
