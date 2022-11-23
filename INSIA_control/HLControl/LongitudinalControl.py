@@ -16,10 +16,21 @@ from INSIA_control.utils.pid import PID
 
 
 class PID_params:
-    def __init__(self, params):
-        self.kp = params['kp'].value
-        self.ti = params['ti'].value
-        self.td = params['td'].value
+    def __init__(self, params, default_wup=0.1):
+        try:
+            self.kp = params['kp'].value
+            self.ti = params['ti'].value
+            self.td = params['td'].value
+        except:
+            print('Error en el pid')
+            exit(0)
+        else:
+            try:
+                self.wup = params['windup'].value
+            except:
+                print(f'Windup por defecto')
+            else:
+                self.wup = default_wup
 
 
 class LongitudinalControlNode(Node):
@@ -59,10 +70,12 @@ class LongitudinalControlNode(Node):
         self.current_speed = 0.
         self.speed_range = vehicle_parameters['speed']['range']
         self.telemetry = Telemetry()
-        self.th_params = PID_params(self.get_parameters_by_prefix('throttle'))
-        self.br_params = PID_params(self.get_parameters_by_prefix('brake'))
-        self.pid_throttle = PID(kp=self.th_params.kp, ti=self.th_params.ti, td=self.th_params.td, anti_wind_up=0.3)
-        self.pid_brake = PID(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td, anti_wind_up=0.65)
+        self.th_params = PID_params(self.get_parameters_by_prefix('throttle'), default_wup=0.1)
+        self.br_params = PID_params(self.get_parameters_by_prefix('brake'), default_wup=0.2)
+        self.pid_throttle = PID(kp=self.th_params.kp, ti=self.th_params.ti, td=self.th_params.td,
+                                anti_wind_up=self.th_params.wup)
+        self.pid_brake = PID(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td,
+                             anti_wind_up=self.br_params.wup)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)

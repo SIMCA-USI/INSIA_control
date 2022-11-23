@@ -81,10 +81,12 @@ emt:
         kp: 6.
         ti: 2.
         td: 0.
+        windup: 0.3
       brake:
         kp: 6.
         ti: 3.
         td: 0.
+        windup: 0.65
   Lateral_Control:
     ros__parameters:
       log_level: 0
@@ -105,4 +107,6 @@ emt:
       tele:
         mode: 'steering_wheel'
         ttl: 1
-
+  PathPlanning:
+    ros__parameters:
+      log_level: 0
