@@ -69,7 +69,9 @@ class VehicleNode(Node):
         msg.brake = int(interp(self.position_brake, self.brake_range, (0, 100)))
         msg.steering = (msg.steering - self.steering_sensor_error)
         msg.steering_deg = msg.steering / self.steering_wheel_conversion
-        msg.speed = self.gps_speed
+        if abs(msg.speed - self.gps_speed) > 3:
+            self.logger.debug(f'Speed from hardware and gps doesn\'t match {msg.speed = } {self.gps_speed = }')
+        # msg.speed = self.gps_speed
         if self.steering_sensor_inverted:
             msg.steering *= -1
         return msg
