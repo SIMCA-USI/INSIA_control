@@ -70,9 +70,12 @@ class LongitudinalControlPIDNode(Node):
 
             pid_params = self.get_parameters_by_prefix('speed')
             try:
-                target = self.pid.calcValue(target_value=target_speed_norm,
-                                            current_value=current_speed_norm, kp=pid_params['kp'].value,
-                                            ti=pid_params['ti'].value, td=pid_params['td'].value)
+                if target_speed_norm == 0 and current_speed_norm < 0.05:
+                    target = -1
+                else:
+                    target = self.pid.calcValue(target_value=target_speed_norm,
+                                                current_value=current_speed_norm, kp=pid_params['kp'].value,
+                                                ti=pid_params['ti'].value, td=pid_params['td'].value)
             except Exception as e:
                 self.logger.error(f'Error calc pid: {e}')
             else:
