@@ -22,7 +22,14 @@ class Decision(Node):
                 self.logger.set_level(param.value)
         return SetParametersResult(successful=True)
 
-    def __init__(self, name: str = 'unknown_control'):
+    def __init__(self):
+        """
+        Decision node that receives
+        MasterSwitch: To invalidate orders from high level
+        PathPlanning: Targets from wp/lidar
+        TeleOperacion: Targets from keyboard/Controller/tablet
+        Mode: To select operation mode
+        """
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
         super().__init__(node_name='Node', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
@@ -38,18 +45,15 @@ class Decision(Node):
         self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
         self.add_on_set_parameters_callback(self.parameters_callback)
 
-        # Se permite por defecto funcionar a los sistemas, en caso de que se quiera
-        # inhabilitar uno se hace con el master switch
+        # Systems enabled by default
         self.master_switch = MasterSwitch(b_steering=True, b_throttle=True, b_brake=True, b_gear=True)
         self.tele_msg = None
-        # self.tele_ttl = self.get_parameter_or('tele_ttl', Parameter(name='tele_ttl', value=1))
         self.wp_msg = None
-        # self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
 
         self.wp_ttl, self.wp_mode = self.get_p(self.get_parameters_by_prefix('wp'))
         self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
 
-        # Arranca en modo manual
+        # Manual mode by default, TODO: When everything will be working perfectly default teleoperation
         self.mode = ModoMision.MANUAL
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
@@ -62,22 +66,29 @@ class Decision(Node):
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=PetConduccion, topic='PathPlanning',
-                                 callback=self.sub_wp, qos_profile=HistoryPolicy.KEEP_LAST)
+                                 callback=self.pathplanning_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=PetConduccion, topic='TeleOperacion',
-                                 callback=self.sub_tele, qos_profile=HistoryPolicy.KEEP_LAST)
+                                 callback=self.teleoperation_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=ModoMision, topic='Mode',
-                                 callback=self.modo_mision, qos_profile=HistoryPolicy.KEEP_LAST)
+                                 callback=self.modo_mision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_control = self.create_timer(1 / 10, self.decision)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def get_p(self, d_params: dict):
+        """
+        Function to get parameters
+        :param d_params: Dictionary of parameters
+        :type d_params: dict
+        :return: ttl and steering data mode of this param
+        :rtype: (float, str)
+        """
         if 'ttl' in d_params.keys():
             ttl = d_params['ttl'].value
         else:
-            ttl = 1
+            ttl = 1  # Default ttl 1s
         if 'mode' in d_params.keys():
             mode = d_params['mode'].value
             if mode not in ['wheels', 'steering_wheel']:
@@ -94,11 +105,11 @@ class Decision(Node):
             self.logger.debug(
                 f'Changed MS: Brake: {data.b_brake} Throttle: {data.b_throttle} Steering: {data.b_steering} Gears: {data.b_gear}')
 
-    def modo_mision(self, data):
+    def modo_mision_callback(self, data: ModoMision):
         self.logger.debug(f'Modo {data.modo_mision}')
         self.mode = data.modo_mision
 
-    def sub_tele(self, data):
+    def teleoperation_callback(self, data: PetConduccion):
         if self.tele_mode == 'wheels':
             data.steering *= self.steering_wheel_conversion
         self.tele_msg = data
@@ -106,7 +117,7 @@ class Decision(Node):
             self.timer_control.reset()
             self.decision()
 
-    def sub_wp(self, data: PetConduccion):
+    def pathplanning_callback(self, data: PetConduccion):
         if self.wp_mode == 'wheels':
             data.steering *= self.steering_wheel_conversion
         self.wp_msg = data
@@ -115,6 +126,11 @@ class Decision(Node):
             self.decision()
 
     def manual(self) -> PetConduccion:
+        """
+        Function to create PetConduccion msg
+        :return: PetConduccion
+        :rtype: PetConduccion
+        """
         return PetConduccion(
             header=Header(stamp=self.get_clock().now().to_msg()),
             id_plataforma=self.id_plataforma,
@@ -127,6 +143,15 @@ class Decision(Node):
         )
 
     def is_valid(self, msg: PetConduccion, ttl) -> bool:
+        """
+        Function to check if msg is valid depending of it's ttl and it's header
+        :param msg: PetConduccion msg
+        :type msg: PetConduccion
+        :param ttl: Time To Live of a msg
+        :type ttl: float
+        :return: If msg is valid or not
+        :rtype: bool
+        """
         if msg is not None:
             t = msg.header.stamp.sec
             if t != 0:
@@ -142,7 +167,10 @@ class Decision(Node):
             return False
 
     def decision(self):
-        msg = None
+        """
+        Decision function to select correct msg and publish it
+        :return: Pub on Decision Result
+        """
         if self.mode == ModoMision.MANUAL:  # Manual
 
             self.logger.debug(f'Modo manual')
@@ -170,7 +198,7 @@ class Decision(Node):
             msg = self.manual()
 
         msg_final = deepcopy(msg)
-        # Se hace la comprobación del master switch
+        # MasterSwitch override
         msg_final.header.stamp = self.get_clock().now().to_msg()
         msg_final.b_brake = msg_final.b_brake and self.master_switch.b_brake
         msg_final.b_throttle = msg_final.b_throttle and self.master_switch.b_throttle
@@ -179,6 +207,10 @@ class Decision(Node):
         self.pub_decision.publish(msg_final)
 
     def publish_heartbeat(self):
+        """
+        Heartbeat publisher to keep tracking every node
+        :return: Publish on Heartbeat
+        """
         msg = StringStamped(
             data=self.get_name()
         )
@@ -193,7 +225,7 @@ def main(args=None):
     rclpy.init(args=args)
     manager = None
     try:
-        manager = Decision(name='Decision')
+        manager = Decision()
         rclpy.spin(manager)
     except KeyboardInterrupt:
         print('Decision: Keyboard interrupt')

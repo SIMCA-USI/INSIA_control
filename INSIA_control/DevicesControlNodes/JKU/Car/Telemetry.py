@@ -34,6 +34,7 @@ class VehicleNode(Node):
         self.id_plataforma = vehicle_parameters['id_vehicle']
         self.steering_sensor_error = vehicle_parameters['steering']['sensor_error']
         self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
+        self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
         self.throttle_range = vehicle_parameters['throttle']['range']
         self.brake_range = vehicle_parameters['brake']['range']
         self.logger = self.get_logger()
@@ -51,6 +52,10 @@ class VehicleNode(Node):
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def publish_heartbeat(self):
+        """
+        Heartbeat publisher to keep tracking every node
+        :return: Publish on Heartbeat
+        """
         msg = StringStamped(
             data=self.get_name()
         )
@@ -63,11 +68,13 @@ class VehicleNode(Node):
         :param data: openpilot/CarState
         :return: Publish on Telemetry
         """
+        steer = (data.steeringangledeg - self.steering_sensor_error) * (
+            -1 if self.steering_sensor_inverted else 1)
         self.pub_telemetry.publish(Telemetry(
             id_plataforma=self.id_plataforma,
             speed=data.vegoraw * 3.6,  # TODO: Revisar si realmente esta en ms o kmh
-            steering=(data.steeringangledeg - self.steering_sensor_error) * (
-                -1 if self.steering_sensor_inverted else 1),
+            steering=steer,
+            steering_deg=steer / self.steering_wheel_conversion,
             throttle=int(interp(data.gas, self.throttle_range, (0, 100))),
             brake=int(interp(data.brake, self.brake_range, (0, 100))),
             gears=dict_gears.get(data.gearshifter, 'U')

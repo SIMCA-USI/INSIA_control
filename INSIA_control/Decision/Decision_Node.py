@@ -169,6 +169,10 @@ class DecisionNode(Node):
                 self.force_use = None
 
     def publish_heartbeat(self):
+        """
+        Heartbeat publisher to keep tracking every node
+        :return: Publish on Heartbeat
+        """
         # print(self.dict_PetConduccion)
 
         msg = StringStamped(

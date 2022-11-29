@@ -98,6 +98,10 @@ class LongitudinalControlPIDNode(Node):
         self.control_msg = decision
 
     def publish_heartbeat(self):
+        """
+        Heartbeat publisher to keep tracking every node
+        :return: Publish on Heartbeat
+        """
         msg = StringStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
             data=self.get_name()

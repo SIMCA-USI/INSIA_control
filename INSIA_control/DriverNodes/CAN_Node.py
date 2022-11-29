@@ -77,6 +77,10 @@ class CanNode(Node):
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
     def publish_heartbeat(self):
+        """
+        Heartbeat publisher to keep tracking every node
+        :return: Publish on Heartbeat
+        """
         msg = StringStamped(
             data=self.get_name()
         )

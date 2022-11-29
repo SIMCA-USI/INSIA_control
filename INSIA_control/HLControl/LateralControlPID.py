@@ -16,8 +16,14 @@ from INSIA_control.utils.pid import PIDF
 
 class LateralControlPIDNode(Node):
 
-    def parameters_callback(self, params):
-        print(params)
+    def parameters_callback(self, params: list):
+        """
+        Parameter callback to update desired parameters on the fly
+        :param params: Params from ROS
+        :type params: list
+        :return: Return new set of params
+        :rtype: SetParametersResult
+        """
         for param in params:
             if param.name == "log_level":
                 self.logger.set_level(param.value)
@@ -29,18 +35,18 @@ class LateralControlPIDNode(Node):
         super().__init__(node_name='LongitudinalControlNode', namespace=vehicle_parameters['id_vehicle'],
                          start_parameter_services=True, allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
-        self.id_plataforma = vehicle_parameters['id_vehicle']
+        self.id_plataforma: str = vehicle_parameters['id_vehicle']
         self.add_on_set_parameters_callback(self.parameters_callback)
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
-        self.shutdown_flag = False
+        self.shutdown_flag: bool = False
         self.control_msg: PetConduccion = PetConduccion()
-        self.current_steering = 0.
+        self.current_steering: float = 0.
         self.steering_range = vehicle_parameters['steering']['wheel_range']
         pid_params: dict = self.get_parameters_by_prefix('steering')
         self.pid_steering = PIDF(kp=pid_params['kp'].value, ti=pid_params['ti'].value, td=pid_params['td'].value,
-                                 anti_wind_up=0.1)
+                                 anti_wind_up=0.3)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
@@ -49,16 +55,34 @@ class LateralControlPIDNode(Node):
 
         self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
-        self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.decision,
+        self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.decision_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_control = self.create_timer(1 / 50, self.control_loop)
 
     def telemetry_callback(self, telemetry: Telemetry):
+        """
+        Function to get current steering form vehicle telemetry
+        :param telemetry: Vehicle telemetry basic
+        :type telemetry: Telemetry
+        :return: No return
+        """
         self.current_steering = telemetry.steering
 
+    def decision_callback(self, decision: PetConduccion):
+        """
+        Decision callback to get target steering and b_steering
+        :param decision: PetConduccion from low level decision
+        :type decision: PetConduccion
+        :return: No return
+        """
+        self.control_msg = decision
+
     def control_loop(self):
+        """
+        Thread of control loop to calculate pid
+        """
         if self.control_msg.b_steering:
             self.logger.debug('Steering enabled')
             # Normalizar valores
@@ -68,7 +92,7 @@ class LateralControlPIDNode(Node):
             self.logger.debug(f'Target steering {self.control_msg.steering} {target_steering_norm}')
             self.logger.debug(f'Current steering {self.current_steering} {current_steering_norm}')
             # Calcular pids
-            pid_params = self.get_parameters_by_prefix('steering')
+            pid_params: dict = self.get_parameters_by_prefix('steering')
             steering = -self.pid_steering.calcValue(target_value=target_steering_norm,
                                                     current_value=current_steering_norm, kp=pid_params['kp'].value,
                                                     ti=pid_params['ti'].value, td=pid_params['td'].value)
@@ -87,10 +111,11 @@ class LateralControlPIDNode(Node):
                 target=0.
             ))
 
-    def decision(self, decision):
-        self.control_msg = decision
-
     def publish_heartbeat(self):
+        """
+        Heartbeat publisher to keep tracking every node
+        :return: Publish on Heartbeat
+        """
         msg = StringStamped(
             data=self.get_name()
         )
