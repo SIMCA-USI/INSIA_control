@@ -21,7 +21,7 @@ def generate_launch_description():
         # Telemetry node to get data from openpilot
         Node(
             package='INSIA_control',
-            executable='telemetry_jku_car',
+            executable='telemetry_jku_robot',
             name='VehicleDecoder',
             parameters=[parameters_file_path],
             output='screen',
@@ -51,7 +51,7 @@ def generate_launch_description():
         # Accel node to transform Controller msgs to openpilot msgs
         Node(
             package='INSIA_control',
-            executable='accel_jku_car',
+            executable='speed_jku_robot',
             name='Speed',
             parameters=[parameters_file_path],
             output='screen',
@@ -60,26 +60,8 @@ def generate_launch_description():
         # Steering node to transform Controller msgs to openpilot msgs
         Node(
             package='INSIA_control',
-            executable='steering_jku_car',
+            executable='steering_jku_robot',
             name='Steering',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        # Lateral control PID
-        Node(
-            package='INSIA_control',
-            executable='lateral_control_PID',
-            name='Lateral_Control',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        # Longitudinal control PID
-        Node(
-            package='INSIA_control',
-            executable='longitudinal_control_PID',
-            name='Longitudinal_Control',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

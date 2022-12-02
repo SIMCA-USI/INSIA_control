@@ -57,6 +57,10 @@ setup(
             'steering_jku_car = INSIA_control.DevicesControlNodes.JKU.Car.SteeringNode:main',
             'telemetry_jku_car = INSIA_control.DevicesControlNodes.JKU.Car.Telemetry:main',
 
+            'speed_jku_robot = INSIA_control.DevicesControlNodes.JKU.Robot.SpeedNode:main',
+            'steering_jku_robot = INSIA_control.DevicesControlNodes.JKU.Robot.SteeringNode:main',
+            'telemetry_jku_robot = INSIA_control.DevicesControlNodes.JKU.Robot.Telemetry:main',
+
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'longitudinal_control_PID = INSIA_control.HLControl.LongitudinalControlPID:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',

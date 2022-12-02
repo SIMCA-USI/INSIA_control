@@ -11,6 +11,7 @@ from rclpy.qos import HistoryPolicy
 from sensor_msgs.msg import Joy as JoyController
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
+from std_msgs.msg import UInt16
 
 dict_buttons_sony = {
     'x': 0,
@@ -23,8 +24,9 @@ dict_buttons_sony = {
     'r2': 7,
     'lb': 8,
     'rb': 9,
-    'l3': 10,
-    'r3': 11,
+    'l3': 11,
+    'r3': 12,
+    'sony': 10
 }
 
 
@@ -43,8 +45,10 @@ class JoyTransformerPetNode(Node):
         self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
         self.device_range_steering = params['wheel_range']
+        self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
         params = vehicle_parameters.get('speed')
         self.device_range_speed = params['range']
+        self.range_signal = params['range_signal']
         self.b_steering = False
         self.b_brake = False
         self.b_throttle = False
@@ -59,6 +63,8 @@ class JoyTransformerPetNode(Node):
 
         self.pub_joy = self.create_publisher(msg_type=PetConduccion, topic='Joy_transformed_Pet',
                                              qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_reset = self.create_publisher(msg_type=UInt16, topic='/ardu_set2zero',
+                                               qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
@@ -76,9 +82,10 @@ class JoyTransformerPetNode(Node):
         if self.last_msg is None:
             self.last_msg = msg
         try:
+            if self.check_button(msg, 'sony', master=True):
+                self.pub_reset.publish(UInt16(data=1))
             # Desactivar all
             if self.check_button(msg, 'l1', master=True):
-                print('entering')
                 self.b_steering = False
                 self.b_throttle = False
                 self.b_brake = False
@@ -107,8 +114,9 @@ class JoyTransformerPetNode(Node):
                 b_throttle=self.b_throttle,
                 b_brake=self.b_brake,
                 b_gear=self.b_gears,
-                speed=interp(msg.axes[1], (0, 1), self.device_range_speed),
-                steering=interp(msg.axes[3], (-1, 1), self.device_range_steering)
+                speed=interp(msg.axes[1], self.range_signal, self.device_range_speed),
+                steering=interp(msg.axes[3] * (
+                    -1 if self.steering_sensor_inverted else 1), (-1, 1), self.device_range_steering)
             ))
             self.last_msg = msg
         except Exception as e:
