@@ -1,7 +1,11 @@
 import os
-from launch import LaunchDescription
-from launch_ros.actions import Node
+
 import yaml
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
+from launch_ros.actions import Node
 from yaml.loader import SafeLoader
 
 
@@ -35,7 +39,7 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True,
             remappings=[
-                ('/'+vehicle_parameters['id_vehicle'] + '/Joy_transformed_Pet',
+                ('/' + vehicle_parameters['id_vehicle'] + '/Joy_transformed_Pet',
                  '/' + vehicle_parameters['id_vehicle'] + '/TeleOperacion'),
             ]
         ),
@@ -99,6 +103,25 @@ def generate_launch_description():
             executable='pathplanning_basic',
             name='PathPlanning',
             parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([os.path.join(
+                get_package_share_directory('ros2_waypoints'), 'launch'),
+                '/waypoints_recorder.launch.py'])
+        ),
+        Node(
+            package='ros2_sensors',
+            executable='xsens',
+            name='GPS_UTM',
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='bluespace_ai_xsens_mti_driver',
+            executable='xsens_mti_node',
+            name='xsens_driver',
             output='screen',
             emulate_tty=True
         ),

@@ -11,6 +11,7 @@ steering:
 
 speed:
   range: [ 0, 50 ]
+  range_signal: [0, 1]
 
 brake:
   range: [ 0, 1 ]
