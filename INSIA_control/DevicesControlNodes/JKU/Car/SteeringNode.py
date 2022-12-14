@@ -7,7 +7,7 @@ from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, FloatStamp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Float64
 from yaml.loader import SafeLoader
 
 
@@ -35,7 +35,7 @@ class SteeringNode(Node):
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='Steer',
+        self.pub_target = self.create_publisher(msg_type=Float64, topic='Steer',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
@@ -48,13 +48,11 @@ class SteeringNode(Node):
         """
         self.controller = data
         if self.controller.enable:
-            self.pub_target.publish(FloatStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
+            self.pub_target.publish(Float64(
                 data=data.target
             ))
         else:
-            self.pub_target.publish(FloatStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
+            self.pub_target.publish(Float64(
                 data=0.
             ))
 
@@ -74,8 +72,7 @@ class SteeringNode(Node):
             self.shutdown_flag = True
             self.timer_heartbeat.cancel()
             # Poner target de motor a 0 por si acaso
-            self.pub_target.publish(FloatStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
+            self.pub_target.publish(Float64(
                 data=0.
             ))
         except Exception as e:

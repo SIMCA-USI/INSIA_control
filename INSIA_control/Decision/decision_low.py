@@ -5,7 +5,7 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision
+from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -49,6 +49,7 @@ class Decision(Node):
         self.master_switch = MasterSwitch(b_steering=True, b_throttle=True, b_brake=True, b_gear=True)
         self.tele_msg = None
         self.wp_msg = None
+        self.override = Override()
 
         self.wp_ttl, self.wp_mode = self.get_p(self.get_parameters_by_prefix('wp'))
         self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
@@ -64,6 +65,9 @@ class Decision(Node):
 
         self.create_subscription(msg_type=MasterSwitch, topic='MasterSwitch', callback=self.master_switch_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=Override, topic='Override',
+                                 callback=self.override_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=PetConduccion, topic='PathPlanning',
                                  callback=self.pathplanning_callback, qos_profile=HistoryPolicy.KEEP_LAST)
@@ -97,6 +101,9 @@ class Decision(Node):
         else:
             mode = 'wheels'
         return ttl, mode
+
+    def override_callback(self, data):
+        self.override = data
 
     def master_switch_callback(self, data: MasterSwitch):
         if self.master_switch.b_gear != data.b_gear or self.master_switch.b_brake != data.b_brake or \
@@ -154,7 +161,7 @@ class Decision(Node):
         """
         if msg is not None:
             t = msg.header.stamp.sec
-            if t != 0:
+            if t != 0 and ttl != 0:
                 t_alive = (time.time() - t)
                 if t_alive > ttl:
                     return False
@@ -181,6 +188,13 @@ class Decision(Node):
             self.logger.debug(f'Modo Waypoints')
             if self.is_valid(self.wp_msg, self.wp_ttl):
                 msg = self.wp_msg
+                if self.override.b_steering:
+                    self.logger.info(
+                        f'Overriding steering from {msg.steering:.2f} to {self.override.steering:.2f}')
+                    msg.steering = self.override.steering
+                if self.override.b_speed and msg.speed > 5:
+                    self.logger.info(f'Overriding speed from {msg.speed:.2f} to {self.override.speed:.2f}')
+                    msg.speed = self.override.speed
             else:
                 self.logger.debug(f'Msg wp is not valid, change to manual')
                 msg = self.manual()

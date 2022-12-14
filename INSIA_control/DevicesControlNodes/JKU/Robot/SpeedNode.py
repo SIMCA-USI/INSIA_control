@@ -37,6 +37,8 @@ class AccelNode(Node):
         self.controller = None
         self.add_on_set_parameters_callback(self.parameters_callback)
         self.telemetry = Telemetry()
+        self.min_limit = 0.5
+        self.pendiente = 3 / 4
 
         self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.controller_update,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -61,10 +63,19 @@ class AccelNode(Node):
         :param data: Controlador Float +-1
         :return: None
         """
-        if data.b_throttle:
-            self.pub_target.publish(Float64(data=(data.speed / 3.6) * 100))
+        if self.telemetry.speed >= 0:
+            max_value = self.telemetry.speed * (1 / self.pendiente) + self.min_limit
+            min_value = self.telemetry.speed * self.pendiente - self.min_limit
         else:
-            self.pub_target.publish(Float64(data=0.))
+            max_value = self.telemetry.speed * self.pendiente + self.min_limit
+            min_value = self.telemetry.speed * (1 / self.pendiente) - self.min_limit
+        self.logger.error(f'{max_value = :2f} {min_value = :2f} {self.telemetry.speed = :2f}')
+        if data.b_throttle:
+            out = min(max(data.speed, min_value), max_value)
+            self.pub_target.publish(Float64(data=(out / 3.6) * 100))
+        else:
+            out = min(max(0., min_value), max_value)
+            self.pub_target.publish(Float64(data=(out / 3.6) * 100))
 
     def publish_heartbeat(self):
         """

@@ -36,7 +36,7 @@ JKU_Robot:
         ttl: 1
       tele:
         mode: 'steering_wheel'
-        ttl: 1
+        ttl: 0
   PathPlanning:
     ros__parameters:
       log_level: 0

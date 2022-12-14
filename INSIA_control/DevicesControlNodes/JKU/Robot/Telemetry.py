@@ -47,7 +47,7 @@ class VehicleNode(Node):
         self.pub_telemetry.publish(self.telemetry)
 
     def speed_callback(self, data: Float64):
-        self.telemetry.speed = (data.data * 100) * 3.6
+        self.telemetry.speed = (data.data / 100) * 3.6
         self.pub_telemetry.publish(self.telemetry)
 
     def publish_heartbeat(self):

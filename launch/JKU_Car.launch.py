@@ -111,6 +111,11 @@ def generate_launch_description():
                 get_package_share_directory('ros2_waypoints'), 'launch'),
                 '/waypoints_recorder.launch.py'])
         ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([os.path.join(
+                get_package_share_directory('ntrip_client')),
+                '/ntrip_client_launch.py'])
+        ),
         Node(
             package='ros2_sensors',
             executable='xsens',
@@ -122,6 +127,13 @@ def generate_launch_description():
             package='bluespace_ai_xsens_mti_driver',
             executable='xsens_mti_node',
             name='xsens_driver',
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='waypoint_gui',
+            executable='waypoint_gui',
+            name='gui',
             output='screen',
             emulate_tty=True
         ),

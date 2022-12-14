@@ -7,11 +7,11 @@ steering:
   wheel_range: [ -50, 50 ]
   sensor_error: 0
   steering_wheel_conversion: 1 # Relacion 1º rueda x volante
-  inverted: True
+  inverted: False
 
 speed:
   range: [ -5 , 5 ]
-  range_signal: [0, 1]
+  range_signal: [-1, 1]
 
 brake:
   range: [ 0, 1 ]

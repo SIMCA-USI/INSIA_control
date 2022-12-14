@@ -9,6 +9,7 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from yaml.loader import SafeLoader
+from std_msgs.msg import Float64
 
 dict_gears = {
     0: 'U',
@@ -41,8 +42,14 @@ class VehicleNode(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
+        self.velocidad = 0.
+        self.volante = 0.
 
         self.create_subscription(msg_type=CarState, topic='carState', callback=self.publish_telemetry,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Float64, topic='Velocity', callback=self.publish_telemetry_fake_speed,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Float64, topic='Volante', callback=self.publish_telemetry_fake_steering,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
@@ -61,6 +68,33 @@ class VehicleNode(Node):
         )
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
+
+    def publish_telemetry_fake_speed(self, data: Float64):
+        """
+        Receive openpilot msg and translate it to telemetry msg
+        :param data: openpilot/CarState
+        :return: Publish on Telemetry
+        """
+        self.velocidad = data.data * 3.6
+        self.pub_telemetry.publish(Telemetry(
+            id_plataforma=self.id_plataforma,
+            speed=self.velocidad,  # TODO: Revisar si realmente esta en ms o kmh
+            steering=self.volante,
+        ))
+
+    def publish_telemetry_fake_steering(self, data: Float64):
+        """
+        Receive openpilot msg and translate it to telemetry msg
+        :param data: openpilot/CarState
+        :return: Publish on Telemetry
+        """
+        self.volante = (data.data - self.steering_sensor_error) * (
+            -1 if self.steering_sensor_inverted else 1)
+        self.pub_telemetry.publish(Telemetry(
+            id_plataforma=self.id_plataforma,
+            speed=self.velocidad,  # TODO: Revisar si realmente esta en ms o kmh
+            steering=self.volante,
+        ))
 
     def publish_telemetry(self, data: CarState):
         """

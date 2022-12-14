@@ -8,7 +8,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Float64
 from yaml.loader import SafeLoader
 
 
@@ -44,7 +44,7 @@ class AccelNode(Node):
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='Accel',
+        self.pub_target = self.create_publisher(msg_type=Float64, topic='Accel',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
@@ -58,13 +58,11 @@ class AccelNode(Node):
         self.controller = data
         self.logger.debug(f'{self.controller.enable =}')
         if self.controller.enable:
-            self.pub_target.publish(FloatStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
+            self.pub_target.publish(Float64(
                 data=4 * data.target
             ))
         else:
-            self.pub_target.publish(FloatStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
+            self.pub_target.publish(Float64(
                 data=-1.
             ))
 
@@ -84,8 +82,7 @@ class AccelNode(Node):
             self.shutdown_flag = True
             self.timer_heartbeat.cancel()
             # Full brake in case of finishing
-            self.pub_target.publish(FloatStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
+            self.pub_target.publish(Float64(
                 data=-1.
             ))
         except Exception as e:
