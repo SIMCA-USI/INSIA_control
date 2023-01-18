@@ -1,6 +1,9 @@
 import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from launch.actions import IncludeLaunchDescription
+from ament_index_python.packages import get_package_share_directory
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
@@ -142,5 +145,15 @@ def generate_launch_description():
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                get_package_share_directory('ros2_waypoints'),
+                '/waypoints_recorder.launch.py'])
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                get_package_share_directory('ros2_sensors'),
+                '/gps.launch.py'])
         ),
     ])

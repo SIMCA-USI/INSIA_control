@@ -5,10 +5,12 @@ from traceback import format_exc
 
 import rclpy
 import yaml
+from std_msgs.msg import Bool
 from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from rclpy import time as t_rclpy
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
@@ -50,6 +52,8 @@ class Decision(Node):
         self.tele_msg = None
         self.wp_msg = None
         self.override = Override()
+        # self.emergency_stop_msg = False
+        # self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
 
         self.wp_ttl, self.wp_mode = self.get_p(self.get_parameters_by_prefix('wp'))
         self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
@@ -62,6 +66,9 @@ class Decision(Node):
 
         self.pub_decision = self.create_publisher(msg_type=PetConduccion, topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+
+        # self.create_subscription(msg_type=Bool, topic='EmergencyStop', callback=self.emergency_stop_callback,
+        #                          qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=MasterSwitch, topic='MasterSwitch', callback=self.master_switch_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -104,6 +111,9 @@ class Decision(Node):
 
     def override_callback(self, data):
         self.override = data
+
+    def emergency_stop_callback(self, data:Bool):
+        self.emergency_stop_msg = data.data
 
     def master_switch_callback(self, data: MasterSwitch):
         if self.master_switch.b_gear != data.b_gear or self.master_switch.b_brake != data.b_brake or \
@@ -160,8 +170,8 @@ class Decision(Node):
         :rtype: bool
         """
         if msg is not None:
-            t = msg.header.stamp.sec
-            if t != 0 and ttl != 0:
+            t = msg.header.stamp.sec + msg.header.stamp.nanosec * 10**-9
+            if t != 0:
                 t_alive = (time.time() - t)
                 if t_alive > ttl:
                     return False
@@ -218,6 +228,8 @@ class Decision(Node):
         msg_final.b_throttle = msg_final.b_throttle and self.master_switch.b_throttle
         msg_final.b_steering = msg_final.b_steering and self.master_switch.b_steering
         msg_final.b_gear = msg_final.b_gear and self.master_switch.b_gear
+        #if self.emergency_stop_msg:
+        #    msg_final.speed = 0.
         self.pub_decision.publish(msg_final)
 
     def publish_heartbeat(self):
