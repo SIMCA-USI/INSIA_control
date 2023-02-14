@@ -65,6 +65,7 @@ class VehicleNode(Node):
             if data is not None:
                 setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
         msg.id_plataforma = self.id_plataforma
+        msg.header=Header(stamp=self.get_clock().now().to_msg())
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
         msg.brake = int(interp(self.position_brake, self.brake_range, (0, 100)))
         msg.steering = (msg.steering - self.steering_sensor_error)
