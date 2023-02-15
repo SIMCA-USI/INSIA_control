@@ -2,7 +2,7 @@ import os
 
 import rclpy
 import yaml
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Header
 from insia_msg.msg import CAN, Telemetry, StringStamped, EPOSStatus
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -72,7 +72,7 @@ class VehicleNode(Node):
         msg.steering_deg = msg.steering / self.steering_wheel_conversion
         if abs(msg.speed - self.gps_speed) > 3:
             self.logger.debug(f'Speed from hardware and gps doesn\'t match {msg.speed = } {self.gps_speed = }')
-        # msg.speed = self.gps_speed
+        msg.speed = self.gps_speed
         if self.steering_sensor_inverted:
             msg.steering *= -1
         return msg
