@@ -15,14 +15,11 @@ imiev:
       ip: 192.168.0.8
       port: 10001
       extend: False
-  io_card:
+  CANADAC_Acelerador:
     ros__parameters:
-      log_level: 0
-      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
-      connection_mode: tcp
-      ip: 192.168.0.7
-      port_dio: 4601
-      port_aio: 4600
+      log_level: 10
+      cobid: 5
+      can: CAN_7
   ImievDecoder:
     ros__parameters:
       log_level: 0

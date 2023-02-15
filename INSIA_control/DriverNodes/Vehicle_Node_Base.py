@@ -2,8 +2,8 @@ import os
 
 import rclpy
 import yaml
-from insia_msg.msg import CAN, Telemetry
-from insia_msg.msg import StringStamped
+from std_msgs.msg import Header
+from insia_msg.msg import CAN, Telemetry, StringStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -45,6 +45,8 @@ class VehicleNode(Node):
             data = self.vehicle_state.get(field)
             if data is not None:
                 setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
+
+        msg.header = Header(stamp=self.get_clock().now().to_msg())
         msg.id_plataforma = self.id_plataforma
         msg.brake = 0
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
