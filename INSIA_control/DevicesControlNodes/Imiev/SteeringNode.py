@@ -40,7 +40,7 @@ class SteeringNode(Node):
         self.pub_enable = self.create_publisher(msg_type=BoolStamped, topic='EPOS4_Volante/Enable',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='io_card/iodigital',
+        self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='EPOS4_Volante/Digital',
                                                          qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_target = self.create_publisher(msg_type=IntStamped, topic='EPOS4_Volante/TargetTorque',
@@ -57,7 +57,7 @@ class SteeringNode(Node):
         self.pub_enable_steering.publish(EPOSDigital(
             header=Header(stamp=self.get_clock().now().to_msg()),
             enable=self.controller.enable,
-            io_digital=7
+            io_digital=1
         ))
         if self.controller.enable:
             self.pub_target.publish(IntStamped(
@@ -89,7 +89,7 @@ class SteeringNode(Node):
             self.pub_enable_steering.publish(EPOSDigital(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=False,
-                io_digital=7
+                io_digital=1
             ))
             # Poner target de motor a 0 por si acaso
             self.pub_target.publish(IntStamped(
