@@ -6,7 +6,8 @@ speed:
 steering:
   # sensor_error: 0
   # conversion: 6500
-  range: [ -20000, 20000 ] # [-10000, 10000] # Tension salida
+  range: [-1000, 1000] # El valor se da en por mil
+  #range: [ -20000, 20000 ] # [-10000, 10000] # Tension salida
   wheel_range: [ -630, 630 ]
   sensor_error: 0
 

@@ -15,7 +15,7 @@ setup(
         ('share/conf/', glob('conf/*')),
         ('share/test/', glob('test/*'))
     ],
-    install_requires=['setuptools', 'PyYAML', 'numpy', 'networkx'],
+    install_requires=['setuptools==58.2.0', 'PyYAML', 'numpy', 'networkx'],
     zip_safe=True,
     maintainer='Alfredo Valle Barrio',
     maintainer_email='alfredo.valle@upm.es',
