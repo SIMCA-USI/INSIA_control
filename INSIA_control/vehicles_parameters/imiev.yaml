@@ -8,8 +8,10 @@ steering:
   # conversion: 6500
   range: [-1500, 1500] # El valor se da en por mil
   #range: [ -20000, 20000 ] # [-10000, 10000] # Tension salida
+  steering_wheel_conversion: 18.5
   wheel_range: [ -630, 630 ]
-  sensor_error: 0
+  sensor_error: -9.5
+  inverted: False
 
 brake:
   range: [ 0, -150000 ]
