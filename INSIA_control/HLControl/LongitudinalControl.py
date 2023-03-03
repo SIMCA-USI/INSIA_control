@@ -29,7 +29,6 @@ class PID_params:
                 self.wup = params['windup'].value
             except:
                 print(f'Windup por defecto')
-            else:
                 self.wup = default_wup
 
 
