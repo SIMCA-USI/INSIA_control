@@ -27,6 +27,7 @@ class VehicleNode(Node):
         self.shutdown_flag = False
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
         self.vehicle_state = {}
+        self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
@@ -49,6 +50,7 @@ class VehicleNode(Node):
         msg.header = Header(stamp=self.get_clock().now().to_msg())
         msg.id_plataforma = self.id_plataforma
         msg.brake = 0
+        msg.steering_deg = msg.steering / self.steering_wheel_conversion
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
         return msg
 
