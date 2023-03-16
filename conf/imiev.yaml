@@ -82,8 +82,9 @@ imiev:
   Decision:
     ros__parameters:
       log_level: 0
-      lidar_priority: 2 # Prioridad en la que está el lidar
-      subscribers:
-        0:
-          topic: /WP
-          ttl: 1 #secs
+      wp:
+        mode: 'wheels'
+        ttl: 1
+      tele:
+        mode: 'wheels'
+        ttl: 1
