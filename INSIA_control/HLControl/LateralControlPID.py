@@ -93,9 +93,10 @@ class LateralControlPIDNode(Node):
             self.logger.debug(f'Current steering {self.current_steering} {current_steering_norm}')
             # Calcular pids
             pid_params: dict = self.get_parameters_by_prefix('steering')
-            steering = -self.pid_steering.calcValue(target_value=target_steering_norm,
-                                                    current_value=current_steering_norm, kp=pid_params['kp'].value,
-                                                    ti=pid_params['ti'].value, td=pid_params['td'].value)
+            steering, _ = self.pid_steering.calcValue(target_value=target_steering_norm,
+                                                      current_value=current_steering_norm, kp=pid_params['kp'].value,
+                                                      ti=pid_params['ti'].value, td=pid_params['td'].value)
+            steering = -steering
             self.logger.debug(f'PID result {steering}')
             self.pub_steering.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
