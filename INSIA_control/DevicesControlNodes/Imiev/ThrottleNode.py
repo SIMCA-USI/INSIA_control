@@ -58,6 +58,12 @@ class ThrottleNode(Node):
                 channel=3,
                 voltage=interp(self.controller.target, (0, 1), self.device_range)
             ))
+        else:
+            self.pub_target.publish(IOAnalogue(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                channel=3,
+                voltage=interp(0, (0, 1), self.device_range)
+            ))
 
     def publish_heartbeat(self):
         """
