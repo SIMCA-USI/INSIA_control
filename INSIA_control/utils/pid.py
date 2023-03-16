@@ -30,11 +30,12 @@ class PIDF(object):
         self.error = 0
         self.n = 8.0
 
-    def calcValue(self, target_value, current_value, kp=None, td=None, ti=None, anti_wind_up_change=False,
+    def calcValue(self, target_value, current_value, kp=None, td=None, ti=None, wup=None, anti_wind_up_change=False,
                   use=(True, True, True)):
         kp = kp if kp is not None else self.kp
         td = td if td is not None else self.td
         ti = ti if ti is not None else self.ti
+        self._antiWindUp = self._pro_wind_up = wup if wup is not None else self._antiWindUp
         self.error = target_value - current_value
 
         if use[0] and self.kp != 0:
@@ -70,14 +71,8 @@ class PIDF(object):
 
         self.prev_value = current_value
 
-        if p + i + d < -1:
-            return -1
-        if p + i + d > 1:
-            return 1
-
         self.prev_target = target_value
-
-        return p + i + d
+        return max(min(p + i + d, 1), -1), (float(p), float(i), float(d))
 
     def antiwindup(self, i):
         if i > self._antiWindUp:

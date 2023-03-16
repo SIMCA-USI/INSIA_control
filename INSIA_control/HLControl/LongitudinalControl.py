@@ -12,7 +12,7 @@ from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
 
-from INSIA_control.utils.pid import PID
+from INSIA_control.utils.pid import PID, PIDF
 
 
 class PID_params:
@@ -45,12 +45,17 @@ class LongitudinalControlNode(Node):
                 self.th_params.ti = param.value
             elif param.name == 'throttle.td':
                 self.th_params.td = param.value
+            elif param.name == 'throttle.wup':
+                self.th_params.wup = param.value
             elif param.name == 'brake.kp':
                 self.br_params.kp = param.value
             elif param.name == 'brake.ti':
                 self.br_params.ti = param.value
             elif param.name == 'brake.td':
                 self.br_params.td = param.value
+            elif param.name == 'brake.wup':
+                self.br_params.wup = param.value
+                self.logger.error(f'Changed windup')
         return SetParametersResult(successful=True)
 
     def __init__(self):
@@ -73,8 +78,8 @@ class LongitudinalControlNode(Node):
         self.br_params = PID_params(self.get_parameters_by_prefix('brake'), default_wup=0.2)
         self.pid_throttle = PID(kp=self.th_params.kp, ti=self.th_params.ti, td=self.th_params.td,
                                 anti_wind_up=self.th_params.wup)
-        self.pid_brake = PID(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td,
-                             anti_wind_up=self.br_params.wup)
+        self.pid_brake = PIDF(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td,
+                              anti_wind_up=self.br_params.wup)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
@@ -120,7 +125,8 @@ class LongitudinalControlNode(Node):
         if self.control_msg.b_brake:
             brake, br_pid_values = self.pid_brake.calcValue(target_value=target_speed_norm,
                                                             current_value=current_speed_norm, kp=self.br_params.kp,
-                                                            ti=self.br_params.ti, td=self.br_params.td)
+                                                            ti=self.br_params.ti, td=self.br_params.td,
+                                                            wup=self.br_params.wup)
             self.pub_pid_values_br.publish(Vector3(x=br_pid_values[0], y=br_pid_values[1], z=br_pid_values[2]))
         else:
             self.pid_brake.reset_values()
