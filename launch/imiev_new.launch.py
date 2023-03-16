@@ -81,7 +81,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='longitudinal_control',
+            executable='longitudinal_control_simple',
             name='Longitudinal_Control',
             parameters=[parameters_file_path],
             output='screen',
