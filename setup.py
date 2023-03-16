@@ -15,7 +15,7 @@ setup(
         ('share/conf/', glob('conf/*')),
         ('share/test/', glob('test/*'))
     ],
-    install_requires=['setuptools==58.2.0', 'PyYAML', 'numpy', 'networkx'],
+    install_requires=['setuptools==58.2.0', 'PyYAML', 'numpy', 'networkx', 'simple_pid'],
     zip_safe=True,
     maintainer='Alfredo Valle Barrio',
     maintainer_email='alfredo.valle@upm.es',
@@ -64,6 +64,7 @@ setup(
 
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'longitudinal_control_PID = INSIA_control.HLControl.LongitudinalControlPID:main',
+            'longitudinal_control_simple = INSIA_control.HLControl.LongitudinalControlSimple:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
             'lateral_control = INSIA_control.HLControl.LateralControl:main',
             'gears_control = INSIA_control.HLControl.HLGearsControl:main',
@@ -72,6 +73,7 @@ setup(
             'decision_low = INSIA_control.Decision.decision_low:main',
 
             'pathplanning_basic = INSIA_control.PathPlanning.PathPlanning_Basic:main',
+
         ],
     },
 )
