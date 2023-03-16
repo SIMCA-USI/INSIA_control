@@ -6,7 +6,7 @@ from traceback import format_exc
 import rclpy
 import yaml
 from std_msgs.msg import Bool
-from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override
+from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override, BoolStamped
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -68,7 +68,7 @@ class Decision(Node):
         self.pub_decision = self.create_publisher(msg_type=PetConduccion, topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=Bool, topic='EnmergencyStop', callback=self.emergency_stop_callback,
+        self.create_subscription(msg_type=BoolStamped, topic='EnmergencyStop', callback=self.emergency_stop_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=MasterSwitch, topic='MasterSwitch', callback=self.master_switch_callback,
@@ -116,7 +116,7 @@ class Decision(Node):
     def override_callback(self, data):
         self.override = data
 
-    def emergency_stop_callback(self, data:Bool):
+    def emergency_stop_callback(self, data:BoolStamped):
         self.emergency_stop_msg = data.data
 
     def master_switch_callback(self, data: MasterSwitch):
