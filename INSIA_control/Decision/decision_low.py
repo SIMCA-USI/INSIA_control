@@ -68,7 +68,7 @@ class Decision(Node):
         self.pub_decision = self.create_publisher(msg_type=PetConduccion, topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic='EnmergencyStop', callback=self.emergency_stop_callback,
+        self.create_subscription(msg_type=BoolStamped, topic='EmergencyStop', callback=self.emergency_stop_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=MasterSwitch, topic='MasterSwitch', callback=self.master_switch_callback,

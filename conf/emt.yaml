@@ -84,8 +84,8 @@ emt:
         windup: 0.3
       brake:
         kp: 6.
-        ti: 3.
-        td: 0.
+        ti: 0.5
+        td: 1.5
         windup: 0.65
   Lateral_Control:
     ros__parameters:
