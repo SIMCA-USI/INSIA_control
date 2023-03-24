@@ -66,7 +66,6 @@ class LongitudinalController(Node):
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
-
         self.shutdown_flag = False
 
         my_params = [
@@ -100,7 +99,7 @@ class LongitudinalController(Node):
             ))
         ]
         # Registrar los parámetros en el nodo
-        self.declare_parameters('', my_params)
+        # self.declare_parameters('', my_params)
         self.th_params = PID_params(self.get_parameters_by_prefix('throttle'))
         self.br_params = PID_params(self.get_parameters_by_prefix('brake'))
         self.speed_range = vehicle_parameters['speed']['range']
@@ -151,21 +150,30 @@ class LongitudinalController(Node):
         if self.target is not None:
             target_speed = interp(self.target.speed, self.speed_range, [0, 1])
             error = target_speed - telemetry_speed
-            accel_signal: float = self.accel_pid(-error)
-            brake_signal = self.brake_pid(error)
+            accel_signal = 0
+            brake_signal = 0
+            if self.target.b_throttle and msg.brake < 10:
+                accel_signal: float = self.accel_pid(-error)
+                th_pid_values = self.accel_pid.components
+                self.pub_pid_values_th.publish(
+                    Vector3(x=float(th_pid_values[0]), y=float(th_pid_values[1]), z=float(th_pid_values[2])))
+            else:
+                self.accel_pid.reset()
+            if self.target.b_brake:
+                brake_signal = self.brake_pid(error)
+                br_pid_values = self.brake_pid.components
+                self.pub_pid_values_br.publish(
+                    Vector3(x=float(br_pid_values[0]), y=float(br_pid_values[1]), z=float(br_pid_values[2])))
+            else:
+                self.brake_pid.reset()
             if accel_signal > brake_signal:
                 # Publicar la señal de control en el topic /throttle
                 brake_signal = 0
             else:
                 # Publicar la señal de control en el topic /brake
                 accel_signal = 0
-
-            th_pid_values = self.accel_pid.components
-            self.pub_pid_values_th.publish(
-                Vector3(x=float(th_pid_values[0]), y=float(th_pid_values[1]), z=float(th_pid_values[2])))
-            br_pid_values = self.brake_pid.components
-            self.pub_pid_values_br.publish(
-                Vector3(x=float(br_pid_values[0]), y=float(br_pid_values[1]), z=float(br_pid_values[2])))
+            if self.target.speed == 0 and msg.speed < 1:
+                brake_signal = 0.60
             self.throttle_pub.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=self.target.b_throttle,
