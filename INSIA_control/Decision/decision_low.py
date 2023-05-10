@@ -6,7 +6,7 @@ from traceback import format_exc
 import rclpy
 import yaml
 from std_msgs.msg import Bool
-from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override, BoolStamped
+from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override, BoolStamped, Telemetry
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -53,6 +53,7 @@ class Decision(Node):
         self.wp_msg = None
         self.emergency_stop_msg = False
         self.override = Override()
+        self.telemetry = Telemetry()
         # self.emergency_stop_msg = False
         # self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
 
@@ -85,9 +86,14 @@ class Decision(Node):
 
         self.create_subscription(msg_type=ModoMision, topic='Mode',
                                  callback=self.modo_mision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.callback_telemetry,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_control = self.create_timer(1 / 10, self.decision)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+
+    def callback_telemetry(self, data: Telemetry):
+        self.telemetry = data
 
     def get_p(self, d_params: dict):
         """
@@ -116,7 +122,7 @@ class Decision(Node):
     def override_callback(self, data):
         self.override = data
 
-    def emergency_stop_callback(self, data:BoolStamped):
+    def emergency_stop_callback(self, data: BoolStamped):
         self.emergency_stop_msg = data.data
 
     def master_switch_callback(self, data: MasterSwitch):
@@ -174,7 +180,7 @@ class Decision(Node):
         :rtype: bool
         """
         if msg is not None:
-            t = msg.header.stamp.sec + msg.header.stamp.nanosec * 10**-9
+            t = msg.header.stamp.sec + msg.header.stamp.nanosec * 10 ** -9
             if t != 0:
                 t_alive = (time.time() - t)
                 if t_alive > ttl:
