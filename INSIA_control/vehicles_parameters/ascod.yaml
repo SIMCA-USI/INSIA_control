@@ -1,0 +1,22 @@
+id_vehicle: ascod
+
+speed:
+  range: [ 0, 40 ]
+
+steering:
+  #Salida de la consigna de volante invertida en SteeringNode
+  # sensor_error: 0
+  # conversion: 6500
+  range: [ -80000, 80000 ] # Posicion [-590, 590]
+  wheel_range: [ -20, 20 ]
+  # range: [ -1100000, 1100000 ] # Posicion [-590, 590]
+  # wheel_range: [ -590, 590 ]
+  sensor_error: -18
+  steering_wheel_conversion: 23.6 # Relacion 1º rueda x volante
+  inverted: True
+
+brake:
+  range: [ 0, 1200 ] # 400000
+
+throttle:
+  range: [ 0.45, 4.1 ] #V

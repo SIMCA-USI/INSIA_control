@@ -1,0 +1,113 @@
+ascod:
+  CAN_6_Vehicle:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.6
+      port: 10001
+      extend: True
+  CAN_7_EPOS:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.7
+      port: 10001
+      extend: False
+  CAN_8_Gears:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 192.168.0.8
+      port: 10001
+      extend: False
+  VehicleDecoder:
+    ros__parameters:
+      log_level: 0
+      dictionary: ascod_dictionary.yaml
+  MCD60_Volante:
+    ros__parameters:
+      log_level: 0
+      cobid: 3
+      driver_type: epos
+      mode: PPM #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
+      auto_fault_reset: True
+      speed: 2000
+      dictionary: epos_dictionary.yaml
+      can: CAN_7_EPOS
+      digital_outputs: 4
+  EPOS4_Freno:
+    ros__parameters:
+      log_level: 0
+      cobid: 1
+      driver_type: epos4
+      mode: PPM #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
+      auto_fault_reset: True
+      speed: 5000
+      dictionary: epos_dictionary.yaml
+      can: CAN_7_EPOS
+      digital_outputs: 2
+      factor: 1
+  CANADAC_Acelerador:
+    ros__parameters:
+      log_level: 10
+      cobid: 5
+      can: CAN_7_EPOS
+  Arduino_Gears:
+    ros__parameters:
+      log_level: 0
+      cobid: 8
+      can: CAN_8_Gears
+      dictionary: ascod_gears_dictionary.yaml
+  Brake:
+    ros__parameters:
+      log_level: 0
+  Steering:
+    ros__parameters:
+      log_level: 0
+  Throttle:
+    ros__parameters:
+      log_level: 0
+  Gears:
+    ros__parameters:
+      log_level: 0
+      dictionary: ascod_gears_dictionary.yaml
+  Longitudinal_Control:
+    ros__parameters:
+      log_level: 0
+      throttle:
+        kp: 1.5 # 3.5
+        ti: 0.7 # 3
+        td: 0. # 0
+        windup: 0.3
+      brake:
+        kp: 3.
+        ti: 0.5
+        td: 0
+        windup: 0.65
+      static_brake: 0.9
+  Lateral_Control:
+    ros__parameters:
+      log_level: 0
+      # steering_range: [ -630, 630 ]
+      steering:
+        kp: 10
+        ti: 8
+        td: 0.03
+  Gears_Control:
+    ros__parameters:
+      log_level: 0
+  Decision:
+    ros__parameters:
+      log_level: 0
+      wp:
+        mode: 'steering_wheel'
+        ttl: 1
+      tele:
+        mode: 'steering_wheel'
+        ttl: 1
+  PathPlanning:
+    ros__parameters:
+      log_level: 0

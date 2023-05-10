@@ -15,7 +15,7 @@ setup(
         ('share/conf/', glob('conf/*')),
         ('share/test/', glob('test/*'))
     ],
-    install_requires=['setuptools==58.2.0', 'PyYAML', 'numpy', 'networkx', 'simple_pid'],
+    install_requires=['setuptools', 'PyYAML', 'numpy', 'networkx', 'simple_pid'],
     zip_safe=True,
     maintainer='Alfredo Valle Barrio',
     maintainer_email='alfredo.valle@upm.es',
@@ -29,6 +29,7 @@ setup(
             'faulhaber = INSIA_control.DriverNodes.FAULHABER_Node:main',
             'gears_arduino = INSIA_control.DriverNodes.Gears_Arduino_Node:main',
             'canadac = INSIA_control.DriverNodes.CANADAC_Node:main',
+            'ascod_placa_azul = INSIA_control.DriverNodes.ASCOD_Placa_Azul:main',
             'vehicledecoder_base = INSIA_control.DriverNodes.Vehicle_Node_Base:main',
             'io_card = INSIA_control.DriverNodes.IO_Card:main',
             'test_can = test.test_CAN_node:main',
@@ -50,6 +51,12 @@ setup(
             'steering_emt = INSIA_control.DevicesControlNodes.EMT.SteeringNode:main',
             'gears_emt = INSIA_control.DevicesControlNodes.EMT.GearsNode:main',
             'telemetry_emt = INSIA_control.DevicesControlNodes.EMT.Telemetry_Basic:main',
+
+            'brake_ascod = INSIA_control.DevicesControlNodes.ASCOD.BrakeNode:main',
+            'throttle_ascod = INSIA_control.DevicesControlNodes.ASCOD.ThrottleNode:main',
+            'steering_ascod = INSIA_control.DevicesControlNodes.ASCOD.SteeringNode:main',
+            'gears_ascod = INSIA_control.DevicesControlNodes.ASCOD.GearsNode:main',
+            'telemetry_ascod = INSIA_control.DevicesControlNodes.ASCOD.Telemetry_Basic:main',
 
             'joy_transformer = INSIA_control.DevicesControlNodes.JKU.JoyTransformerNode:main',
             'joy_transformer_pet = INSIA_control.DevicesControlNodes.JKU.JoyTransformerPetNode:main',

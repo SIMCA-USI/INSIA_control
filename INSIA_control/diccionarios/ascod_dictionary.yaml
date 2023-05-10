@@ -1,0 +1,33 @@
+0x305: # Posicion de giro de volante del sensor de giro de volante
+  0xFFFF:
+    0xFF:
+      name: steering
+      inicio: 0
+      longitud: 16
+      factor: 0.13
+      offset: 0
+      signed: True
+      type: motorola #motorola/big_endian    intel/little_endian
+      can_open: False
+0x98FEF103:
+  0xFFFF:
+    0xFF:
+      name: speed
+      inicio: 1
+      longitud: 16
+      factor: 0.0039
+      offset: 0
+      signed: False
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: False
+0x8CF00400:
+  0xFFFF:
+    0xFF:
+      name: rpm
+      inicio: 3
+      longitud: 16
+      factor: 0.125
+      offset: 0
+      signed: False
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: False
