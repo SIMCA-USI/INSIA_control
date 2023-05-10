@@ -173,7 +173,7 @@ class LongitudinalController(Node):
                 # Publicar la señal de control en el topic /brake
                 accel_signal = 0
             if self.target.speed == 0 and msg.speed < 1:
-                brake_signal = 0.60
+                brake_signal = max(min(self.get_parameter('static_brake').value, 1), 0)
             self.throttle_pub.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=self.target.b_throttle,
