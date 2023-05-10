@@ -212,6 +212,9 @@ class Decision(Node):
                     self.logger.info(
                         f'Overriding steering from {msg.steering:.2f} to {self.override.steering:.2f}')
                     msg.steering = self.override.steering
+                else:
+                    if self.telemetry.speed < 2:  # Limited steering stopped
+                        msg.steering = 0.
                 if self.override.b_speed and msg.speed > 5:
                     self.logger.info(f'Overriding speed from {msg.speed:.2f} to {self.override.speed:.2f}')
                     msg.speed = self.override.speed
