@@ -87,7 +87,7 @@ emt:
         ti: 0.5
         td: 1.5
         windup: 0.65
-      static_brake: 0.6
+      static_brake: 0.75
   Lateral_Control:
     ros__parameters:
       log_level: 0
