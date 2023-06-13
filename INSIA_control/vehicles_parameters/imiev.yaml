@@ -12,6 +12,7 @@ steering:
   wheel_range: [ -630, 630 ]
   sensor_error: -9.5
   inverted: False
+  actuator_inverted: False
 
 brake:
   range: [ 0, -150000 ]

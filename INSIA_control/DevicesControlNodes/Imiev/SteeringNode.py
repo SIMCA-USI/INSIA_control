@@ -27,6 +27,7 @@ class SteeringNode(Node):
         self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
         self.device_range = params['range']
+        self.actuator_inverted = params['actuator_inverted']
         self.telemetry = Telemetry()
         self.controller = None
 
@@ -60,9 +61,10 @@ class SteeringNode(Node):
             io_digital=1
         ))
         if self.controller.enable:
+            result = int(interp(self.controller.target, (-1, 1), self.device_range))
             self.pub_target.publish(IntStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                data=int(interp(self.controller.target, (-1, 1), self.device_range))
+                data=-result if self.actuator_inverted else result
             ))
 
     def publish_heartbeat(self):
