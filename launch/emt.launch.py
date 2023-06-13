@@ -154,6 +154,6 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 get_package_share_directory('ros2_sensors'),
-                '/gps.launch.py'])
+                '/gps_ip.launch.py'])
         ),
     ])

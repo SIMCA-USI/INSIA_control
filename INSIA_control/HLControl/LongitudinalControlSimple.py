@@ -152,7 +152,7 @@ class LongitudinalController(Node):
             error = target_speed - telemetry_speed
             accel_signal = 0
             brake_signal = 0
-            if self.target.b_throttle and msg.brake < 10:
+            if self.target.b_throttle and msg.brake < 25:
                 accel_signal: float = self.accel_pid(-error)
                 th_pid_values = self.accel_pid.components
                 self.pub_pid_values_th.publish(
@@ -166,6 +166,10 @@ class LongitudinalController(Node):
                     Vector3(x=float(br_pid_values[0]), y=float(br_pid_values[1]), z=float(br_pid_values[2])))
             else:
                 self.brake_pid.reset()
+            # if msg.speed - self.target.speed < 2 and self.target.speed < 5:
+            #     brake_signal = 0
+            # else:
+            #     accel_signal = 0
             if accel_signal > brake_signal:
                 # Publicar la señal de control en el topic /throttle
                 brake_signal = 0

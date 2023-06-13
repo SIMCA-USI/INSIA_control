@@ -149,7 +149,7 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 get_package_share_directory('ros2_waypoints'),
-                '/waypoints_recorder.launch.py'])
+                '/launch/waypoints_recorder.launch.py'])
         ),
         # IncludeLaunchDescription(
         #     PythonLaunchDescriptionSource([
