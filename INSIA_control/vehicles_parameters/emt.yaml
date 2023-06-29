@@ -12,7 +12,8 @@ steering:
   # wheel_range: [ -590, 590 ]
   sensor_error: -202
   steering_wheel_conversion: 23.6 # Relacion 1º rueda x volante
-  inverted: True
+  inverted: False
+  actuator_inverted: True
 
 brake:
   range: [ 0, 450000 ] # 400000

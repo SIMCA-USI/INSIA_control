@@ -89,7 +89,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='lateral_control_PID',
+            executable='lateral_control_PID_simple',
             name='Lateral_Control',
             parameters=[parameters_file_path],
             output='screen',

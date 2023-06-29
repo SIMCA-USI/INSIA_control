@@ -60,14 +60,16 @@ imiev:
     ros__parameters:
       log_level: 0
       throttle:
-        kp: 3
-        ti: 2
-        td: 0
+        kp: 6.
+        ti: 0.2
+        td: 0.
+        windup: 0.3
       brake:
-        kp: 0.5
-        ti: 4
-        td: 0
-      static_brake: 0.9
+        kp: 2.
+        ti: 3.
+        td: 0.
+        windup: 0.65
+      static_brake: 0.75
   Lateral_Control:
     ros__parameters:
       log_level: 0
@@ -77,9 +79,10 @@ imiev:
         #        ti: 8
         #        td: 0.03
         # Pista
-        kp: 0.3
-        ti: 0.2
+        kp: 2
+        ti: 0.7
         td: 0.1
+        windup: 0.3
   Decision:
     ros__parameters:
       log_level: 0

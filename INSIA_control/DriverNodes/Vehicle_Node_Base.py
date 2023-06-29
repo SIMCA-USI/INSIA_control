@@ -45,7 +45,10 @@ class VehicleNode(Node):
         for field in fields.keys():
             data = self.vehicle_state.get(field)
             if data is not None:
-                setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
+                try:
+                    setattr(msg, field, convert_types(ros2_type=fields.get(field), data=data))
+                except Exception as e:
+                    self.logger.error(f'Error setting atributes {e}')
 
         msg.header = Header(stamp=self.get_clock().now().to_msg())
         msg.id_plataforma = self.id_plataforma

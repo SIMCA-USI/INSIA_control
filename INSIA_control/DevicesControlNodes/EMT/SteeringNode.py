@@ -28,6 +28,7 @@ class SteeringNode(Node):
         self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
         self.device_range = params['range']
+        self.actuator_inverted = params['actuator_inverted']
         if not self.has_parameter('delay_turn'):
             self.declare_parameter('delay_turn', 2.)
 
@@ -99,9 +100,10 @@ class SteeringNode(Node):
         ))
         # if self.controller.enable and self.telemetry.brake < 50 and not self.lock_turn:
         if self.controller.enable and not self.lock_turn:
+            result = int(interp(self.controller.target, (-1, 1), self.device_range))
             self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                position=int(interp(self.controller.target, (-1, 1), self.device_range)),
+                position=-result if self.actuator_inverted else result,
                 mode=EPOSConsigna.RELATIVO
             ))
 
