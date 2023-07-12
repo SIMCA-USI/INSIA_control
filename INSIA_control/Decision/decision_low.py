@@ -181,7 +181,7 @@ class Decision(Node):
         """
         if msg is not None:
             t = msg.header.stamp.sec + msg.header.stamp.nanosec * 10 ** -9
-            if t != 0:
+            if t != 0 and ttl != 0:
                 t_alive = (time.time() - t)
                 if t_alive > ttl:
                     return False
