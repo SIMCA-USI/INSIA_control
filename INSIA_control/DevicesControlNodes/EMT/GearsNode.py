@@ -54,7 +54,7 @@ class GearsNode(Node):
                     if (self.current_gear in ['D'] and controlador.target in ['R']) \
                             or (self.current_gear in ['R'] and controlador.target in ['D']):
                         target_gear = 'N'
-                    if self.telemetry.speed == 0 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'])):
+                    if self.telemetry.speed <= 5 or (self.telemetry.speed != 0 and (target_gear in ['N', 'M'])):
                         self.current_gear = target_gear
                         self.pub_gear.publish(
                             StringStamped(
