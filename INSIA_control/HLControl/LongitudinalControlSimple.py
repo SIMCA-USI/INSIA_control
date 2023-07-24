@@ -41,21 +41,32 @@ class LongitudinalController(Node):
                 self.set_accel_tunnings()
             elif param.name in ['brake.kp', 'brake.ti', 'brake.td']:
                 if param.name == 'brake.kp':
+                    self.logger.error(f'Updated kp brake to {param.value}')
                     self.br_params.kp = param.value
                 elif param.name == 'brake.ti':
+                    self.logger.error(f'Updated ti brake to {param.value}')
                     self.br_params.ti = param.value
                 elif param.name == 'brake.td':
+                    self.logger.error(f'Updated td brake to {param.value}')
                     self.br_params.td = param.value
                 self.set_brake_tunnings()
         return SetParametersResult(successful=True)
 
-    def set_accel_tunnings(self):
+    def set_accel_tunnings(self, tunnings=None):
         self.logger.debug(f'Accel tunnings modified: {self.th_params =}')
-        self.accel_pid.tunings = (self.th_params.kp, self.th_params.ti, self.th_params.td)
+        if tunnings is None:
+            self.accel_pid.tunings = (self.th_params.kp, self.th_params.ti, self.th_params.td)
+        else:
+            self.accel_pid.tunings = tunnings
+        self.logger.error(f'Accel tunnings {self.brake_pid.tunings}')
 
-    def set_brake_tunnings(self):
+    def set_brake_tunnings(self, tunnings = None):
         self.logger.debug(f'Brake tunnings modified: {self.br_params =}')
-        self.brake_pid.tunings = (self.br_params.kp, self.br_params.ti, self.br_params.td)
+        if tunnings is None:
+            self.brake_pid.tunings = (self.br_params.kp, self.br_params.ti, self.br_params.td)
+        else:
+            self.brake_pid.tunings = tunnings
+        self.logger.error(f'Brake tunnings {self.brake_pid.tunings}')
 
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
@@ -145,6 +156,11 @@ class LongitudinalController(Node):
     def telemetry_callback(self, msg: Telemetry):
         # Almacenar el valor de telemetría
         telemetry_speed = interp(msg.speed, self.speed_range, [0, 1])
+        if msg.speed < 10:
+            self.set_brake_tunnings(
+                tunnings=(self.br_params.kp, interp(msg.speed, [0, 10], [5, self.br_params.ti]), self.br_params.td))
+        else:
+            self.set_brake_tunnings()
 
         # Calcular la señal de control del PID
         if self.target is not None:
@@ -152,6 +168,10 @@ class LongitudinalController(Node):
             error = target_speed - telemetry_speed
             accel_signal = 0
             brake_signal = 0
+            # if 0 < self.target.speed - msg.speed < 2 and msg.speed > 8:
+            #     brake_signal = 0
+            #     accel_signal = 0
+            # else:
             if self.target.b_throttle and msg.brake < 25:
                 accel_signal: float = self.accel_pid(-error)
                 th_pid_values = self.accel_pid.components
@@ -170,12 +190,11 @@ class LongitudinalController(Node):
             #     brake_signal = 0
             # else:
             #     accel_signal = 0
-            if accel_signal > brake_signal:
-                # Publicar la señal de control en el topic /throttle
-                brake_signal = 0
-            else:
-                # Publicar la señal de control en el topic /brake
+            # if accel_signal > brake_signal:
+            if brake_signal > 0.1:
                 accel_signal = 0
+            else:
+                brake_signal = 0
             if self.target.speed == 0 and msg.speed < 1:
                 brake_signal = max(min(self.get_parameter('static_brake').value, 1), 0)
             self.throttle_pub.publish(ControladorFloat(
