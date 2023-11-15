@@ -60,7 +60,7 @@ imiev:
     ros__parameters:
       log_level: 0
       throttle:
-        kp: 6.
+        kp: 3.
         ti: 0.2
         td: 0.
         windup: 0.3
@@ -79,10 +79,10 @@ imiev:
         #        ti: 8
         #        td: 0.03
         # Pista
-        kp: 2
-        ti: 0.7
-        td: 0.1
-        windup: 0.3
+        kp: 1.0
+        ti: 1.0
+        td: 0.0
+        windup: 0.0
   Decision:
     ros__parameters:
       log_level: 0
