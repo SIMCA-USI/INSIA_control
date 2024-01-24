@@ -98,7 +98,7 @@ class LateralControlPIDNode(Node):
             self.logger.debug(f'Current steering {self.current_steering} {current_steering_norm}')
             # Calcular pids
             error = target_steering_norm - current_steering_norm
-            steering_signal = self.pid_steering(error)
+            steering_signal = self.pid_steering(-error)
             steering_pid_components = self.pid_steering.components
             self.pub_pid_values.publish(
                 Vector3(x=float(steering_pid_components[0]), y=float(steering_pid_components[1]),

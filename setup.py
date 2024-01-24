@@ -38,6 +38,7 @@ setup(
             'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
             'throttle_imiev_new = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode_new:main',
             'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
+            'telemetry_imiev = INSIA_control.DevicesControlNodes.Imiev.TelemetryNode:main',
 
             'brake_lagarto = INSIA_control.DevicesControlNodes.Lagarto.BrakeNode:main',
             'throttle_lagarto = INSIA_control.DevicesControlNodes.Lagarto.ThrottleNode:main',

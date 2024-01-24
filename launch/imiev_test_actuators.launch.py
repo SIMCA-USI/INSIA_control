@@ -79,36 +79,4 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        Node(
-            package='INSIA_control',
-            executable='longitudinal_control_simple',
-            name='Longitudinal_Control',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='lateral_control_PID_simple',
-            name='Lateral_Control',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='decision_low',
-            name='Decision',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='pathplanning_basic',
-            name='PathPlanning',
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
     ])
