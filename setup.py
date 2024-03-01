@@ -73,6 +73,7 @@ setup(
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'longitudinal_control_PID = INSIA_control.HLControl.LongitudinalControlPID:main',
             'longitudinal_control_simple = INSIA_control.HLControl.LongitudinalControlSimple:main',
+            'longitudinal_control_IA = INSIA_control.HLControl.LongitudinalControlIA:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
             'lateral_control_PID_simple = INSIA_control.HLControl.LateralControlPIDSimple:main',
             'lateral_control = INSIA_control.HLControl.LateralControl:main',
