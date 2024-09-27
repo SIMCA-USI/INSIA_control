@@ -1,9 +1,9 @@
 from insia_msg.msg import CAN
 from std_msgs.msg import Header
 from rclpy.node import Node
-
+import numpy as np
 import struct
-
+import can
 
 # def make_can_frame(node, index, sub_index=0, data=0, write=True):
 #     frame = bytearray(2)
@@ -23,6 +23,8 @@ import struct
 #
 #     return payload
 
+import traceback
+
 
 def decoder_can(msg: bytearray, extended=False):
     try:
@@ -37,6 +39,53 @@ def decoder_can(msg: bytearray, extended=False):
         print(f'Error decoding CAN {msg}')
         data_raw, cobid, specifier, index, sub_index = 0, 0, 0, 0, 0
     return msg, data_raw, cobid, specifier, index, sub_index
+
+
+def decoder_libreria(msg: can.Message):
+    try:
+        data_raw = np.zeros(13, dtype=np.uint8)
+        cobid = msg.arbitration_id
+        specifier = 0
+        index = 0
+        sub_index = 0
+        data = np.zeros(4, dtype=np.uint8)
+
+        print(f'list data {list(msg.data)}')
+        print(f'len msg {len(msg)}')
+        print(f'cobid {cobid}')
+
+        if len(msg.data) == 8:
+            specifier, index, sub_index = struct.unpack('<BHB4x', msg.data)
+            print(f'{specifier = } {index = } {sub_index = }')
+            data = msg.data[4:]
+            if msg.is_extended_id:
+                cobid_values = [(cobid >> 24) & 0xFF, (cobid >> 16) & 0xFF, (cobid >> 8) & 0xFF, cobid & 0xFF]
+                print(f'cobid extended {cobid_values}')
+                data_raw[:4] = cobid_values
+                data_raw[4:12] = list(msg.data)
+                data_raw[12] = 0
+            else:
+                cobid_values = [(cobid >> 8) & 0xFF, cobid & 0xFF]
+                print(f'cobid normal {cobid_values}')
+                data_raw[:2] = 0
+                data_raw[2:4] = cobid_values
+                data_raw[4:12] = list(msg.data)
+                data_raw[12] = 0
+        else:
+            if msg.is_extended_id:
+                data_raw[:4] = msg.arbitration_id
+            else:
+                data_raw[:2] = 0
+                data_raw[2:4] = msg.arbitration_id
+            data_raw[4:len(msg.data)+4] = msg.data
+
+    except Exception as e:
+        pass
+        # print(f'Error decoding CAN {msg} {e} {len(msg)}')
+        # print(f'{traceback.format_exc()}')
+        # msg, data_raw, cobid, specifier, index, sub_index, data = 0, 0, 0, 0, 0, 0, 0
+
+    return msg, data_raw, cobid, specifier, index, sub_index, data
 
 
 def make_can_frame(node, index, sub_index=0, data=0, write=True) -> bytearray:

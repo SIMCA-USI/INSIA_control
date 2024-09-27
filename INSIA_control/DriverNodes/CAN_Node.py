@@ -87,7 +87,7 @@ class CanNode(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
         msg_status = CANEthStatus(
-            connected=self.connection.connected,
+            connected=self.is_connected(),
             queue_lenth=len(self.queue.queue),
             frequency=self.current_frec,
         )
