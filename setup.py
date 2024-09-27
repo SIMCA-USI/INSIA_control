@@ -46,6 +46,11 @@ setup(
             'gears_lagarto = INSIA_control.DevicesControlNodes.Lagarto.GearsNode:main',
             'telemetry_lagarto = INSIA_control.DevicesControlNodes.Lagarto.Telemetry_Basic:main',
 
+            'telemetry_maqueta = INSIA_control.DevicesControlNodes.Maqueta.TelemetryNode:main',
+            'throttle_maqueta = INSIA_control.DevicesControlNodes.Maqueta.ThrottleNode:main',
+            'steering_maqueta = INSIA_control.DevicesControlNodes.Maqueta.SteeringNode:main',
+            'brake_maqueta = INSIA_control.DevicesControlNodes.Maqueta.BrakeNode:main',
+
             'dumpbox_lagarto = INSIA_control.DevicesControlNodes.Lagarto.DumpBoxNode:main',
             'brake_emt = INSIA_control.DevicesControlNodes.EMT.BrakeNode:main',
             'throttle_emt = INSIA_control.DevicesControlNodes.EMT.ThrottleNode:main',
@@ -81,8 +86,11 @@ setup(
 
             'decision = INSIA_control.Decision.Decision_Node:main',
             'decision_low = INSIA_control.Decision.decision_low:main',
+            'decision_simulador = INSIA_control.Decision.decision_simulador:main',
 
             'pathplanning_basic = INSIA_control.PathPlanning.PathPlanning_Basic:main',
+
+            'driverCAN = INSIA_control.DriverCAN.DriverCAN:main'
 
         ],
     },
