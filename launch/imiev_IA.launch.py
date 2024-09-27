@@ -82,7 +82,7 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='longitudinal_control_IA',
-            name='Longitudinal_Control',
+            name='Longitudinal_Control_IA',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

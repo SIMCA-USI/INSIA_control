@@ -108,7 +108,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='longitudinal_control_simple',
+            executable='longitudinal_control_IA',
             name='Longitudinal_Control',
             parameters=[parameters_file_path],
             output='screen',
@@ -150,10 +150,5 @@ def generate_launch_description():
             PythonLaunchDescriptionSource([
                 get_package_share_directory('ros2_waypoints'),
                 '/launch/waypoints_recorder.launch.py'])
-        ),
-        # IncludeLaunchDescription(
-        #     PythonLaunchDescriptionSource([
-        #         get_package_share_directory('ros2_sensors'),
-        #         '/gps_ip.launch.py'])
-        # ),
+        )
     ])
