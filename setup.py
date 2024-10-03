@@ -33,6 +33,8 @@ setup(
             'vehicledecoder_base = INSIA_control.DriverNodes.Vehicle_Node_Base:main',
             'io_card = INSIA_control.DriverNodes.IO_Card:main',
             'test_can = test.test_CAN_node:main',
+            'can_ascod = INSIA_control.DriverNodes.CAN_NODE_ASCOD:main',
+            'maxon_ascod = INSIA_control.DriverNodes.MAXON_NODE_ASCOD:main',
 
             'brake_imiev = INSIA_control.DevicesControlNodes.Imiev.BrakeNode:main',
             'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
@@ -51,6 +53,11 @@ setup(
             'steering_maqueta = INSIA_control.DevicesControlNodes.Maqueta.SteeringNode:main',
             'brake_maqueta = INSIA_control.DevicesControlNodes.Maqueta.BrakeNode:main',
 
+            'telemetry_gdels = INSIA_control.DevicesControlNodes.GDELS.TelemetryNode:main',
+            'throttle_gdels = INSIA_control.DevicesControlNodes.GDELS.ThrottleNode:main',
+            'steering_gdels = INSIA_control.DevicesControlNodes.GDELS.SteeringNode:main',
+            'brake_gdels = INSIA_control.DevicesControlNodes.GDELS.BrakeNode:main',
+
             'dumpbox_lagarto = INSIA_control.DevicesControlNodes.Lagarto.DumpBoxNode:main',
             'brake_emt = INSIA_control.DevicesControlNodes.EMT.BrakeNode:main',
             'throttle_emt = INSIA_control.DevicesControlNodes.EMT.ThrottleNode:main',
@@ -63,6 +70,7 @@ setup(
             'steering_ascod = INSIA_control.DevicesControlNodes.ASCOD.SteeringNode:main',
             'gears_ascod = INSIA_control.DevicesControlNodes.ASCOD.GearsNode:main',
             'telemetry_ascod = INSIA_control.DevicesControlNodes.ASCOD.Telemetry_Basic:main',
+
 
             'joy_transformer = INSIA_control.DevicesControlNodes.JKU.JoyTransformerNode:main',
             'joy_transformer_pet = INSIA_control.DevicesControlNodes.JKU.JoyTransformerPetNode:main',
@@ -78,6 +86,8 @@ setup(
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'longitudinal_control_PID = INSIA_control.HLControl.LongitudinalControlPID:main',
             'longitudinal_control_simple = INSIA_control.HLControl.LongitudinalControlSimple:main',
+            'longitudinal_control_simple_ascod = INSIA_control.HLControl.LongitudinalControlSimpleAscod:main',
+
             'longitudinal_control_IA = INSIA_control.HLControl.LongitudinalControlIA:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
             'lateral_control_PID_simple = INSIA_control.HLControl.LateralControlPIDSimple:main',
