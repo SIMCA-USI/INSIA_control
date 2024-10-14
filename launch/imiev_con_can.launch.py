@@ -4,12 +4,20 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    parameters_file_path = '{}/../conf/maqueta.yaml'.format(
+    parameters_file_path = '{}/../conf/imievcan.yaml'.format(
         os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
     return LaunchDescription([
         Node(
             package='INSIA_control',
-            executable='driverCAN',
+            executable='driverCAN2',
+            name='can_coche',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='driverCAN2',
             name='can_control',
             parameters=[parameters_file_path],
             output='screen',
@@ -25,8 +33,8 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='telemetry_lagarto',
-            name='LagartoDecoder',
+            executable='telemetry_imiev_srv',
+            name='ImievDecoder',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
@@ -34,22 +42,22 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='maxon',
-            name='MCD60_Volante',
+            name='EPOS4_Volante',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
         ),
         Node(
             package='INSIA_control',
-            executable='maxon',
-            name='MCD60_Freno',
+            executable='faulhaber',
+            name='FAULHABER_Freno',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
         ),
         Node(
             package='INSIA_control',
-            executable='brake_maqueta',
+            executable='brake_imiev',
             name='Brake',
             parameters=[parameters_file_path],
             output='screen',
@@ -57,7 +65,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='steering_ascod',
+            executable='steering_imiev',
             name='Steering',
             parameters=[parameters_file_path],
             output='screen',
@@ -65,7 +73,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='throttle_ascod',
+            executable='throttle_imiev_new',
             name='Throttle',
             parameters=[parameters_file_path],
             output='screen',
@@ -87,20 +95,21 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='decision_low',
-        #     name='Decision',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='pathplanning_basic',
-        #     name='PathPlanning',
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # )
+        Node(
+            package='INSIA_control',
+            executable='decision_low',
+            name='Decision',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='pathplanning_basic',
+            name='PathPlanning',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+
     ])

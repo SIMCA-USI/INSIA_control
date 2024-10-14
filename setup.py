@@ -90,7 +90,9 @@ setup(
 
             'pathplanning_basic = INSIA_control.PathPlanning.PathPlanning_Basic:main',
 
-            'driverCAN = INSIA_control.DriverCAN.DriverCAN:main'
+            'driverCAN = INSIA_control.DriverCAN.DriverCAN:main',
+            'driverCAN2 = INSIA_control.DriverCAN.DriverCAN2:main',
+            'telemetry_imiev_srv = INSIA_control.DevicesControlNodes.Imiev.TelemetryNodeSRV:main',
 
         ],
     },

@@ -4,6 +4,9 @@ import rclpy
 import yaml
 from std_msgs.msg import Header
 from insia_msg.msg import CAN, Telemetry, StringStamped
+from insia_msg.srv import RequestCANMessage
+
+
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -28,6 +31,11 @@ class VehicleNode(Node):
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
 
 
+        self.client = self.create_client(RequestCANMessage, 'request_can_messages')
+        self.alta_de_mensajes = vehicle_parameters.get('AltaDeMensajes', {}).get('valor', False)
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Esperando por el servicio de request_can_messages...')
+
         self.vehicle_state = {}
         self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
 
@@ -36,10 +44,13 @@ class VehicleNode(Node):
         self.pub_telemetry = self.create_publisher(msg_type=Telemetry, topic='Telemetry',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CAN, topic='Telemetry/CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+
+        if self.alta_de_mensajes:
+            self.request_can_messages()
 
     def create_msg_Telemetry(self):
         msg = Telemetry()
@@ -61,6 +72,28 @@ class VehicleNode(Node):
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
         return msg
 
+    def request_can_messages(self):
+        if not self.client.service_is_ready():
+            self.get_logger().error('Servicio no está disponible')
+            return
+
+        for can_id in self.decoder.dic_parameters.keys():
+            self.send_request(can_id)
+
+    def send_request(self, can_id):
+
+        request = RequestCANMessage()
+        request.can_id = can_id
+        request.topic = '/Telemetry/CAN'
+
+        future = self.client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is not None:
+            self.get_logger().info(f'Mensaje CAN {can_id} solicitado exitosamente.')
+        else:
+            self.get_logger().error(f'Error al solicitar el mensaje CAN {can_id}.')
+
     def publish_heartbeat(self):
         """
         Heartbeat publisher to keep tracking every node
@@ -80,6 +113,7 @@ class VehicleNode(Node):
             name, value = self.decoder.decode(msg)
             self.vehicle_state.update({name: value})
             # self.logger.debug(f'Decoded {name}: {value}')
+
         except ValueError as e:
             self.logger.debug(f'{e}')
 

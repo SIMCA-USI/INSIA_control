@@ -50,23 +50,17 @@ def decoder_libreria(msg: can.Message):
         sub_index = 0
         data = np.zeros(4, dtype=np.uint8)
 
-        print(f'list data {list(msg.data)}')
-        print(f'len msg {len(msg)}')
-        print(f'cobid {cobid}')
 
         if len(msg.data) == 8:
             specifier, index, sub_index = struct.unpack('<BHB4x', msg.data)
-            print(f'{specifier = } {index = } {sub_index = }')
             data = msg.data[4:]
             if msg.is_extended_id:
                 cobid_values = [(cobid >> 24) & 0xFF, (cobid >> 16) & 0xFF, (cobid >> 8) & 0xFF, cobid & 0xFF]
-                print(f'cobid extended {cobid_values}')
                 data_raw[:4] = cobid_values
                 data_raw[4:12] = list(msg.data)
                 data_raw[12] = 0
             else:
                 cobid_values = [(cobid >> 8) & 0xFF, cobid & 0xFF]
-                print(f'cobid normal {cobid_values}')
                 data_raw[:2] = 0
                 data_raw[2:4] = cobid_values
                 data_raw[4:12] = list(msg.data)
