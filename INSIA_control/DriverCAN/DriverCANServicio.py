@@ -4,7 +4,9 @@ from INSIA_control.utils.utils import decoder_can, decoder_libreria
 import rclpy
 from rclpy.node import Node
 import can
-from insia_msg.msg import CAN
+from rclpy.parameter import Parameter
+
+from insia_msg.msg import CAN, CANGroup
 from insia_msg.srv import RequestCANMessage
 from rclpy.qos import HistoryPolicy
 import yaml
@@ -24,12 +26,34 @@ class CanNode(Node):
         self.bus = can.Bus(channel=self.get_parameter('can').value, bustype='socketcan')
         self.can_id_dict = {}
         self.topic_publisher_dict = {}
-
+        self.logger = self.get_logger()
+        self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
+        self.logger.set_level(self._log_level.value)
         # Crear el servicio
-        self.srv = self.create_service(RequestCANMessage, 'request_can_messages', self.handle_can_request)
-
+        self.srv = self.create_service(RequestCANMessage, self.get_name() + '/request_can_messages', self.handle_can_request)
+        self.listener = self.get_parameter_or('Listener', Parameter(name='Listener', value=True))
         # Notificador para recibir todos los mensajes del bus CAN
         self.notifier = can.Notifier(self.bus, [self.receive_message], timeout=0.00001)
+        self.create_subscription(msg_type=CANGroup, topic='can_control', callback=self.save_msg,
+                                 qos_profile=HistoryPolicy.KEEP_LAST)
+        if self.listener:
+            self.pub_CAN = self.create_publisher(msg_type=CAN, topic='CAN', qos_profile=HistoryPolicy.KEEP_LAST)
+
+    def save_msg(self, msg: CANGroup):
+
+        for can_frame in msg.can_frames:
+            self.get_logger().debug(f"Procesando CAN frame: {can_frame}")
+            self.send_can_message(can_frame)
+
+    def send_can_message(self, data: CAN):
+
+        msg = can.Message(arbitration_id=data.cobid, data=data.msg_raw[4:12], is_extended_id=data.is_extended)
+        # self.get_logger().info(f"Mensaje {msg}")
+        try:
+            self.bus.send(msg)
+            # self.get_logger().info(f"Mensaje enviado al bus CAN: {msg} {type(msg) = }")
+        except can.CanError as e:
+            self.get_logger().error(f"Error al enviar el mensaje al bus CAN: {e}")
 
     def handle_can_request(self, request, response):
         can_id = request.can_id
@@ -43,22 +67,26 @@ class CanNode(Node):
 
         # Crear el publisher si no existe ya
         if topic not in self.topic_publisher_dict:
-            self.topic_publisher_dict[topic] = self.create_publisher(CAN, topic, qos_profile=HistoryPolicy.KEEP_LAST)
+            self.topic_publisher_dict[topic] = self.create_publisher(CAN, topic + '/CAN', qos_profile=HistoryPolicy.KEEP_LAST)
 
         response.success = True
-        self.get_logger().info(f'Registrado CAN ID: {can_id} en topic: {topic}')
+        self.logger.info(f'Registrado CAN ID: {hex(int(can_id))} en topic: {topic}')
+        self.logger.info(f'{self.can_id_dict.keys()}')
+
         return response
 
-    def receive_message(self, can_frame):
+    def receive_message(self, can_frame:can.Message):
         # Decodificar el mensaje CAN
-        msg = self.decode_can(can_frame)
-        can_id = msg.cobid
-
+        can_id = can_frame.arbitration_id
         # Publicar el mensaje en los topics correspondientes
-        if can_id in self.can_id_dict:
+        if can_id in self.can_id_dict.keys():
             for topic in self.can_id_dict[can_id]:
+                msg = self.decode_can(can_frame)
                 self.topic_publisher_dict[topic].publish(msg)
-                self.get_logger().info(f'Publicado mensaje en {topic} para CAN ID: {can_id}')
+                self.logger.info(f'Publicado mensaje en {topic} para CAN ID: {can_id}')
+        if self.listener:
+            msg = self.decode_can(can_frame)
+            self.pub_CAN.publish(msg)
 
 
     def decode_can(self, can_frame):

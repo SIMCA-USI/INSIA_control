@@ -17,6 +17,7 @@ imiev:
     ros__parameters:
       log_level: 0
       dictionary: imiev_dictionary.yaml
+      can_recepcion: 'can_coche'
   EPOS4_Volante:
     ros__parameters:
       log_level: 0
@@ -95,4 +96,8 @@ imiev:
         mode: 'wheels'
         ttl: 0
   AltaDeMensajes:
-      valor: True
+      ros__parameters:
+       valor: True
+  Listener:
+    ros__parameters:
+      valor: False

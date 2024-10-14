@@ -15,7 +15,7 @@ setup(
         ('share/conf/', glob('conf/*')),
         ('share/test/', glob('test/*'))
     ],
-    install_requires=['setuptools', 'PyYAML', 'numpy', 'networkx', 'simple_pid'],
+    install_requires=['setuptools', 'PyYAML', 'numpy', 'networkx', 'simple_pid', 'python-can==4.3.1'],
     zip_safe=True,
     maintainer='Alfredo Valle Barrio',
     maintainer_email='alfredo.valle@upm.es',
@@ -91,7 +91,7 @@ setup(
             'pathplanning_basic = INSIA_control.PathPlanning.PathPlanning_Basic:main',
 
             'driverCAN = INSIA_control.DriverCAN.DriverCAN:main',
-            'driverCAN2 = INSIA_control.DriverCAN.DriverCAN2:main',
+            'driverCANServicio = INSIA_control.DriverCAN.DriverCANServicio:main',
             'telemetry_imiev_srv = INSIA_control.DevicesControlNodes.Imiev.TelemetryNodeSRV:main',
 
         ],

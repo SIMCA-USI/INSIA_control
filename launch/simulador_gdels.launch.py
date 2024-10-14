@@ -25,7 +25,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='telemetry_gdels',
+            executable='telemetry_maqueta',
             name='GDELSDecoder',
             parameters=[parameters_file_path],
             output='screen',
@@ -34,7 +34,7 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='maxon',
-            name='EPOS4_Volante',
+            name='MCD60_Volante',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
@@ -49,7 +49,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='brake_gdels',
+            executable='brake_maqueta',
             name='Brake',
             parameters=[parameters_file_path],
             output='screen',
@@ -57,7 +57,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='steering_gdels',
+            executable='steering_maqueta',
             name='Steering',
             parameters=[parameters_file_path],
             output='screen',
@@ -65,7 +65,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='throttle_gdels',
+            executable='throttle_maqueta',
             name='Throttle',
             parameters=[parameters_file_path],
             output='screen',
