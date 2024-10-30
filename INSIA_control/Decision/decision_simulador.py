@@ -69,7 +69,7 @@ class Decision(Node):
         self.pub_decision = self.create_publisher(msg_type=PetConduccion, topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_cmd_vel = self.create_publisher(msg_type=Twist, topic='/cmd_vel',
+        self.pub_cmd_vel = self.create_publisher(msg_type=Twist, topic='/simu/mutt/cmd_vel',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=BoolStamped, topic='EmergencyStop', callback=self.emergency_stop_callback,
@@ -139,7 +139,7 @@ class Decision(Node):
                 f'Changed MS: Brake: {data.b_brake} Throttle: {data.b_throttle} Steering: {data.b_steering} Gears: {data.b_gear}')
 
     def modo_mision_callback(self, data: ModoMision):
-        self.logger.debug(f'Modo {data.modo_mision}')
+        #self.logger.debug(f'Modo {data.modo_mision}')
         data.id_plataforma = self.id_plataforma
         self.mode = data.modo_mision
 
@@ -221,7 +221,7 @@ class Decision(Node):
         """
 
         if self.mode == ModoMision.MANUAL:  # Manual
-            self.logger.debug(f'Modo manual')
+            #self.logger.debug(f'Modo manual')
             msg = self.manual()
 
         elif self.mode == ModoMision.AUTONOMO:  # Waypoints
@@ -239,15 +239,15 @@ class Decision(Node):
                     self.logger.info(f'Overriding speed from {msg.speed:.2f} to {self.override.speed:.2f}')
                     msg.speed = self.override.speed
             else:
-                self.logger.debug(f'Msg wp is not valid, change to manual')
+                #self.logger.debug(f'Msg wp is not valid, change to manual')
                 msg = self.manual()
 
         elif self.mode == ModoMision.TELE_OPERADO:  # Teleoperado
-            self.logger.debug(f'Modo Teleoperado')
+            #self.logger.debug(f'Modo Teleoperado')
             if self.is_valid(self.tele_msg, self.tele_ttl):
                 msg = self.tele_msg
             else:
-                self.logger.debug(f'Msg tele is not valid, change to manual')
+                #self.logger.debug(f'Msg tele is not valid, change to manual')
                 msg = self.manual()
         else:
             self.logger.error(f'Error in mode: {self.mode}')

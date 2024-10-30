@@ -12,6 +12,7 @@ from rclpy.qos import HistoryPolicy
 import yaml
 import os
 from yaml.loader import SafeLoader
+from time import sleep
 
 
 class CanNode(Node):
@@ -31,24 +32,22 @@ class CanNode(Node):
         self.logger.set_level(self._log_level.value)
         # Crear el servicio
         self.srv = self.create_service(RequestCANMessage, self.get_name() + '/request_can_messages', self.handle_can_request)
-        self.listener = self.get_parameter_or('Listener', Parameter(name='Listener', value=True))
+        self.listener = self.get_parameter_or('listener', Parameter(name='listener', value=False)).value
         # Notificador para recibir todos los mensajes del bus CAN
         self.notifier = can.Notifier(self.bus, [self.receive_message], timeout=0.00001)
-        self.create_subscription(msg_type=CANGroup, topic='can_control', callback=self.save_msg,
+        self.create_subscription(msg_type=CANGroup, topic=self.get_name(), callback=self.save_msg,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.logger.debug(f'Listener mode = {self.listener}')
         if self.listener:
             self.pub_CAN = self.create_publisher(msg_type=CAN, topic='CAN', qos_profile=HistoryPolicy.KEEP_LAST)
 
     def save_msg(self, msg: CANGroup):
-
         for can_frame in msg.can_frames:
-            self.get_logger().debug(f"Procesando CAN frame: {can_frame}")
             self.send_can_message(can_frame)
 
     def send_can_message(self, data: CAN):
-
+        #self.logger.error(f'Driver CAN send: {data.msg_raw}')
         msg = can.Message(arbitration_id=data.cobid, data=data.msg_raw[4:12], is_extended_id=data.is_extended)
-        # self.get_logger().info(f"Mensaje {msg}")
         try:
             self.bus.send(msg)
             # self.get_logger().info(f"Mensaje enviado al bus CAN: {msg} {type(msg) = }")
@@ -70,8 +69,6 @@ class CanNode(Node):
             self.topic_publisher_dict[topic] = self.create_publisher(CAN, topic + '/CAN', qos_profile=HistoryPolicy.KEEP_LAST)
 
         response.success = True
-        self.logger.info(f'Registrado CAN ID: {hex(int(can_id))} en topic: {topic}')
-        self.logger.info(f'{self.can_id_dict.keys()}')
 
         return response
 
@@ -83,7 +80,6 @@ class CanNode(Node):
             for topic in self.can_id_dict[can_id]:
                 msg = self.decode_can(can_frame)
                 self.topic_publisher_dict[topic].publish(msg)
-                self.logger.info(f'Publicado mensaje en {topic} para CAN ID: {can_id}')
         if self.listener:
             msg = self.decode_can(can_frame)
             self.pub_CAN.publish(msg)

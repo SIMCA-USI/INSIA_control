@@ -55,7 +55,6 @@ class VehicleNode(Node):
             self.request_can_messages()
 
     def create_msg_Telemetry(self):
-        self.logger.error(f'Create msg telemetry  {self.vehicle_state = }')
         msg = Telemetry()
         fields = msg.get_fields_and_field_types()
         for field in fields.keys():
@@ -73,7 +72,6 @@ class VehicleNode(Node):
         #msg.brake = 0
         msg.steering_deg = msg.steering / self.steering_wheel_conversion
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
-        self.logger.error(f'{msg = }')
         return msg
 
     def request_can_messages(self):
@@ -82,12 +80,11 @@ class VehicleNode(Node):
             self.send_request(can_id)
 
     def send_request(self, can_id):
-
         request = RequestCANMessage.Request()
         request.can_id = int(can_id)
         request.topic = self.get_name()
 
-        future = self.client.call_async(request)
+        self.client.call_async(request)
 
         # if future.result() is not None:
         #     self.get_logger().info(f'Mensaje CAN {can_id} solicitado exitosamente.')
@@ -112,8 +109,6 @@ class VehicleNode(Node):
         try:
             name, value = self.decoder.decode(msg)
             self.vehicle_state.update({name: value})
-            self.logger.debug(f'Decoded {name}: {value}')
-            self.logger.error(f'{msg =} {type(msg) = }')
         except ValueError as e:
             self.logger.debug(f'{e}')
 
