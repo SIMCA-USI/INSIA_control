@@ -29,6 +29,7 @@ class CANADACNode(Node):
         self.cobid = self.get_parameter('cobid').value
         self.can_connected = self.get_parameter('can').value
 
+
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 

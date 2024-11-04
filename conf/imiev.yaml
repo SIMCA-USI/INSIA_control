@@ -65,14 +65,13 @@ imiev:
         td: 0.
         windup: 0.3
       brake:
-        #follow-me
-#        kp: 6.
-#        ti: 4.
-#        td: 0.
-        #normal
         kp: 2.
         ti: 3.
         td: 0.
+        #normal
+#        kp: 2.
+#        ti: 3.
+#        td: 0.
         windup: 0.65
       static_brake: 0.75
   Lateral_Control:

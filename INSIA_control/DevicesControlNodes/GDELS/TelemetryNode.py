@@ -3,7 +3,7 @@ import os
 import rclpy
 import yaml
 from std_msgs.msg import Header
-from insia_msg.msg import CAN, Telemetry, StringStamped
+from insia_msg.msg import CAN, Telemetry, StringStamped, ModoMision, PetConduccion
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -26,22 +26,25 @@ class VehicleNode(Node):
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
-
-
         self.vehicle_state = {}
         self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.pub_telemetry = self.create_publisher(msg_type=Telemetry, topic='Telemetry',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CAN, topic='CAN',
+                                 callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
+
+        self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry_teleoperado)
+
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
-    def create_msg_Telemetry(self):
+    def create_msg_Telemetry_teleoperado(self):
+
         msg = Telemetry()
         fields = msg.get_fields_and_field_types()
         for field in fields.keys():
@@ -61,6 +64,7 @@ class VehicleNode(Node):
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
         return msg
 
+
     def publish_heartbeat(self):
         """
         Heartbeat publisher to keep tracking every node
@@ -72,8 +76,8 @@ class VehicleNode(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
 
-    def publish_telemetry(self):
-        self.pub_telemetry.publish(msg=self.create_msg_Telemetry())
+    def publish_telemetry_teleoperado(self):
+        self.pub_telemetry.publish(msg=self.create_msg_Telemetry_teleoperado())
 
     def msg_can(self, msg):
         try:

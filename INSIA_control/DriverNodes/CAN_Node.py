@@ -58,7 +58,6 @@ class CanNode(Node):
 
         self.pub_status = self.create_publisher(msg_type=CANEthStatus, topic=self.get_name() + '/Status',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
         if self.local:
             self.logger.info(f'Running in local mode')
             self.connection = None
@@ -68,7 +67,9 @@ class CanNode(Node):
                                          ip=self.ip, port=self.port, deco_function=self.decode_can,
                                          log_level=self._log_level.value)
 
+
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+
         self.timer_write = threading.Thread(target=self.write_th, daemon=False, name=f'Writer {self.get_name()}')
         if not self.local:
             self.timer_write.start()
@@ -167,7 +168,6 @@ class CanNode(Node):
 
     def decode_can(self, can_frame):
         _, data_raw, cobid, specifier, index, sub_index = decoder_can(msg=can_frame, extended=self.extended)
-
         data = bytearray(can_frame[8:-1])
         msg = CAN(
             is_extended=self.extended,
