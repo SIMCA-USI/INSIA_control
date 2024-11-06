@@ -41,14 +41,6 @@ def decoder_can(msg: bytearray, extended=False):
         data_raw, cobid, specifier, index, sub_index = 0, 0, 0, 0, 0
     return msg, data_raw, cobid, specifier, index, sub_index
 
-def decoder_libreria(msg: can.Message):
-    try:
-        data_raw= np.zeros(13, dtype=np.uint8)
-        cobid = msg.arbitration_id
-        specifier=0
-        index=0
-        sub_index=0
-        data= np.zeros(4, dtype=np.uint8)
 
 def decoder_libreria(msg: can.Message):
     try:

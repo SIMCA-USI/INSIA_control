@@ -49,7 +49,7 @@ class Decision(Node):
 
         # Systems enabled by default
         self.master_switch = MasterSwitch(b_steering=True, b_throttle=True, b_brake=True, b_gear=True)
-        self.tele_msg = None
+        self.tele_msg = PetConduccion(b_brake=True)
         self.wp_msg = None
         self.emergency_stop_msg = False
         self.override = Override()
