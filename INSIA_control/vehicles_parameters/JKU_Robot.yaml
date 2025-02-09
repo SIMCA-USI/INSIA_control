@@ -1,0 +1,20 @@
+id_vehicle: JKU_Robot
+
+steering:
+  # sensor_error: 0
+  # conversion: 6500
+  range: [ -1100000, 1100000 ] # Posicion [-590, 590]
+  wheel_range: [ -50, 50 ]
+  sensor_error: 0
+  steering_wheel_conversion: 1 # Relacion 1º rueda x volante
+  inverted: False
+
+speed:
+  range: [ -5 , 5 ]
+  range_signal: [-1, 1]
+
+brake:
+  range: [ 0, 1 ]
+
+throttle:
+  range: [ 0, 1 ]

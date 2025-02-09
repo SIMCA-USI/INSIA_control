@@ -1,0 +1,18 @@
+id_vehicle: lagarto
+
+speed:
+  range: [ 0, 120 ]
+
+steering:
+  # sensor_error: 0
+  # conversion: 6500
+  range: [ -658833, 658833 ] # Posicion [-590, 590]
+  wheel_range: [ -590, 590 ]
+  sensor_error: 0
+  inverted: False
+
+brake:
+  range: [ 0, 223334 ]
+
+throttle:
+  range: [ 3.15, 0.73 ] #V

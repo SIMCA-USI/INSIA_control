@@ -1,0 +1,44 @@
+JKU_Car:
+  # car state listener not require arguments
+  VehicleDecoder:
+    ros__parameters:
+      log_level: 0
+  JoyTransformer:
+    ros__parameters:
+      log_level: 0
+  # Joy node no require arguments
+  Speed:
+    ros__parameters:
+      log_level: 0
+  Steering:
+    ros__parameters:
+      log_level: 0
+  Lateral_Control:
+    ros__parameters:
+      log_level: 0
+      # steering_range: [ -630, 630 ]
+      steering:
+        kp: 10
+        ti: 8
+        td: 0.03
+  Longitudinal_Control:
+    ros__parameters:
+      log_level: 0
+      speed:
+        kp: 3
+        ti: 2
+        td: 0
+  Decision:
+    ros__parameters:
+      log_level: 0
+      wp:
+        mode: 'wheels'
+        ttl: 1
+      tele:
+        mode: 'steering_wheel'
+        ttl: 1
+  PathPlanning:
+    ros__parameters:
+      log_level: 0
+
+

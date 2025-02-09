@@ -1,0 +1,100 @@
+imiev:
+  can_coche:
+    ros__parameters:
+      log_level: 0
+      can: can1
+  can_control:
+    ros__parameters:
+      log_level: 0
+      can: can2
+      listener: True
+  CANADAC_Acelerador:
+    ros__parameters:
+      log_level: 10
+      cobid: 5
+      can: can_control
+  ImievDecoder:
+    ros__parameters:
+      log_level: 0
+      dictionary: imiev_dictionary.yaml
+      can_recepcion: 'can_coche'
+  EPOS4_Volante:
+    ros__parameters:
+      log_level: 0
+      cobid: 2
+      driver_type: epos4
+      mode: CST #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
+      auto_fault_reset: False
+      speed: 2000
+      dictionary: epos4_dictionary.yaml
+      can: can_control
+      digital_outputs: 2
+  FAULHABER_Freno:
+    ros__parameters:
+      log_level: 0
+      cobid: 1
+      can: can_control
+  #  Arduino_Gears:
+  #    ros__parameters:
+  #      log_level: 10
+  #      cobid: 8
+  #      can: CAN_7
+  #      dictionary: emt_gears_dictionary.yaml
+  #      dict_BigEndian: True # True si es big endian False si está en little endian
+  Brake:
+    ros__parameters:
+      log_level: 0
+  Steering:
+    ros__parameters:
+      log_level: 0
+  Throttle:
+    ros__parameters:
+      log_level: 0
+  Longitudinal_Control:
+    ros__parameters:
+      log_level: 0
+      throttle:
+        kp: 3.
+        ti: 0.2
+        td: 0.
+        windup: 0.3
+      brake:
+        #follow-me
+#        kp: 6.
+#        ti: 4.
+#        td: 0.
+        #normal
+        kp: 2.
+        ti: 3.
+        td: 0.
+        windup: 0.65
+      static_brake: 0.75
+  Lateral_Control:
+    ros__parameters:
+      log_level: 0
+      steering:
+        # Follow
+#        kp: 5.
+#        ti: 0.
+#        td: 0.
+        # A6
+        #kp: 10
+        #ti: 8
+        #td: 0.03
+        # Pista
+        kp: 1.0
+        ti: 1.0
+        td: 0.0
+        windup: 0.0
+  Decision:
+    ros__parameters:
+      log_level: 0
+      wp:
+        mode: 'wheels'
+        ttl: 0
+      tele:
+        mode: 'wheels'
+        ttl: 0
+  AltaDeMensajes:
+      ros__parameters:
+       valor: True

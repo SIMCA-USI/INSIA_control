@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d0" for="edge" attr.name="transition" attr.type="long"/>
+<graph edgedefault="directed"><node id="Not ready to switch on"/>
+<node id="Switch on disabled"/>
+<node id="Ready to switch on"/>
+<node id="Switched on"/>
+<node id="Operation enabled"/>
+<node id="Quick stop active"/>
+<node id="Fault reaction active"/>
+<node id="Fault"/>
+<edge source="Not ready to switch on" target="Switch on disabled">
+  <data key="d0">1</data>
+</edge>
+<edge source="Switch on disabled" target="Ready to switch on">
+  <data key="d0">2</data>
+</edge>
+<edge source="Ready to switch on" target="Switch on disabled">
+  <data key="d0">7</data>
+</edge>
+<edge source="Ready to switch on" target="Switched on">
+  <data key="d0">3</data>
+</edge>
+<edge source="Ready to switch on" target="Operation enabled">
+  <data key="d0">4</data>
+</edge>
+<edge source="Switched on" target="Switch on disabled">
+  <data key="d0">10</data>
+</edge>
+<edge source="Switched on" target="Ready to switch on">
+  <data key="d0">6</data>
+</edge>
+<edge source="Switched on" target="Operation enabled">
+  <data key="d0">4</data>
+</edge>
+<edge source="Operation enabled" target="Switch on disabled">
+  <data key="d0">9</data>
+</edge>
+<edge source="Operation enabled" target="Ready to switch on">
+  <data key="d0">8</data>
+</edge>
+<edge source="Operation enabled" target="Switched on">
+  <data key="d0">5</data>
+</edge>
+<edge source="Operation enabled" target="Quick stop active">
+  <data key="d0">11</data>
+</edge>
+<edge source="Quick stop active" target="Operation enabled">
+  <data key="d0">16</data>
+</edge>
+<edge source="Quick stop active" target="Switch on disabled">
+  <data key="d0">12</data>
+</edge>
+<edge source="Fault reaction active" target="Fault">
+  <data key="d0">15</data>
+</edge>
+<edge source="Fault" target="Switch on disabled">
+  <data key="d0">15</data>
+</edge>
+</graph></graphml>
