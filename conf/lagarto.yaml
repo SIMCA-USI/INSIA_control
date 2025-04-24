@@ -18,7 +18,7 @@ lagarto:
   EPOS_Volante:
     ros__parameters:
       log_level: 0
-      cobid: 3
+      cobid: 0x603
       driver_type: epos
       mode: PPM #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
       auto_fault_reset: True
@@ -29,7 +29,7 @@ lagarto:
   MCD60_Freno:
     ros__parameters:
       log_level: 0
-      cobid: 1
+      cobid: 0x601
       driver_type: epos
       mode: PPM #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
       auto_fault_reset: True
@@ -40,18 +40,18 @@ lagarto:
   CANADAC_Acelerador:
     ros__parameters:
       log_level: 0
-      cobid: 5
+      cobid: 0x605
       can: CAN_Control
   Arduino_Gears:
     ros__parameters:
       log_level: 0
-      cobid: 6
+      cobid: 0x606
       can: CAN_Control
       dictionary: lagarto_gears_dictionary.yaml
   Arduino_DumpBox:
     ros__parameters:
       log_level: 0
-      cobid: 7
+      cobid: 0x607
       can: CAN_Control
       dictionary: lagarto_dump_box_dictionary.yaml
   LagartoDecoder:

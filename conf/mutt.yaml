@@ -1,0 +1,18 @@
+/**:
+  CAN_MUTT:
+    ros__parameters:
+      log_level: 0
+      local: False # Poner a true si no esta conectado al vehiculo para poder ver laa conexion de los topics
+      connection_mode: tcp
+      ip: 10.4.0.10
+      port: 10001
+      extend: False
+#  VehicleDecoder:
+#    ros__parameters:
+#      log_level: 0
+#      dictionary: ascod_dictionary.yaml
+  CANADAC_MUTT:
+    ros__parameters:
+      log_level: 10
+      cobid: 0x100
+      can: CAN_MUTT

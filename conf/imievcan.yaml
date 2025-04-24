@@ -11,7 +11,7 @@ imiev:
   CANADAC_Acelerador:
     ros__parameters:
       log_level: 10
-      cobid: 5
+      cobid: 0x605
       can: can_control
   ImievDecoder:
     ros__parameters:
@@ -21,7 +21,7 @@ imiev:
   EPOS4_Volante:
     ros__parameters:
       log_level: 0
-      cobid: 2
+      cobid: 0x602
       driver_type: epos4
       mode: CST #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
       auto_fault_reset: False
@@ -32,12 +32,12 @@ imiev:
   FAULHABER_Freno:
     ros__parameters:
       log_level: 0
-      cobid: 1
+      cobid: 0x601
       can: can_control
   #  Arduino_Gears:
   #    ros__parameters:
   #      log_level: 10
-  #      cobid: 8
+  #      cobid: 0x608
   #      can: CAN_7
   #      dictionary: emt_gears_dictionary.yaml
   #      dict_BigEndian: True # True si es big endian False si está en little endian
