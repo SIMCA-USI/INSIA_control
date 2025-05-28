@@ -19,6 +19,7 @@ class CANADACNode(Node):
         # Configuración inicial del logger
         self.logger = self.get_logger()
         self._configure_logging()
+        self.enabled = False
 
         self.shutdown_flag = False
         self.cobid = 0x100
@@ -35,10 +36,10 @@ class CANADACNode(Node):
 
     def _configure_logging(self):
         """Configura los niveles de log y formato"""
-        log_level = self.get_parameter_or(
-            'log_level',
-            Parameter(name='log_level', value=10)
+        log_level = self.get_parameter(
+            'log_level'
         ).value
+        self.logger.error(f'{log_level}')
         self.logger.set_level(log_level)
         self.logger.debug("Logger configured with level %d" % log_level)
 
@@ -61,7 +62,7 @@ class CANADACNode(Node):
 
     def _init_subscriptions(self):
         """Inicializa las suscripciones"""
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Enable', callback=self.enable,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Enable', callback=self.set_enable,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=FloatStamped, topic=self.get_name() + '/Steering', callback=self.set_steering,
@@ -76,46 +77,49 @@ class CANADACNode(Node):
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.logger.debug("Timers initialized")
 
-
-    def enable(self, data: BoolStamped):
+    def set_enable(self, data: BoolStamped):
         """Maneja el estado de habilitación"""
         try:
-            self.logger.debug(f"Received enable signal: {data.data}")
-            msg_data = 0x01 if data.data else 0x00
-            mode = "Drive" if data.data else "Stop"
-            msg = make_can_msg(
-                node=self.cobid,
-                index=0x0100,
-                data=msg_data,
-                clock=self.get_clock().now().to_msg()
-            )
-            self.pub_CAN.publish(CANGroup(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=[msg]
-            ))
-            self.logger.debug(f"Sent {mode} mode command")
+            if self.enabled != data.data:
+                self.logger.debug(f"Received enable signal: {data.data}")
+                msg_data = 0x01 if data.data else 0x00
+                mode = "Drive" if data.data else "Stop"
+                msg = make_can_msg(
+                    node=self.cobid,
+                    index=0x0001,
+                    data=msg_data,
+                    clock=self.get_clock().now().to_msg()
+                )
+                self.pub_CAN.publish(CANGroup(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    can_frames=[msg]
+                ))
+                self.logger.debug(f"Sent {mode} mode command")
+            self.enabled = data.data
         except Exception as e:
             self.logger.error(f'{e}')
 
     def set_steering(self, data: FloatStamped):
-        msg = make_can_msg(node=self.cobid, index=0x0200, sub_index=0x02, data=data.data, c_type='f',
-                           clock=self.get_clock().now().to_msg())
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=[
-                msg
-            ]
-        ))
+        if self.enabled:
+            msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x02, data=data.data, c_type='f',
+                               clock=self.get_clock().now().to_msg())
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
 
     def set_throttle(self, data: FloatStamped):
-        msg = make_can_msg(node=self.cobid, index=0x0200, sub_index=0x01, data=data.data, c_type='f',
-                           clock=self.get_clock().now().to_msg())
-        self.pub_CAN.publish(CANGroup(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            can_frames=[
-                msg
-            ]
-        ))
+        if self.enabled:
+            msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x01, data=data.data, c_type='f',
+                               clock=self.get_clock().now().to_msg())
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
 
     def publish_heartbeat(self):
         """
