@@ -35,7 +35,11 @@ setup(
             'test_can = test.test_CAN_node:main',
             'can_ascod = INSIA_control.DriverNodes.CAN_NODE_ASCOD:main',
             'maxon_ascod = INSIA_control.DriverNodes.MAXON_NODE_ASCOD:main',
+
             'canadac_mutt = INSIA_control.DriverNodes.CANADAC_MUTT:main',
+            'device_mutt = INSIA_control.DevicesControlNodes.MUTT.MUTT_Device_Node:main',
+            'control_mutt = INSIA_control.HLControl.MUTTControl:main',
+            'telemetry_mutt = INSIA_control.DevicesControlNodes.MUTT.Telemetry_Basic:main',
 
             'brake_imiev = INSIA_control.DevicesControlNodes.Imiev.BrakeNode:main',
             'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
@@ -72,7 +76,6 @@ setup(
             'gears_ascod = INSIA_control.DevicesControlNodes.ASCOD.GearsNode:main',
             'telemetry_ascod = INSIA_control.DevicesControlNodes.ASCOD.Telemetry_Basic:main',
 
-
             'joy_transformer = INSIA_control.DevicesControlNodes.JKU.JoyTransformerNode:main',
             'joy_transformer_pet = INSIA_control.DevicesControlNodes.JKU.JoyTransformerPetNode:main',
 
@@ -104,9 +107,6 @@ setup(
             'driverCAN = INSIA_control.DriverCAN.DriverCAN:main',
             'driverCANServicio = INSIA_control.DriverCAN.DriverCANServicio:main',
             'telemetry_imiev_srv = INSIA_control.DevicesControlNodes.Imiev.TelemetryNodeSRV:main',
-
-
-
         ],
     },
 )
