@@ -48,13 +48,13 @@ class Decoder:
 
 class Filter:
     def __init__(self, parameters):
-        parameters = parameters
         self.name = parameters['name']
         self.inicio = parameters['inicio']
         self.longitud = parameters['longitud']
         self.factor = parameters['factor']
         self.offset = parameters['offset']
         self.signed = parameters['signed']
+        self.force_type = parameters.get('force_type', None)
         self.type = parameters['type']
         self.can_open = parameters['can_open']
         if 'mask' in parameters:
@@ -67,7 +67,12 @@ class Filter:
             data = data.data
         else:
             data = data.msg_raw[4:]
-        deco = dic_byte_order[self.type] + dic_format[(self.signed, self.longitud)]
+        if self.force_type is None:
+            format = dic_format[(self.signed, self.longitud)]
+        else:
+            format = self.force_type
+                
+        deco = dic_byte_order[self.type] + format
         value = struct.unpack(deco, data[self.inicio:int(self.inicio + self.longitud / 8)])[0]
         try:
             if self.mask is not None:

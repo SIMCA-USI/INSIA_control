@@ -1,11 +1,15 @@
 from traceback import format_exc
 
 import rclpy
-from insia_msg.msg import CANGroup, StringStamped, FloatStamped, BoolStamped
+from insia_msg.msg import CANGroup, StringStamped, FloatStamped, BoolStamped, CAN
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
+from INSIA_control.utils.filtro import Decoder
+from INSIA_control.utils.utils import convert_types
+from yaml.loader import SafeLoader
+from numpy import interp
 
 from INSIA_control.utils.utils import make_can_msg
 
@@ -20,6 +24,8 @@ class CANADACNode(Node):
         self.logger = self.get_logger()
         self._configure_logging()
         self.enabled = False
+        self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
+        self.vehicle_state = {}
 
         self.shutdown_flag = False
         self.cobid = 0x100
@@ -33,13 +39,30 @@ class CANADACNode(Node):
         except Exception as e:
             self.logger.critical(f"Initialization failed: {str(e)}\n{format_exc()}")
             raise
+        
+    def update_values(self, name, value):
+        if "rpm" in self.vehicle_state:
+            if self.vehicle_state["rpm"] != value:
+                self.pub_rpm.publish(FloatStamped(header=Header(stamp=self.get_clock().now().to_msg()), data=value))
+                self.vehicle_state["rpm"] = value
+            # Si el valor es igual, no se hace nada
+        else:
+            self.vehicle_state["rpm"] = value
+            self.pub_rpm.publish(FloatStamped(header=Header(stamp=self.get_clock().now().to_msg()), data=value))
+        
+    def msg_can(self, msg):
+        try:
+            name, value = self.decoder.decode(msg)
+            self.update_values(name, value)
+            # self.logger.debug(f'Decoded {name}: {value}')
+        except ValueError as e:
+            self.logger.debug(f'{e}')
 
     def _configure_logging(self):
         """Configura los niveles de log y formato"""
         log_level = self.get_parameter(
             'log_level'
         ).value
-        self.logger.error(f'{log_level}')
         self.logger.set_level(log_level)
         self.logger.debug("Logger configured with level %d" % log_level)
 
@@ -54,6 +77,8 @@ class CANADACNode(Node):
     def _init_publishers(self):
         """Inicializa los publishers"""
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
+                                                   qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_rpm = self.create_publisher(msg_type=FloatStamped, topic='RPM',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.pub_CAN = self.create_publisher(msg_type=CANGroup, topic=self.can_connected,
@@ -70,6 +95,7 @@ class CANADACNode(Node):
 
         self.create_subscription(msg_type=FloatStamped, topic=self.get_name() + '/Throttle', callback=self.set_throttle,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
         self.logger.debug("Subscriptions initialized")
 
     def _init_timers(self):
@@ -101,7 +127,7 @@ class CANADACNode(Node):
 
     def set_steering(self, data: FloatStamped):
         if self.enabled:
-            msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x02, data=data.data, c_type='f',
+            msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x02, data=-data.data, c_type='f',
                                clock=self.get_clock().now().to_msg())
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),

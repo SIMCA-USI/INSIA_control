@@ -39,7 +39,9 @@ setup(
             'canadac_mutt = INSIA_control.DriverNodes.CANADAC_MUTT:main',
             'device_mutt = INSIA_control.DevicesControlNodes.MUTT.MUTT_Device_Node:main',
             'control_mutt = INSIA_control.HLControl.MUTTControl:main',
+            'control_mutt_actuators = INSIA_control.HLControl.MUTTControl_actuators:main',
             'telemetry_mutt = INSIA_control.DevicesControlNodes.MUTT.Telemetry_Basic:main',
+            'decision_mutt = INSIA_control.DevicesControlNodes.MUTT.decision_MUTT:main',
 
             'brake_imiev = INSIA_control.DevicesControlNodes.Imiev.BrakeNode:main',
             'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
