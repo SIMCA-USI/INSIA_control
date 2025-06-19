@@ -36,6 +36,9 @@ setup(
             'can_ascod = INSIA_control.DriverNodes.CAN_NODE_ASCOD:main',
             'maxon_ascod = INSIA_control.DriverNodes.MAXON_NODE_ASCOD:main',
 
+            'brakeCAN = INSIA_control.DriverNodes.BRAKE_CAN_Node:main',
+            'nimbus = INSIA_control.DriverNodes.NIMBUS_Node:main',
+
             'canadac_mutt = INSIA_control.DriverNodes.CANADAC_MUTT:main',
             'device_mutt = INSIA_control.DevicesControlNodes.MUTT.MUTT_Device_Node:main',
             'control_mutt = INSIA_control.HLControl.MUTTControl:main',
@@ -48,6 +51,12 @@ setup(
             'throttle_imiev_new = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode_new:main',
             'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
             'telemetry_imiev = INSIA_control.DevicesControlNodes.Imiev.TelemetryNode:main',
+
+            'brake_ravo = INSIA_control.DevicesControlNodes.RAVO.BrakeNode:main',
+            'throttle_ravo = INSIA_control.DevicesControlNodes.RAVO.ThrottleNode:main',
+            'steering_ravo = INSIA_control.DevicesControlNodes.RAVO.SteeringNode:main',
+            'telemetry_ravo = INSIA_control.DevicesControlNodes.RAVO.TelemetryNode:main',
+            'brushes_ravo = INSIA_control.DevicesControlNodes.RAVO.BrushesNode:main',
 
             'brake_lagarto = INSIA_control.DevicesControlNodes.Lagarto.BrakeNode:main',
             'throttle_lagarto = INSIA_control.DevicesControlNodes.Lagarto.ThrottleNode:main',

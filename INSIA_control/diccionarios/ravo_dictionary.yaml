@@ -1,0 +1,11 @@
+0x18FF40C4: # Posicion de giro de volante del sensor de giro de volante
+  0xFFFF:
+    0xFF:
+      name: speed
+      inicio: 0
+      longitud: 16
+      factor: 0.01
+      offset: 0
+      signed: False
+      type: intel #motorola/big_endian    intel/little_endian
+      can_open: False
