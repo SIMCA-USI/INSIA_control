@@ -3,7 +3,7 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, EPOSConsigna
+from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, EPOSConsigna, FloatStamped
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -35,7 +35,7 @@ class BrakeNode(Node):
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='FAULHABER_Freno/TargetPosition',
+        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='BrakeCAN/Target',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         # Servicio para la calibración del freno
@@ -45,16 +45,14 @@ class BrakeNode(Node):
     def controller_update(self, data):
         self.controller = data
         if self.controller.enable:
-            self.pub_target.publish(EPOSConsigna(
+            self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                position=int(interp(self.controller.target, (0, 1), self.device_range)),
-                mode=EPOSConsigna.ABSOLUTO
+                data=float(interp(self.controller.target, (0., 1.), self.device_range)),
             ))
         else:
-            self.pub_target.publish(EPOSConsigna(
+            self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                position=0,
-                mode=EPOSConsigna.ABSOLUTO
+                data=0.,
             ))
 
     def enable_calibration(self, request, response):

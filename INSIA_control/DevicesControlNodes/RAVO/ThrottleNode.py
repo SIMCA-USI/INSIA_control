@@ -3,7 +3,7 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, EPOSDigital, IOAnalogue
+from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, EPOSDigital, IOAnalogue, FloatStamped, BoolStamped
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -35,34 +35,29 @@ class ThrottleNode(Node):
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_enable_throttle = self.create_publisher(msg_type=EPOSDigital, topic='io_card/iodigital',
+        self.pub_enable_throttle = self.create_publisher(msg_type=BoolStamped, topic='CANADAC_Acelerador/EnableTension',
                                                          qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=IOAnalogue, topic='io_card/ioanalogue',
+        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='CANADAC_Acelerador/Target',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
-        self.timer_send = self.create_timer(10, self.controller_update)
-
-    def controller_update(self, data=None):
-        if data is not None:
-            self.controller = data
-        self.pub_enable_throttle.publish(EPOSDigital(
+        self.pub_target.publish(FloatStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
-            enable=self.controller.enable,
-            io_digital=8
+            data=interp(0, (0, 1), self.device_range)
+        ))
+
+        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+
+    def controller_update(self, data):
+        self.controller = data
+        self.pub_enable_throttle.publish(BoolStamped(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            data=self.controller.enable,
         ))
         if self.controller.enable:
-            self.pub_target.publish(IOAnalogue(
+            self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                channel=3,
-                voltage=interp(self.controller.target, (0, 1), self.device_range)
-            ))
-        else:
-            self.pub_target.publish(IOAnalogue(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                channel=3,
-                voltage=interp(0, (0, 1), self.device_range)
+                data=interp(self.controller.target, (0, 1), self.device_range)
             ))
 
     def publish_heartbeat(self):

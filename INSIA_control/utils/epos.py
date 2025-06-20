@@ -235,7 +235,7 @@ def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
 
 def get_transitions(graph, start, end):
     edge_labels = nx.get_edge_attributes(graph, 'transition')
-    path = nx.shortest_path(graph)
+    path = dict(nx.shortest_path(graph))
     path_edges = [edge_labels.get(x, edge_labels.get((x[1], x[0]))) for x in
                   zip(path[start][end], path[start][end][1:])]
     return path_edges

@@ -1,23 +1,18 @@
-import os
 from traceback import format_exc
 
 import rclpy
-import yaml
-from insia_msg.msg import CANGroup, StringStamped, FloatStamped, BoolStamped, IntStamped
+from INSIA_control.utils.utils import make_can_msg
+from insia_msg.msg import CANGroup, StringStamped, BoolStamped, IntStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
-from yaml.loader import SafeLoader
-
-from INSIA_control.utils.utils import make_can_msg
 
 
 class NIMBUSNode(Node):
     def __init__(self):
-        super().__init__(node_name='NIMBUS', start_parameter_services=True,
-                         allow_undeclared_parameters=False,
-                         automatically_declare_parameters_from_overrides=True)
+        super().__init__(node_name='BrushesControl', start_parameter_services=True,
+                         allow_undeclared_parameters=False, automatically_declare_parameters_from_overrides=True)
 
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
@@ -45,58 +40,73 @@ class NIMBUSNode(Node):
         self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/ModoTrabajo',
                                  callback=self.ModoTrabajo_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Turbina/Activacion', callback=self.turbina_activacion_callback,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Turbina/Activacion',
+                                 callback=self.turbina_activacion_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/Turbina/RPM', callback=self.,
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/Turbina/RPM',
+                                 callback=self.turbina_rpm_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosCentrales/Activacion',
+                                 callback=self.cepillos_centrales_activacion_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosCentrales/Activacion', callback=self.cepillos_centrales_activacion_callback,
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosCentrales/Movimiento',
+                                 callback=self.cepillos_centrales_movimiento_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosCentrales/Movimiento', callback=self.,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosCentrales/Agua',
+                                 callback=self.cepillos_centrales_agua_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosCentrales/Agua', callback=self.cepillos_centrales_agua_callback,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosCentrales/Luces',
+                                 callback=self.cepillos_centrales_luces_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosCentrales/Luces', callback=self.cepillos_centrales_luces_callback,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Activacion',
+                                 callback=self.cepillos_frontal_activacion_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Activacion', callback=self.,
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosFrontal/Movimiento',
+                                 callback=self.cepillos_frontal_movimiento_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosFrontal/Movimiento', callback=self.,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Agua',
+                                 callback=self.cepillos_frontal_agua_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Agua', callback=self.cepillos_frontal_agua_callback,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Luces',
+                                 callback=self.cepillos_frontal_luces_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Luces', callback=self.cepillos_frontal_luces_callback,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Despliegue',
+                                 callback=self.cepillos_frontal_despliegue_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Despliegue', callback=self.cepillos_frontal_despliegue_callback,
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosFrontal/Rotacion',
+                                 callback=self.cepillos_frontal_rotacion_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosFrontal/Rotacion', callback=self.,
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosFrontal/Angulo',
+                                 callback=self.cepillos_frontal_angulo_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosFrontal/Angulo', callback=self.,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Suspension',
+                                 callback=self.suspension_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Suspension', callback=self.suspension_callback,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Pistolas',
+                                 callback=self.pistolas_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Pistolas', callback=self.pistolas_callback,
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/Faldon', callback=self.faldon_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/Faldon', callback=self.,
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/Chupon', callback=self.chupon_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/Chupon', callback=self.,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Puertas', callback=self.puertas_callback,
+        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Puertas',
+                                 callback=self.puertas_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
@@ -171,15 +181,39 @@ class NIMBUSNode(Node):
             ]
         ))
 
-    #TODO: RPM Turbina
+    def turbina_rpm_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2]:
+            if data.data == 0:
+                # Dejar de modificar RPM de turbina
+                msg = make_can_msg(node=self.cobid, index=0x0400, sub_index=1, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Disminuir RPM de turbina
+                msg = make_can_msg(node=self.cobid, index=0x0400, sub_index=1, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data =2
+                # Aumentar RPM de turbina
+                msg = make_can_msg(node=self.cobid, index=0x0400, sub_index=1, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
+
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de RPM de turbina no valido {data.data}')
 
     def cepillos_centrales_activacion_callback(self, data):
         if data.data:
             # Encender cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x00, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x00, data=0x01,
+                               clock=self.get_clock().now().to_msg())
         else:
             # Apagar cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x00, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x00, data=0x00,
+                               clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -187,15 +221,47 @@ class NIMBUSNode(Node):
             ]
         ))
 
-    #TODO: Movimiento cepillos
+    def cepillos_centrales_movimiento_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2, 3, 4]:
+            if data.data == 0:
+                # Dejar de realizar movimiento
+                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Bajar cepillos centrales
+                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 2:
+                # Subir cepillos centrales
+                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 3:
+                # Dedsplazar cepillos centrales a la izquierda
+                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x03,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data = 4
+                # Dedsplazar cepillos centrales a la derecha
+                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x04,
+                                   clock=self.get_clock().now().to_msg())
+
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de movimiento de cepillos centrales no valido {data.data}')
 
     def cepillos_centrales_agua_callback(self, data):
         if data.data:
             # Activar agua de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x02, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x02, data=0x01,
+                               clock=self.get_clock().now().to_msg())
         else:
             # Desactivar agua de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x02, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x02, data=0x00,
+                               clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -206,10 +272,12 @@ class NIMBUSNode(Node):
     def cepillos_centrales_luces_callback(self, data):
         if data.data:
             # Activar luz de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x03, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x03, data=0x01,
+                               clock=self.get_clock().now().to_msg())
         else:
             # Desactivar luz de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x03, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x03, data=0x00,
+                               clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -217,9 +285,61 @@ class NIMBUSNode(Node):
             ]
         ))
 
-    # TODO: Activacion cepillos frontal
+    def cepillos_frontal_activacion_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2]:
+            if data.data == 0:
+                # Apagar cepillo frontal
+                msg = make_can_msg(node=self.cobid, index=0x0600, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Rotacion del cepillo frontal en sentido horario
+                msg = make_can_msg(node=self.cobid, index=0x0600, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data = 2
+                # Rotacion del cepillo frontal en sentido horario
+                msg = make_can_msg(node=self.cobid, index=0x0600, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
 
-    # TODO: Movimiento cepillos frontal
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de movimiento de cepillos frontal no valido {data.data}')
+
+    def cepillos_frontal_movimiento_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2, 3, 4]:
+            if data.data == 0:
+                # Dejar de realizar movimiento
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Bajar cepillos frontal
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 2:
+                # Subir cepillos frontal
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 3:
+                # Dedsplazar cepillos v a la izquierda
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x03,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data = 4
+                # Dedsplazar cepillos frontal a la derecha
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x04,
+                                   clock=self.get_clock().now().to_msg())
+
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de movimiento de cepillos centrales no valido {data.data}')
 
     def cepillos_frontal_agua_callback(self, data):
         if data.data:
@@ -269,9 +389,53 @@ class NIMBUSNode(Node):
             ]
         ))
 
-    #TODO: Rotacion cepillo frontal
+    def cepillos_frontal_rotacion_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2]:
+            if data.data == 0:
+                # No rotar
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x05, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Rotar en sentido horario
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x05, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data = 2
+                # Rotar en sentido antihorario
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x05, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
 
-    #TODO: Angulo cepillo frontal
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de rotacion de cepillos frontal no valido {data.data}')
+
+    def cepillos_frontal_angulo_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2]:
+            if data.data == 0:
+                # No rotar
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x06, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Rotar angulo en sentido horario
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x06, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data = 2
+                # Rotar angulo en sentido antihorario
+                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x06, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
+
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de angulo de cepillos frontal no valido {data.data}')
 
     def suspension_callback(self, data):
         if data.data:
@@ -305,9 +469,53 @@ class NIMBUSNode(Node):
             ]
         ))
 
-    #TODO: Faldon
+    def faldon_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2]:
+            if data.data == 0:
+                # Dejar de cambiar el faldon
+                msg = make_can_msg(node=self.cobid, index=0x0900, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Bajar faldon
+                msg = make_can_msg(node=self.cobid, index=0x0900, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data = 2
+                # Subir faldon
+                msg = make_can_msg(node=self.cobid, index=0x0900, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
 
-    #TODO: Chupon
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de faldon no valido {data.data}')
+
+    def chupon_callback(self, data: IntStamped):
+        if data.data in [0, 1, 2]:
+            if data.data == 0:
+                # Dejar de cambiar el chupon
+                msg = make_can_msg(node=self.cobid, index=0x0A00, data=0x00,
+                                   clock=self.get_clock().now().to_msg())
+            elif data.data == 1:
+                # Bajar chupon
+                msg = make_can_msg(node=self.cobid, index=0x0A00, data=0x01,
+                                   clock=self.get_clock().now().to_msg())
+            else:  # data = 2
+                # Subir chupon
+                msg = make_can_msg(node=self.cobid, index=0x0A00, data=0x02,
+                                   clock=self.get_clock().now().to_msg())
+
+            self.pub_CAN.publish(CANGroup(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                can_frames=[
+                    msg
+                ]
+            ))
+        else:
+            self.logger.warn(f'Solicitud de chupon no valido {data.data}')
 
     def puertas_callback(self, data):
         if data.data:
@@ -324,6 +532,7 @@ class NIMBUSNode(Node):
                 msg
             ]
         ))
+
     """
     def enable(self, data):
         if data.data:

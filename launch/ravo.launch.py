@@ -28,7 +28,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='canadac',
+            executable='canadacv3',
             name='CANADAC_Acelerador',
             namespace=namespace,
             parameters=[parameters_file_path],
@@ -65,7 +65,7 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='nimbus',
-            name='BrushesControl',
+            name='BrushesDriver',
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
@@ -93,15 +93,6 @@ def generate_launch_description():
             package='INSIA_control',
             executable='throttle_ravo',
             name='Throttle',
-            namespace=namespace,
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='brushes_ravo',
-            name='Brushes',
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',

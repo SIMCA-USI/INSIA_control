@@ -2,15 +2,16 @@ import os
 
 import rclpy
 import yaml
-from std_msgs.msg import Header
-from insia_msg.msg import CAN, Telemetry, StringStamped
+from INSIA_control.utils.filtro import Decoder
+from INSIA_control.utils.utils import convert_types
+from INSIA_control.utils.utils import make_can_msg
+from insia_msg.msg import CAN, Telemetry
+from insia_msg.msg import CANGroup, StringStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
+from std_msgs.msg import Header
 from yaml.loader import SafeLoader
-
-from INSIA_control.utils.filtro import Decoder
-from INSIA_control.utils.utils import convert_types
 
 
 class VehicleNode(Node):
@@ -27,14 +28,18 @@ class VehicleNode(Node):
         self.shutdown_flag = False
         self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
 
-
         self.vehicle_state = {}
+        self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
+        self.steering_sensor_error = vehicle_parameters['steering']['sensor_error']
         self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
         self.pub_telemetry = self.create_publisher(msg_type=Telemetry, topic='Telemetry',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.pub_CAN = self.create_publisher(msg_type=CANGroup, topic='can_control',
+                                             qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
@@ -56,7 +61,10 @@ class VehicleNode(Node):
 
         msg.header = Header(stamp=self.get_clock().now().to_msg())
         msg.id_plataforma = self.id_plataforma
-        #msg.brake = 0
+        # msg.brake = 0
+        msg.steering = (msg.steering - self.steering_sensor_error)
+        if self.steering_sensor_inverted:
+            msg.steering *= -1
         msg.steering_deg = msg.steering / self.steering_wheel_conversion
         # msg.brake = int((int(msg.brake / 0.25) & 0x0FFF) * 0.25)
         return msg
@@ -79,7 +87,7 @@ class VehicleNode(Node):
         try:
             name, value = self.decoder.decode(msg)
             self.vehicle_state.update({name: value})
-            # self.logger.debug(f'Decoded {name}: {value}')
+            self.logger.error(f'Decoded {name}: {value}')
         except ValueError as e:
             self.logger.debug(f'{e}')
 
