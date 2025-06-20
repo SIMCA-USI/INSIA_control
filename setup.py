@@ -119,6 +119,7 @@ setup(
             'driverCAN = INSIA_control.DriverCAN.DriverCAN:main',
             'driverCANServicio = INSIA_control.DriverCAN.DriverCANServicio:main',
             'telemetry_imiev_srv = INSIA_control.DevicesControlNodes.Imiev.TelemetryNodeSRV:main',
+            'socketcan_driver = INSIA_control.DriverNodes.socketcan_driver:main',
 
             'seta_emergencia = INSIA_control.Emergency.seta:main',
         ],
