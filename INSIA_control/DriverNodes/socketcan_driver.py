@@ -30,10 +30,13 @@ class CANDecoderNode(Node):
 
         self.add_on_set_parameters_callback(self.parameters_callback)
 
+
+
         # Publicador para el mensaje CAN procesado
         self.pub_CAN = self.create_publisher(CAN, 'CAN', 10)
-        self.can_connected = self.get_parameter_or('can', Parameter(name='can', value='can0'))
-        self.extended = self.get_parameter_or('extend', Parameter(name='extend', value=False))
+        self.can_connected = self.get_parameter_or('can', Parameter(name='can', value='can0')).value
+        self.extended = self.get_parameter_or('extend', Parameter(name='extend', value=True)).value
+        extend: True# Puedes ajustar si usáis IDs extendidos
 
         # Subscripciones a can0 y can1
         self.create_subscription(Frame, f'CAN/{self.can_connected}/receive', self.callback_can, 10)
@@ -67,7 +70,7 @@ class CANDecoderNode(Node):
         try:
             can_id = msg.id
             data = bytes(msg.data)
-            can_frame = can_id.to_bytes(4, byteorder='little')  # Dummy para 2 bytes iniciales
+            can_frame = can_id.to_bytes(4, byteorder='big')  # Dummy para 2 bytes iniciales
             can_frame += data
             can_frame += bytes([0x08])  # Final según tu protocolo
             self.decode_can(can_frame)

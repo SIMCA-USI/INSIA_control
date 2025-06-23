@@ -15,6 +15,7 @@ def generate_launch_description():
             package='INSIA_control',
             executable='socketcan_driver',
             name='can_control',
+            namespace='RAVO',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
@@ -23,6 +24,7 @@ def generate_launch_description():
             package='INSIA_control',
             executable='socketcan_driver',
             name='can_ravo',
+            namespace='RAVO',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
@@ -30,6 +32,6 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 get_package_share_directory('ros2socketcan_bridge'),
-                'can.launch.py'])
+                '/launch/can.launch.py'])
         )
     ])
