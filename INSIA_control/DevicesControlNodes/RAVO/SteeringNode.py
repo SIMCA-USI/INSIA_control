@@ -24,7 +24,6 @@ class SteeringNode(Node):
         self.logger = self.get_logger()
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
-        self.shutdown_flag = False
         params = vehicle_parameters.get('steering')
         self.device_range = params['range']
         self.actuator_inverted = params['actuator_inverted']
@@ -80,7 +79,6 @@ class SteeringNode(Node):
 
     def shutdown(self):
         try:
-            self.shutdown_flag = True
             self.timer_heartbeat.cancel()
             # Desactivar EPOS4
             self.pub_enable.publish(BoolStamped(

@@ -75,18 +75,15 @@ class ThrottleNode(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbeat.cancel()
-            # Desactivar EPOS4
             # Desactivar reles
-            self.pub_enable_throttle.publish(EPOSDigital(
+            self.pub_enable_throttle.publish(BoolStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                enable=False,
-                io_digital=8
+                data=False,
             ))
             # Poner target de motor a 0 por si acaso
-            self.pub_target.publish(IOAnalogue(
+            self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                channel=3,
-                voltage=interp(0, (0, 1), self.device_range)
+                data=interp(0., (0, 1), self.device_range)
             ))
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')

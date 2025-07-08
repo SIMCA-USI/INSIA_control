@@ -2,16 +2,16 @@ import os
 
 import rclpy
 import yaml
-from INSIA_control.utils.filtro import Decoder
-from INSIA_control.utils.utils import convert_types
-from INSIA_control.utils.utils import make_can_msg
-from insia_msg.msg import CAN, Telemetry
-from insia_msg.msg import CANGroup, StringStamped
+from can_msgs.msg import Frame
+from insia_msg.msg import CAN, CANGroup, StringStamped, Telemetry
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
 from yaml.loader import SafeLoader
+
+from INSIA_control.utils.filtro import Decoder
+from INSIA_control.utils.utils import convert_types
 
 
 class VehicleNode(Node):
@@ -32,6 +32,7 @@ class VehicleNode(Node):
         self.steering_sensor_inverted = vehicle_parameters['steering']['inverted']
         self.steering_sensor_error = vehicle_parameters['steering']['sensor_error']
         self.steering_wheel_conversion = vehicle_parameters['steering']['steering_wheel_conversion']
+        self.pub_can = self.create_publisher(Frame, f'CAN/can0/transmit', 10)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
@@ -74,6 +75,19 @@ class VehicleNode(Node):
         Heartbeat publisher to keep tracking every node
         :return: Publish on Heartbeat
         """
+        try:
+            msg = Frame()
+            msg.header = Header()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.id = 0x0000
+            msg.is_extended = False
+            msg.dlc = 2
+            msg.data = [0x01, 0x20]  # OJO: lista de enteros, no bytearray
+
+            #self.pub_can.publish(msg)
+        except Exception as e:
+            self.logger.error(f'{e}')
+
         msg = StringStamped(
             data=self.get_name()
         )
@@ -87,7 +101,7 @@ class VehicleNode(Node):
         try:
             name, value = self.decoder.decode(msg)
             self.vehicle_state.update({name: value})
-            self.logger.error(f'Decoded {name}: {value}')
+            #self.logger.error(f'Decoded {name}: {value}')
         except ValueError as e:
             self.logger.debug(f'{e}')
 

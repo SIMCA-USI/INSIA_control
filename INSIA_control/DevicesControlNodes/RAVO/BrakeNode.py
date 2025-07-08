@@ -35,7 +35,7 @@ class BrakeNode(Node):
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='BrakeCAN/Target',
+        self.pub_target = self.create_publisher(msg_type=FloatStamped, topic='BrakeCAN/Target_DAC1',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         # Servicio para la calibración del freno

@@ -146,7 +146,7 @@ class MaxonNode(Node):
         key = keys[next_key].split(':')
         if 500 < int(key[0]):
             key = key + ([0] * (
-                    3 - len(key)))  # array de longitud 3 relleno de cobid index subindex y los 0's necesarios
+                        3 - len(key)))  # array de longitud 3 relleno de cobid index subindex y los 0's necesarios
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 can_frames=[make_can_msg(node=self.cobid, index=int(key[1]), sub_index=int(key[2]), write=False)]
@@ -230,7 +230,10 @@ class MaxonNode(Node):
 
     def msg_can(self, msg: CAN):
         try:
+            self.logger.error(f'{hex(msg.cobid)}')
+            self.logger.error(f'{self.decoder.dic_parameters.keys()}')
             name, value = self.decoder.decode(msg)
+            self.logger.error(f'{name}, {value}')
             self.epos_dictionary.update({name: value})
             if name == 'Fault':
                 self.logger.warn(f'Fault: {self.epos.get_fault(value)}')

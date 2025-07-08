@@ -25,17 +25,28 @@
       log_level: 0
       dictionary: ravo_dictionary.yaml
       can_recepcion: 'can_ravo'
-  EPOS4_Volante:
+  EPOS4_Volante: # Usar este con motor pequeño
     ros__parameters:
-      log_level: 0
-      cobid: 0x602
-      driver_type: epos4
+      log_level: 10
+      cobid: 0x603
+      driver_type: epos
       mode: CST #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
       auto_fault_reset: False
       speed: 2000
-      dictionary: epos4_dictionary.yaml
+      dictionary: epos_dictionary.yaml
       can: can_control
-      digital_outputs: 2
+      digital_outputs: 4
+  #  EPOS4_Volante: # Usar este con motor negro
+  #    ros__parameters:
+  #      log_level: 0
+  #      cobid: 0x602
+  #      driver_type: epos4
+  #      mode: CST #CST: Cyclic Synchronous Torque Mode, PPM: Profile position mode TODO: CST para volante imiev, para EC90 usar PPM
+  #      auto_fault_reset: False
+  #      speed: 2000
+  #      dictionary: epos4_dictionary.yaml
+  #      can: can_control
+  #      digital_outputs: 2
   BrakeCAN:
     ros__parameters:
       log_level: 0

@@ -29,11 +29,11 @@ import traceback
 def decoder_can(msg: bytearray, extended=False):
     try:
         if extended:
-            cobid, specifier = struct.unpack('<IB8x', msg)
-            index, sub_index = struct.unpack('<5xHB5x', msg)
+            cobid, specifier = struct.unpack('>IB8x', msg)
+            index, sub_index = struct.unpack('>5xHB5x', msg)
         else:
-            cobid, specifier = struct.unpack('<2xHB8x', msg)
-            index, sub_index = struct.unpack('<5xHB5x', msg)
+            cobid, specifier = struct.unpack('>2xHB8x', msg)
+            index, sub_index = struct.unpack('>5xHB5x', msg)
         data_raw = bytearray(msg[8:-1])
     except Exception as e:
         print(f'Error decoding CAN {msg} {e} {len(msg)}')

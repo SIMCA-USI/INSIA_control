@@ -9,13 +9,13 @@ steering:
   range: [-1500, 1500] # El valor se da en por mil
   #range: [ -20000, 20000 ] # [-10000, 10000] # Tension salida
   steering_wheel_conversion: 1
-  wheel_range: [ -50 , 50 ]
+  wheel_range: [ -40 , 40 ]
   sensor_error: 58
   inverted: True
   actuator_inverted: True
 
 brake:
-  range: [ 0, -180000 ] # 150000
+  range: [ 0, 10. ] # 150000
 
 throttle:
-  range: [ 0.973, 4.5 ] # [ 1.15, 4.5 ]
+  range: [ 0.45, 4.0 ] # [ 1.15, 4.5 ]

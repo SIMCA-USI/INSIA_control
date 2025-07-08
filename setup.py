@@ -21,7 +21,7 @@ setup(
     maintainer_email='alfredo.valle@upm.es',
     description='Paquete de control universal INSIA en Ros2 Foxy',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'can = INSIA_control.DriverNodes.CAN_Node:main',
