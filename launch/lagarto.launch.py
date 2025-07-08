@@ -18,7 +18,7 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='can',
-            name='CAN_Control',
+            name='can_control',
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True

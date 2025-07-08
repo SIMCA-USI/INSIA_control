@@ -128,10 +128,10 @@ class NIMBUSNode(Node):
     def botonera_callback(self, data):
         if data.data:
             # Control remoto (autonomo)
-            msg = make_can_msg(node=self.cobid, index=0x0100, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0001, data=0x01, clock=self.get_clock().now().to_msg())
         else:
             # Control manual(botonera original)
-            msg = make_can_msg(node=self.cobid, index=0x0100, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0001, data=0x00, clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -142,10 +142,10 @@ class NIMBUSNode(Node):
     def RutinaEncendido_callback(self, data):
         if data.data:
             # Encender rutina encendido
-            msg = make_can_msg(node=self.cobid, index=0x0200, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x01, clock=self.get_clock().now().to_msg())
         else:
             # Apagar rutina encendido
-            msg = make_can_msg(node=self.cobid, index=0x0200, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0002, data=0x00, clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -156,10 +156,10 @@ class NIMBUSNode(Node):
     def ModoTrabajo_callback(self, data):
         if data.data:
             # Encender modo de trabajo
-            msg = make_can_msg(node=self.cobid, index=0x0300, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0003, data=0x01, clock=self.get_clock().now().to_msg())
         else:
             # Apagar modo de trabajo
-            msg = make_can_msg(node=self.cobid, index=0x0300, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0003, data=0x00, clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -170,10 +170,10 @@ class NIMBUSNode(Node):
     def turbina_activacion_callback(self, data):
         if data.data:
             # Encender turbina
-            msg = make_can_msg(node=self.cobid, index=0x0400, data=0x01, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0004, data=0x01, clock=self.get_clock().now().to_msg())
         else:
             # Apagar turbina
-            msg = make_can_msg(node=self.cobid, index=0x0400, data=0x00, clock=self.get_clock().now().to_msg())
+            msg = make_can_msg(node=self.cobid, index=0x0004, data=0x00, clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=[
@@ -185,15 +185,15 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2]:
             if data.data == 0:
                 # Dejar de modificar RPM de turbina
-                msg = make_can_msg(node=self.cobid, index=0x0400, sub_index=1, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x0004, sub_index=1, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Disminuir RPM de turbina
-                msg = make_can_msg(node=self.cobid, index=0x0400, sub_index=1, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x0004, sub_index=1, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             else:  # data =2
                 # Aumentar RPM de turbina
-                msg = make_can_msg(node=self.cobid, index=0x0400, sub_index=1, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x0004, sub_index=1, data=0x02,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -208,11 +208,11 @@ class NIMBUSNode(Node):
     def cepillos_centrales_activacion_callback(self, data):
         if data.data:
             # Encender cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x00, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=0x00, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Apagar cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x00, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=0x00, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -225,23 +225,23 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2, 3, 4]:
             if data.data == 0:
                 # Dejar de realizar movimiento
-                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=1, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Bajar cepillos centrales
-                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=1, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 2:
                 # Subir cepillos centrales
-                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=1, data=0x02,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 3:
                 # Dedsplazar cepillos centrales a la izquierda
-                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x03,
+                msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=1, data=0x03,
                                    clock=self.get_clock().now().to_msg())
             else:  # data = 4
                 # Dedsplazar cepillos centrales a la derecha
-                msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=1, data=0x04,
+                msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=1, data=0x04,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -256,11 +256,11 @@ class NIMBUSNode(Node):
     def cepillos_centrales_agua_callback(self, data):
         if data.data:
             # Activar agua de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x02, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=0x02, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Desactivar agua de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x02, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=0x02, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -272,11 +272,11 @@ class NIMBUSNode(Node):
     def cepillos_centrales_luces_callback(self, data):
         if data.data:
             # Activar luz de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x03, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=0x03, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Desactivar luz de los cepillos centrales
-            msg = make_can_msg(node=self.cobid, index=0x0500, sub_index=0x03, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0005, sub_index=0x03, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -289,15 +289,15 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2]:
             if data.data == 0:
                 # Apagar cepillo frontal
-                msg = make_can_msg(node=self.cobid, index=0x0600, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x0006, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Rotacion del cepillo frontal en sentido horario
-                msg = make_can_msg(node=self.cobid, index=0x0600, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x0006, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             else:  # data = 2
                 # Rotacion del cepillo frontal en sentido horario
-                msg = make_can_msg(node=self.cobid, index=0x0600, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x0006, data=0x02,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -313,23 +313,23 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2, 3, 4]:
             if data.data == 0:
                 # Dejar de realizar movimiento
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=1, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Bajar cepillos frontal
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=1, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 2:
                 # Subir cepillos frontal
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=1, data=0x02,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 3:
                 # Dedsplazar cepillos v a la izquierda
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x03,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=1, data=0x03,
                                    clock=self.get_clock().now().to_msg())
             else:  # data = 4
                 # Dedsplazar cepillos frontal a la derecha
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=1, data=0x04,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=1, data=0x04,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -344,11 +344,11 @@ class NIMBUSNode(Node):
     def cepillos_frontal_agua_callback(self, data):
         if data.data:
             # Activar agua del cepillo frontal
-            msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x02, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x02, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Desactivar agua del cepillo frontal
-            msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x02, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x02, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -360,11 +360,11 @@ class NIMBUSNode(Node):
     def cepillos_frontal_luces_callback(self, data):
         if data.data:
             # Activar luz del cepillo frontal
-            msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x03, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x03, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Desactivar luz del cepillo frontal
-            msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x03, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x03, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -376,11 +376,11 @@ class NIMBUSNode(Node):
     def cepillos_frontal_despliegue_callback(self, data):
         if data.data:
             # Desplegar/replegar cepillo frontal
-            msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x04, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x04, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Dejar de desplegar/replegar cepillo frontal
-            msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x04, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x04, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -393,15 +393,15 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2]:
             if data.data == 0:
                 # No rotar
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x05, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x05, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Rotar en sentido horario
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x05, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x05, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             else:  # data = 2
                 # Rotar en sentido antihorario
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x05, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x05, data=0x02,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -417,15 +417,15 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2]:
             if data.data == 0:
                 # No rotar
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x06, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x06, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Rotar angulo en sentido horario
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x06, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x06, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             else:  # data = 2
                 # Rotar angulo en sentido antihorario
-                msg = make_can_msg(node=self.cobid, index=0x0600, sub_index=0x06, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x0006, sub_index=0x06, data=0x02,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -440,11 +440,11 @@ class NIMBUSNode(Node):
     def suspension_callback(self, data):
         if data.data:
             # Subir suspension
-            msg = make_can_msg(node=self.cobid, index=0x0700, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0007, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Dejar de subir suspension
-            msg = make_can_msg(node=self.cobid, index=0x0700, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0007, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -456,11 +456,11 @@ class NIMBUSNode(Node):
     def pistolas_callback(self, data):
         if data.data:
             # Activar pitolas de agua
-            msg = make_can_msg(node=self.cobid, index=0x0800, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x0008, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Desactivar pitolas de agua
-            msg = make_can_msg(node=self.cobid, index=0x0800, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x0008, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -473,15 +473,15 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2]:
             if data.data == 0:
                 # Dejar de cambiar el faldon
-                msg = make_can_msg(node=self.cobid, index=0x0900, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x0009, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Bajar faldon
-                msg = make_can_msg(node=self.cobid, index=0x0900, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x0009, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             else:  # data = 2
                 # Subir faldon
-                msg = make_can_msg(node=self.cobid, index=0x0900, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x0009, data=0x02,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -497,15 +497,15 @@ class NIMBUSNode(Node):
         if data.data in [0, 1, 2]:
             if data.data == 0:
                 # Dejar de cambiar el chupon
-                msg = make_can_msg(node=self.cobid, index=0x0A00, data=0x00,
+                msg = make_can_msg(node=self.cobid, index=0x000A, data=0x00,
                                    clock=self.get_clock().now().to_msg())
             elif data.data == 1:
                 # Bajar chupon
-                msg = make_can_msg(node=self.cobid, index=0x0A00, data=0x01,
+                msg = make_can_msg(node=self.cobid, index=0x000A, data=0x01,
                                    clock=self.get_clock().now().to_msg())
             else:  # data = 2
                 # Subir chupon
-                msg = make_can_msg(node=self.cobid, index=0x0A00, data=0x02,
+                msg = make_can_msg(node=self.cobid, index=0x000A, data=0x02,
                                    clock=self.get_clock().now().to_msg())
 
             self.pub_CAN.publish(CANGroup(
@@ -520,11 +520,11 @@ class NIMBUSNode(Node):
     def puertas_callback(self, data):
         if data.data:
             # Dejar de pulsar bloqueo de puertas
-            msg = make_can_msg(node=self.cobid, index=0x0B00, data=0x01,
+            msg = make_can_msg(node=self.cobid, index=0x000B, data=0x01,
                                clock=self.get_clock().now().to_msg())
         else:
             # Bloquear/Desbloquear puertas
-            msg = make_can_msg(node=self.cobid, index=0x0B00, data=0x00,
+            msg = make_can_msg(node=self.cobid, index=0x000B, data=0x00,
                                clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),

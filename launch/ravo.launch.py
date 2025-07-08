@@ -89,7 +89,6 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True
         ),
-
         Node(
             package='INSIA_control',
             executable='brushes_ravo',

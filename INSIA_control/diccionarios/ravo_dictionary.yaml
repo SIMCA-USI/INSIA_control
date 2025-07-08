@@ -1,4 +1,4 @@
-0xC440FF98: # velocidad
+0x98FF40C4: # velocidad
   0xFFFF:
     0xFF:
       name: speed
@@ -10,7 +10,7 @@
       type: intel #motorola/big_endian    intel/little_endian
       can_open: False
 
-0xA001: # Giro volante
+0x01A0: # Giro volante
   0xFFFF:
     0xFF:
       name: steering

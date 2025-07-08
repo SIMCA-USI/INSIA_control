@@ -84,7 +84,7 @@ class VehicleNode(Node):
             msg.dlc = 2
             msg.data = [0x01, 0x20]  # OJO: lista de enteros, no bytearray
 
-            #self.pub_can.publish(msg)
+            self.pub_can.publish(msg)
         except Exception as e:
             self.logger.error(f'{e}')
 

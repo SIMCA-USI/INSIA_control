@@ -10,7 +10,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     parameters_file_path = '{}/../conf/ravo.yaml'.format(
         os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
-    namespace = 'RAVO'
+    namespace = 'ravo'
     return LaunchDescription([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -21,6 +21,60 @@ def generate_launch_description():
             package='INSIA_control',
             executable='telemetry_ravo',
             name='Telemetry',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        # Node(
+        #     package='INSIA_control',
+        #     executable='maxon',
+        #     name='EPOS4_Volante',
+        #     namespace=namespace,
+        #     parameters=[parameters_file_path],
+        #     output='screen',
+        #     emulate_tty=True
+        # ),
+        Node(
+            package='INSIA_control',
+            executable='brakeCAN',
+            name='BrakeCAN',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='brake_ravo',
+            name='Brake',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='canadacv3',
+            name='CANADAC_Acelerador',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='throttle_ravo',
+            name='Throttle',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='nimbus',
+            name='BrushesDriver',
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',

@@ -48,7 +48,7 @@ class BrakeCanNode(Node):
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
     def consigna(self, data, dac):
-        msg = make_can_msg(node=self.cobid, index=0x0100, sub_index=dac, data=int(data.data * 100),
+        msg = make_can_msg(node=self.cobid, index=0x0001, sub_index=dac, data=int(data.data * 100),
                            clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),

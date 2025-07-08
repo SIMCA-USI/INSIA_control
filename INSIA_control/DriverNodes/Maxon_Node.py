@@ -290,7 +290,7 @@ def main(args=None):
     except KeyboardInterrupt:
         print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
-        print(f'{e}')
+        print(f'Exception {e}')
     finally:
         manager.shutdown()
 
