@@ -61,6 +61,7 @@ class Decision(Node):
         self.telemetry = Telemetry()
         default_mode = ModoMision.MANUAL
         self.current_mode = default_mode
+        self.emergency_stop_status = False
         self.mode = default_mode
         # self.emergency_stop_msg = False
         # self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
@@ -69,7 +70,8 @@ class Decision(Node):
         self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
         self.follow_ttl, self.follow_mode = self.get_p(self.get_parameters_by_prefix('follow_me'))
         self.emergency_stop_mode: Parameter = self.get_parameter_or('emergency_stop_mode',
-                                                                    Parameter(name='emergency_stop_mode', value=1)).value
+                                                                    Parameter(name='emergency_stop_mode',
+                                                                              value=1)).value
 
         # Manual mode by default, TODO: When everything will be working perfectly default teleoperation
 
@@ -85,7 +87,8 @@ class Decision(Node):
         self.create_subscription(msg_type=Bool, topic='EmergencyStop', callback=self.emergency_stop_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=Bool, topic='EmergencyStopCamera', callback=self.emergency_stop_camera_callback,
+        self.create_subscription(msg_type=Bool, topic='EmergencyStopCamera',
+                                 callback=self.emergency_stop_camera_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=Bool, topic='EmergencyStopLidar', callback=self.emergency_stop_lidar_callback,
@@ -176,7 +179,8 @@ class Decision(Node):
         self.mode = data.modo_mision
         self.current_mode = data.modo_mision
         msg_status = ModoMision(
-            modo_mision=self.current_mode
+            modo_mision=self.current_mode,
+            emergency_stop=self.emergency_stop_status,
         )
         self.pub_decision_status.publish(msg_status)
 
@@ -298,8 +302,9 @@ class Decision(Node):
         msg_final.b_throttle = msg_final.b_throttle and self.master_switch.b_throttle
         msg_final.b_steering = msg_final.b_steering and self.master_switch.b_steering
         msg_final.b_gear = msg_final.b_gear and self.master_switch.b_gear
+        msg_final.emergency_stop = False
         try:
-            if self.emergency_stop_msg: #or self.emergency_stop_hmi_msg:
+            if self.emergency_stop_msg or self.emergency_stop_hmi_msg:
                 msg_final = self.create_emergency_stop_msg(msg_final)
                 self.logger.error(f'Emergency  general: {self.emergency_stop_msg} '
                                   f'Emergency HMI {self.emergency_stop_hmi_msg = }')
@@ -311,25 +316,28 @@ class Decision(Node):
                     msg_final = self.create_emergency_stop_msg(msg_final)
             else:
                 self.logger.error(f'No Emergency Stop')
+                self.emergency_stop_status = False
         except Exception as e:
             self.logger.error(f'{e}')
         self.pub_decision.publish(msg_final)
 
     def create_emergency_stop_msg(self, current_msg):
-        
-            if self.emergency_stop_mode == 0:
-                # paso a modo manual
-                return self.manual()
-            elif self.emergency_stop_mode == 1:
-                # mantener frenado teniendo en cuenta el master switch
-                current_msg.speed = -99.
-                return current_msg
-            elif self.emergency_stop_mode == 2:
-                # Frenar incluso si esta en modo manual
-                return PetConduccion(b_brake=True, speed=0.0)
-            else:
-                self.logger.warn(f'Modo de frenada de emergencia no reconocido')
-                return PetConduccion()
+        self.emergency_stop_status = True
+
+        if self.emergency_stop_mode == 0:
+            # paso a modo manual
+            return self.manual()
+        elif self.emergency_stop_mode == 1:
+            # mantener frenado teniendo en cuenta el master switch
+            current_msg.speed = -99.
+            current_msg.emergency_stop = True
+            return current_msg
+        elif self.emergency_stop_mode == 2:
+            # Frenar incluso si esta en modo manual
+            return PetConduccion(b_brake=True, speed=0.0, emergency_stop=True)
+        else:
+            self.logger.warn(f'Modo de frenada de emergencia no reconocido')
+            return PetConduccion()
 
     def publish_heartbeat(self):
         """
@@ -342,7 +350,8 @@ class Decision(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
         msg_status = ModoMision(
-            modo_mision=self.current_mode
+            modo_mision=self.current_mode,
+            emergency_stop=self.emergency_stop_status,
         )
         self.pub_decision_status.publish(msg_status)
 
