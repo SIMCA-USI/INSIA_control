@@ -3,8 +3,10 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, Telemetry, ControladorFloat, EPOSDigital, IOAnalogue, FloatStamped, BoolStamped
+from insia_msg.msg import ControladorFloat, FloatStamped, BoolStamped
+from insia_msg.msg import StringStamped, Telemetry
 from numpy import interp
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -13,6 +15,12 @@ from yaml.loader import SafeLoader
 
 
 class ThrottleNode(Node):
+
+    def parameters_callback(self, params):
+        for param in params:
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+        return SetParametersResult(successful=True)
 
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
@@ -28,6 +36,8 @@ class ThrottleNode(Node):
         self.device_range = params['range']
         self.telemetry = Telemetry()
         self.controller = ControladorFloat()
+        self.add_on_set_parameters_callback(self.parameters_callback)
+
 
         self.create_subscription(msg_type=ControladorFloat, topic=self.get_name(), callback=self.controller_update,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -48,17 +58,32 @@ class ThrottleNode(Node):
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
-    def controller_update(self, data):
-        self.controller = data
-        self.pub_enable_throttle.publish(BoolStamped(
-            header=Header(stamp=self.get_clock().now().to_msg()),
-            data=self.controller.enable,
-        ))
-        if self.controller.enable:
-            self.pub_target.publish(FloatStamped(
+    def controller_update(self, data:ControladorFloat):
+        if data.enable != self.controller.enable:
+            self.pub_enable_throttle.publish(BoolStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                data=interp(self.controller.target, (0, 1), self.device_range)
+                data=data.enable,
             ))
+            self.logger.debug(f'Send enable {data.enable = }')
+            if data.enable == False:
+                self.pub_target.publish(FloatStamped(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    data=interp(0, (0, 1), self.device_range)
+                ))
+                self.logger.debug(f'Send disable voltaje')
+
+        if data.enable:
+            if data.target != self.controller.target:
+                #self.logger.error(f'Distinto {data.target}')
+                self.pub_target.publish(FloatStamped(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    data=interp(data.target, (0, 1), self.device_range)
+                ))
+           # else:
+                #self.logger.error(f'Es igual {data.target}')
+        #else:
+                #self.logger.error(f'No hay data')
+        self.controller = data
 
     def publish_heartbeat(self):
         """
@@ -98,7 +123,7 @@ def main(args=None):
     except KeyboardInterrupt:
         print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
-        format_exc()
+        print(format_exc())
         print(e)
     finally:
         manager.shutdown()

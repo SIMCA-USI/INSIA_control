@@ -1,11 +1,14 @@
 import importlib
 import os
+from traceback import format_exc
 
 import networkx as nx
 import rclpy
 import yaml
-from insia_msg.msg import CAN, CANGroup, StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped, EPOSAnalog, \
+from insia_msg.msg import CAN, CANGroup, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped, EPOSAnalog, \
     EPOSStatus
+from insia_msg.msg import StringStamped
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
@@ -17,6 +20,15 @@ from INSIA_control.utils.utils import make_can_msg
 
 
 class MaxonNode(Node):
+
+    def parameters_callback(self, params):
+        for param in params:
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+            elif param.name == "factor":
+                self.factor = param.value
+        return SetParametersResult(successful=True)
+
     def __init__(self):
         with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
             vehicle_parameters = yaml.load(f, Loader=SafeLoader)
@@ -72,6 +84,9 @@ class MaxonNode(Node):
         self.create_subscription(msg_type=EPOSConsigna, topic=self.get_name() + '/TargetPosition',
                                  callback=self.target_position_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
+        self.create_subscription(msg_type=EPOSConsigna, topic=self.get_name() + '/TargetPosition_PM_rel',
+                                 callback=self.target_position_update_PM, qos_profile=HistoryPolicy.KEEP_LAST)
+
         self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/TargetTorque',
                                  callback=self.target_torque_update, qos_profile=HistoryPolicy.KEEP_LAST)
 
@@ -93,6 +108,10 @@ class MaxonNode(Node):
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
         self.timer_read_dictionary = self.create_timer(0.1, self.read_dictionary)
         self.timer_status = self.create_timer(0.1, self.publish_status)
+        self.timer_position = self.create_timer(0.05, self.get_position)
+        if self.op_mode != 'PM':
+            self.timer_position.cancel()
+
         # self.timer_print_dictionary = self.create_timer(1, self.print_dictionary)
         self.timer_io = None
         from time import sleep
@@ -100,6 +119,7 @@ class MaxonNode(Node):
         self.init_device()
 
     def init_device(self):
+        self.logger.warn(f'{self.op_mode = }')
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
             can_frames=self.epos.init_device(node=self.cobid, mode=self.op_mode, rpm=self.speed)
@@ -125,6 +145,13 @@ class MaxonNode(Node):
             )
         )
 
+    def get_position(self):
+        self.pub_CAN.publish(CANGroup(
+            header=Header(stamp=self.get_clock().now().to_msg()),
+            can_frames=self.epos.read_position(node=self.cobid)
+        ))
+
+
     def fault_reset(self, data: Header):
         self.update_state(fault_reset=True)
 
@@ -146,7 +173,7 @@ class MaxonNode(Node):
         key = keys[next_key].split(':')
         if 500 < int(key[0]):
             key = key + ([0] * (
-                        3 - len(key)))  # array de longitud 3 relleno de cobid index subindex y los 0's necesarios
+                    3 - len(key)))  # array de longitud 3 relleno de cobid index subindex y los 0's necesarios
             self.pub_CAN.publish(CANGroup(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 can_frames=[make_can_msg(node=self.cobid, index=int(key[1]), sub_index=int(key[2]), write=False)]
@@ -197,6 +224,31 @@ class MaxonNode(Node):
                 ))
             else:
                 self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
+        elif self.op_mode == 'PM':
+            status = self.epos.get_status_from_dict(self.epos_dictionary)
+            if status == self.EPOSStatus.Operation_enabled:
+                self.pub_CAN.publish(CANGroup(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    can_frames=self.epos.set_angle_value_PM(node=self.cobid, angle=msg.position * self.factor)
+                ))
+            else:
+                self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
+        else:
+            self.logger.debug(f'Received position but driver is in {self.op_mode} mode')
+
+    def target_position_update_PM(self, msg):
+        if self.op_mode == 'PM':
+            status = self.epos.get_status_from_dict(self.epos_dictionary)
+            position = int(self.epos_dictionary.get(
+                'position_actual_value')) if 'position_actual_value' in self.epos_dictionary.keys() else 0
+            if status == self.EPOSStatus.Operation_enabled:
+                self.pub_CAN.publish(CANGroup(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    can_frames=self.epos.set_angle_value_PM(node=self.cobid,
+                                                            angle=((-msg.position * self.factor) + position))
+                ))
+            else:
+                self.logger.debug(f'Consigna {msg.position} {msg.mode} no enviada, motor en status: {status}')
         else:
             self.logger.debug(f'Received position but driver is in {self.op_mode} mode')
 
@@ -230,10 +282,8 @@ class MaxonNode(Node):
 
     def msg_can(self, msg: CAN):
         try:
-            self.logger.error(f'{hex(msg.cobid)}')
-            self.logger.error(f'{self.decoder.dic_parameters.keys()}')
             name, value = self.decoder.decode(msg)
-            self.logger.error(f'{name}, {value}')
+            self.logger.debug(f'{name}, {value}')
             self.epos_dictionary.update({name: value})
             if name == 'Fault':
                 self.logger.warn(f'Fault: {self.epos.get_fault(value)}')
@@ -291,6 +341,7 @@ def main(args=None):
         print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
         print(f'Exception {e}')
+        print(format_exc())
     finally:
         manager.shutdown()
 

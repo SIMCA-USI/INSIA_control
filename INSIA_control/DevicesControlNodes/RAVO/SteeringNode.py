@@ -3,7 +3,8 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from insia_msg.msg import StringStamped, BoolStamped, IntStamped, Telemetry, ControladorFloat, EPOSDigital
+from insia_msg.msg import StringStamped, EPOSConsigna, EPOSDigital, BoolStamped, IntStamped
+from insia_msg.msg import Telemetry, ControladorFloat
 from numpy import interp
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -28,7 +29,9 @@ class SteeringNode(Node):
         self.device_range = params['range']
         self.actuator_inverted = params['actuator_inverted']
         self.telemetry = Telemetry()
-        self.controller = None
+        self.rate_telemetry = 4
+        self.controller = ControladorFloat()
+        self.consigna_alcanzada = 25
 
         self.create_subscription(msg_type=ControladorFloat,
                                  topic=self.get_name(),
@@ -43,12 +46,13 @@ class SteeringNode(Node):
         self.pub_enable_steering = self.create_publisher(msg_type=EPOSDigital, topic='EPOS4_Volante/Digital',
                                                          qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_target = self.create_publisher(msg_type=IntStamped, topic='EPOS4_Volante/TargetTorque',
+        self.pub_target = self.create_publisher(msg_type=EPOSConsigna, topic='EPOS4_Volante/TargetPosition',
                                                 qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+        self.timer_control = self.create_timer(1/4, self.controller_function)
 
-    def controller_update(self, data):
+    def controller_update(self, data:ControladorFloat):
         self.controller = data
         self.pub_enable.publish(BoolStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -57,14 +61,21 @@ class SteeringNode(Node):
         self.pub_enable_steering.publish(EPOSDigital(
             header=Header(stamp=self.get_clock().now().to_msg()),
             enable=self.controller.enable,
-            io_digital=1
+            io_digital=2
         ))
+
+    def controller_function(self):
         if self.controller.enable:
             result = int(interp(self.controller.target, (-1, 1), self.device_range))
-            self.pub_target.publish(IntStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                data=-result if self.actuator_inverted else result
-            ))
+            if -self.consigna_alcanzada < result < self.consigna_alcanzada:
+                self.logger.debug(f'Consigna alcanzada')
+            else:
+                self.logger.debug(f'Consigna no alcanzada {result}')
+                self.pub_target.publish(EPOSConsigna(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    position=-result if self.actuator_inverted else result,
+                    mode=EPOSConsigna.RELATIVO
+                ))
 
     def publish_heartbeat(self):
         """
@@ -89,12 +100,13 @@ class SteeringNode(Node):
             self.pub_enable_steering.publish(EPOSDigital(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=False,
-                io_digital=1
+                io_digital=2
             ))
             # Poner target de motor a 0 por si acaso
-            self.pub_target.publish(IntStamped(
+            self.pub_target.publish(EPOSConsigna(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                data=int(interp(0, (-1, 1), self.device_range))
+                position=int(interp(0, (-1, 1), self.device_range)),
+                mode=EPOSConsigna.RELATIVO
             ))
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
@@ -109,7 +121,7 @@ def main(args=None):
     except KeyboardInterrupt:
         print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
-        format_exc()
+        print(format_exc())
         print(e)
     finally:
         manager.shutdown()

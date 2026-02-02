@@ -58,6 +58,8 @@ setup(
             'steering_ravo = INSIA_control.DevicesControlNodes.RAVO.SteeringNode:main',
             'telemetry_ravo = INSIA_control.DevicesControlNodes.RAVO.TelemetryNode:main',
             'brushes_ravo = INSIA_control.DevicesControlNodes.RAVO.BrushesNode:main',
+            'decision_ravo = INSIA_control.DevicesControlNodes.RAVO.decision:main',
+            'manual_ravo = INSIA_control.DevicesControlNodes.RAVO.ManualModeNode:main',
 
             'brake_lagarto = INSIA_control.DevicesControlNodes.Lagarto.BrakeNode:main',
             'throttle_lagarto = INSIA_control.DevicesControlNodes.Lagarto.ThrottleNode:main',
@@ -102,7 +104,10 @@ setup(
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'longitudinal_control_PID = INSIA_control.HLControl.LongitudinalControlPID:main',
             'longitudinal_control_simple = INSIA_control.HLControl.LongitudinalControlSimple:main',
+            'longitudinal_control_simple_ravo = INSIA_control.HLControl.LongitudinalControlSimpleRavo:main',
+            'longitudinal_control_simpleP = INSIA_control.HLControl.LongitudinalControlSimpleP:main',
             'longitudinal_control_simple_ascod = INSIA_control.HLControl.LongitudinalControlSimpleAscod:main',
+            
 
             'longitudinal_control_IA = INSIA_control.HLControl.LongitudinalControlIA:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',

@@ -42,10 +42,25 @@ class VehicleNode(Node):
         self.pub_CAN = self.create_publisher(msg_type=CANGroup, topic='can_control',
                                              qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CAN, topic='CAN_control', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(msg_type=CAN, topic='CAN_vehiculo', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_telemetry = self.create_timer(1 / 20, self.publish_telemetry)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+        msg = Frame()
+        msg.header = Header()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.id = 0x0000
+        msg.is_extended = False
+        msg.dlc = 2
+        msg.data = [0x01, 0x20]  # OJO: lista de enteros, no bytearray
+
+        self.msg_act_sensor = msg
+
+        try:
+            self.pub_can.publish(msg)
+        except Exception as e:
+            self.logger.error(f'{e}')
 
     def create_msg_Telemetry(self):
         msg = Telemetry()
@@ -75,18 +90,6 @@ class VehicleNode(Node):
         Heartbeat publisher to keep tracking every node
         :return: Publish on Heartbeat
         """
-        try:
-            msg = Frame()
-            msg.header = Header()
-            msg.header.stamp = self.get_clock().now().to_msg()
-            msg.id = 0x0000
-            msg.is_extended = False
-            msg.dlc = 2
-            msg.data = [0x01, 0x20]  # OJO: lista de enteros, no bytearray
-
-            self.pub_can.publish(msg)
-        except Exception as e:
-            self.logger.error(f'{e}')
 
         msg = StringStamped(
             data=self.get_name()
@@ -101,7 +104,7 @@ class VehicleNode(Node):
         try:
             name, value = self.decoder.decode(msg)
             self.vehicle_state.update({name: value})
-            #self.logger.error(f'Decoded {name}: {value}')
+            self.logger.debug(f'Decoded {name}: {value}')
         except ValueError as e:
             self.logger.debug(f'{e}')
 

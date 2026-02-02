@@ -10,7 +10,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     parameters_file_path = '{}/../conf/ravo.yaml'.format(
         os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
-    namespace = 'RAVO'
+    namespace = 'ravo'
     return LaunchDescription([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -24,16 +24,11 @@ def generate_launch_description():
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
-            executable='canadacv3',
-            name='CANADAC_Acelerador',
-            namespace=namespace,
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
+            emulate_tty=True,
+            remappings=[
+                ('CAN_vehiculo', 'can_Telemetry'),
+                ('CAN_control', 'CAN'),
+            ]
         ),
         Node(
             package='INSIA_control',
@@ -55,15 +50,6 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='nimbus',
-            name='BrushesDriver',
-            namespace=namespace,
-            parameters=[parameters_file_path],
-            output='screen',
-            emulate_tty=True
-        ),
-        Node(
-            package='INSIA_control',
             executable='brake_ravo',
             name='Brake',
             namespace=namespace,
@@ -73,8 +59,8 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='steering_ravo',
-            name='Steering',
+            executable='canadacv3',
+            name='CANADAC_Acelerador',
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
@@ -91,8 +77,8 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='brushes_ravo',
-            name='Brushes',
+            executable='nimbus',
+            name='BrushesDriver',
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
@@ -100,8 +86,8 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='longitudinal_control_simple',
-            name='Longitudinal_Control',
+            executable='steering_ravo',
+            name='Steering',
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
@@ -110,7 +96,7 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='lateral_control',
-            name='Lateral_Control',
+            name='LateralControl',
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
@@ -118,7 +104,16 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
-            executable='decision_low',
+            executable='longitudinal_control_simple_ravo',
+            name='Longitudinal_Control',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='decision_ravo',
             name='Decision',
             namespace=namespace,
             parameters=[parameters_file_path],
@@ -129,9 +124,13 @@ def generate_launch_description():
             package='INSIA_control',
             executable='pathplanning_basic',
             name='PathPlanning',
-            namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                get_package_share_directory('nmea_navsat_driver'),
+                '/gps_utm_fix.launch.py']),
         ),
     ])
