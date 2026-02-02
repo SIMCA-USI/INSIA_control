@@ -24,17 +24,21 @@ def generate_launch_description():
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
+            emulate_tty=True,
+            remappings=[
+                ('CAN_vehiculo', 'CAN_Telemetry'),
+                ('CAN_control', 'CAN'),
+            ]
+        ),
+        Node(
+            package='INSIA_control',
+            executable='maxon',
+            name='EPOS4_Volante',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
             emulate_tty=True
         ),
-        # Node(
-        #     package='INSIA_control',
-        #     executable='maxon',
-        #     name='EPOS4_Volante',
-        #     namespace=namespace,
-        #     parameters=[parameters_file_path],
-        #     output='screen',
-        #     emulate_tty=True
-        # ),
         Node(
             package='INSIA_control',
             executable='brakeCAN',
@@ -79,5 +83,54 @@ def generate_launch_description():
             parameters=[parameters_file_path],
             output='screen',
             emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='steering_ravo',
+            name='Steering',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='lateral_control',
+            name='LateralControl',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='longitudinal_control_simple',
+            name='Longitudinal_Control',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='decision_low',
+            name='Decision',
+            namespace=namespace,
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        Node(
+            package='INSIA_control',
+            executable='pathplanning_basic',
+            name='PathPlanning',
+            parameters=[parameters_file_path],
+            output='screen',
+            emulate_tty=True
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                get_package_share_directory('nmea_navsat_driver'),
+                '/gps_utm_fix.launch.py']),
         ),
     ])

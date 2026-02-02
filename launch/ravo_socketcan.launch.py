@@ -28,7 +28,11 @@ def generate_launch_description():
             namespace=namespace,
             parameters=[parameters_file_path],
             output='screen',
-            emulate_tty=True
+            emulate_tty=True,
+            remappings=[
+                ('CAN',
+                 'can_Telemetry'),
+            ]
         ),
         Node(
             package='ros2socketcan_bridge',

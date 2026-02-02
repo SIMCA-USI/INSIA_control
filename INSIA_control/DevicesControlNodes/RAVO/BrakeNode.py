@@ -27,7 +27,7 @@ class BrakeNode(Node):
         params = vehicle_parameters.get('brake')
         self.device_range = params['range']
         self.telemetry = Telemetry()
-        self.controller = None
+        self.controller = ControladorFloat()
 
         self.create_subscription(msg_type=ControladorFloat, topic=self.get_name(), callback=self.controller_update,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
@@ -42,18 +42,20 @@ class BrakeNode(Node):
         # self.srv_brake_calibration = self.create_service(BrakeCalibration, 'brake_calibration', self.enable_calibration)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
-    def controller_update(self, data):
-        self.controller = data
-        if self.controller.enable:
+    def controller_update(self, data: ControladorFloat):
+
+        if data.enable:
             self.pub_target.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                data=float(interp(self.controller.target, (0., 1.), self.device_range)),
+                data=float(interp(data.target, (0., 1.), self.device_range)),
             ))
         else:
-            self.pub_target.publish(FloatStamped(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                data=0.,
-            ))
+            if self.controller.enable != data.enable:
+                self.pub_target.publish(FloatStamped(
+                    header=Header(stamp=self.get_clock().now().to_msg()),
+                    data=0.,
+                ))
+        self.controller = data
 
     def enable_calibration(self, request, response):
         if not request.bool.data:

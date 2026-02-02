@@ -75,7 +75,8 @@ mode_epos = {
     'HMM': 6,
     'CSP': 8,
     'CSV': 9,
-    'CST': 10
+    'CST': 10,
+    'PM': -1
 }
 
 mode_epos_reverse = {
@@ -85,6 +86,7 @@ mode_epos_reverse = {
     8: 'CSP',
     9: 'CSV',
     10: 'CST',
+    -1: 'PM',
 }
 
 transitions = {
@@ -216,6 +218,11 @@ def set_angle_value(node: int, angle: int, absolute: bool = False):
     else:
         set_angle += [make_can_msg(node=node, index=0x607A, data=angle)]
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x007F)]
+    return set_angle
+
+def set_angle_value_PM(node: int, angle: int):
+    set_angle = []
+    set_angle += [make_can_msg(node=node, index=0x2062, data=angle)]
     return set_angle
 
 

@@ -63,7 +63,7 @@ class NIMBUSNode(Node):
                                  callback=self.cepillos_centrales_luces_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/CepillosFrontal/Activacion',
+        self.create_subscription(msg_type=IntStamped, topic=self.get_name() + '/CepillosFrontal/Activacion',
                                  callback=self.cepillos_frontal_activacion_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 

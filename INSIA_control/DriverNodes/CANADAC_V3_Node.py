@@ -1,19 +1,25 @@
-import os
 from traceback import format_exc
 
 import rclpy
-import yaml
-from insia_msg.msg import CANGroup, StringStamped, FloatStamped, BoolStamped
+from insia_msg.msg import CANGroup, FloatStamped, BoolStamped
+from insia_msg.msg import StringStamped
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
-from yaml.loader import SafeLoader
 
 from INSIA_control.utils.utils import make_can_msg
 
 
 class CANADACNode(Node):
+
+    def parameters_callback(self, params):
+        for param in params:
+            if param.name == "log_level":
+                self.logger.set_level(param.value)
+        return SetParametersResult(successful=True)
+
     def __init__(self):
         super().__init__(node_name='CANADAC', start_parameter_services=True,
                          allow_undeclared_parameters=False,
@@ -23,6 +29,8 @@ class CANADACNode(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
+        self.add_on_set_parameters_callback(self.parameters_callback)
+
 
         self.cobid = self.get_parameter('cobid').value
         self.can_connected = self.get_parameter('can').value
@@ -47,8 +55,10 @@ class CANADACNode(Node):
 
     def enable_tension(self, data):
         if data.data:
+            self.logger.error(f'Enviar activacion')
             msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x01, data=0x01, clock=self.get_clock().now().to_msg())
         else:
+            self.logger.error(f'Enviar desactivacion')
             msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x01, data=0x00, clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -59,8 +69,10 @@ class CANADACNode(Node):
 
     def enable(self, data):
         if data.data:
+            self.logger.debug(f'Enviar enable')
             msg = make_can_msg(node=self.cobid, index=0x0003, data=0x01, clock=self.get_clock().now().to_msg())
         else:
+            self.logger.debug(f'Desactivar enable')
             msg = make_can_msg(node=self.cobid, index=0x0003, data=0x00, clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(
             header=Header(stamp=self.get_clock().now().to_msg()),
@@ -70,6 +82,7 @@ class CANADACNode(Node):
         ))
 
     def consigna(self, data):
+        self.logger.debug(f'Tension recibida {data.data}')
         msg = make_can_msg(node=self.cobid, index=0x0001, sub_index=0x04, data=int(data.data * 100),
                            clock=self.get_clock().now().to_msg())
         self.pub_CAN.publish(CANGroup(

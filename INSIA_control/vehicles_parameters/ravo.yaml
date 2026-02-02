@@ -2,6 +2,7 @@ id_vehicle: ravo
 
 speed:
   range: [ 0, 120 ]
+  limit_speed: 10.0
 
 steering:
   # sensor_error: 0
@@ -9,13 +10,14 @@ steering:
   range: [-1500, 1500] # El valor se da en por mil
   #range: [ -20000, 20000 ] # [-10000, 10000] # Tension salida
   steering_wheel_conversion: 1
-  wheel_range: [ -40 , 40 ]
-  sensor_error: 58
+  wheel_range: [ -50 , 50 ]
+  sensor_error: 74.5
+   #73.6 #74.5
   inverted: True
   actuator_inverted: True
 
 brake:
-  range: [ 0, 10. ] # 150000
+  range: [ 0, 2. ] # 10
 
 throttle:
   range: [ 0.45, 4.0 ] # [ 1.15, 4.5 ]
