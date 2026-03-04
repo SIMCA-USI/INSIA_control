@@ -74,7 +74,7 @@ class LongitudinalControlNode(Node):
         self.pid_throttle = PID(kp=self.th_params.kp, ti=self.th_params.ti, td=self.th_params.td,
                                 anti_wind_up=self.th_params.wup)
         self.pid_brake = PID(kp=self.br_params.kp, ti=self.br_params.ti, td=self.br_params.td,
-                             anti_wind_up=self.br_params.wup)
+                             anti_wind_up=0.65)
 
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
@@ -138,8 +138,8 @@ class LongitudinalControlNode(Node):
         self.logger.debug(f'PID Throttle: {throttle}')
         if self.control_msg.speed <= 0.1:
             self.logger.debug(f'Case frenada a 0')
-            if self.current_speed < 0.5:
-                brake_solution = -0.8
+            if self.current_speed < 2:
+                brake_solution = -0.9
                 throttle_solution = 0.
             else:
                 brake_solution = brake

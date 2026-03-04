@@ -16,7 +16,7 @@ steering:
   actuator_inverted: True
 
 brake:
-  range: [ 0, 450000 ] # 400000
+  range: [ 0, 420000 ]
 
 throttle:
   range: [ 4.03, 0.92 ] #V
