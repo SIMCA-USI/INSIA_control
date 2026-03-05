@@ -100,3 +100,6 @@ imiev:
       tele:
         mode: 'wheels'
         ttl: 0
+      nav2:
+        mode: 'steering_wheel'
+        ttl: 1

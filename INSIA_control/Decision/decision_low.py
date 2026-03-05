@@ -54,6 +54,7 @@ class Decision(Node):
         self.tele_msg = PetConduccion(b_brake=True)
         self.wp_msg = PetConduccion(b_brake=True)
         self.follow_msg = PetConduccion(b_brake=True)
+        self.nav2_msg = PetConduccion(b_brake=True)
         self.emergency_stop_msg = False
         self.emergency_stop_lidar_msg = False
         self.emergency_stop_camera_msg = False
@@ -70,6 +71,7 @@ class Decision(Node):
         self.wp_ttl, self.wp_mode = self.get_p(self.get_parameters_by_prefix('wp'))
         self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
         self.follow_ttl, self.follow_mode = self.get_p(self.get_parameters_by_prefix('follow_me'))
+        self.nav2_ttl, self.nav2_mode = self.get_p(self.get_parameters_by_prefix('nav2'))
         self.emergency_stop_mode: Parameter = self.get_parameter_or('emergency_stop_mode',
                                                                     Parameter(name='emergency_stop_mode', value=1)).value
 
@@ -115,6 +117,9 @@ class Decision(Node):
 
         self.create_subscription(msg_type=PetConduccion, topic='followme/result',
                                  callback=self.follow_me_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+
+        self.create_subscription(msg_type=PetConduccion, topic='nav2/result',
+                                 callback=self.nav2_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=ModoMision, topic='Mode',
                                  callback=self.modo_mision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
@@ -206,6 +211,14 @@ class Decision(Node):
         if self.mode == ModoMision.AUTONOMO:
             self.timer_control.reset()
             self.decision()
+    
+    def nav2_callback(self, data: PetConduccion):
+        if self.nav2_mode == 'wheels':
+            data.steering *= self.steering_wheel_conversion
+        self.nav2_msg = data
+        if self.mode == ModoMision.NAV2:
+            self.timer_control.reset()
+            self.decision()
 
     def manual(self) -> PetConduccion:
         """
@@ -291,6 +304,14 @@ class Decision(Node):
                 msg = self.follow_msg
             else:
                 self.logger.debug(f'Msg follow_me is not valid, change to manual')
+                msg = self.manual()
+        
+        elif self.mode == ModoMision.NAV2:  # Nav2
+            self.logger.debug(f'Modo Nav2')
+            if self.is_valid(self.nav2_msg, self.nav2_ttl):
+                msg = self.nav2_msg
+            else:
+                self.logger.debug(f'Msg nav2 is not valid, change to manual')
                 msg = self.manual()
         else:
             self.logger.error(f'Error in mode: {self.mode}')
