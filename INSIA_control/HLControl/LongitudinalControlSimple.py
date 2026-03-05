@@ -178,6 +178,11 @@ class LongitudinalController(Node):
                 accel_signal = 0
             if self.target.speed == 0 and msg.speed < 1:
                 brake_signal = max(min(self.get_parameter('static_brake').value, 1), 0)
+            if self.target.speed == -99.:
+                accel_signal = 0.
+                brake_signal = 1.
+                self.accel_pid.reset()
+                self.brake_pid.reset()
             self.throttle_pub.publish(ControladorFloat(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 enable=self.target.b_throttle,

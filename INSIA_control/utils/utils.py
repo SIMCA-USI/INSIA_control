@@ -29,10 +29,10 @@ import traceback
 def decoder_can(msg: bytearray, extended=False):
     try:
         if extended:
-            cobid, specifier = struct.unpack('<IB8x', msg)
+            cobid, specifier = struct.unpack('>IB8x', msg)
             index, sub_index = struct.unpack('<5xHB5x', msg)
         else:
-            cobid, specifier = struct.unpack('<2xHB8x', msg)
+            cobid, specifier = struct.unpack('>2xHB8x', msg)
             index, sub_index = struct.unpack('<5xHB5x', msg)
         data_raw = bytearray(msg[8:-1])
     except Exception as e:
@@ -83,14 +83,15 @@ def decoder_libreria(msg: can.Message):
     return msg, data_raw, cobid, specifier, index, sub_index, data
 
 
-def make_can_frame(node, index, sub_index=0, data=0, write=True, c_type='i') -> bytearray:
-    header = struct.pack(f'>2xHBHB', node, 0x22 if write else 0x40, index, sub_index)
-    msg = struct.pack(f'<{c_type}B', data, 0x08)
+def make_can_frame(node, index, sub_index=0, data=0, write=True) -> bytearray:
+    if write:
+        return bytearray(struct.pack('<2xBBBHBiB', 6, node, 0x22, index, sub_index, data, 0x08))
+    else:
+        return bytearray(struct.pack('<2xBBBHBiB', 6, node, 0x40, index, sub_index, data, 0x08))
 
-    return bytearray(header + msg)
 
-def make_can_msg(node, index=0x0000, sub_index=0, data=0, write=True, clock=None, c_type='i') -> CAN:
-    msg = make_can_frame(node, index, sub_index, data, write, c_type)
+def make_can_msg(node, index=0x0000, sub_index=0, data=0, write=True, clock=None) -> CAN:
+    msg = make_can_frame(node, index, sub_index, data, write)
     _, data_raw, cobid, specifier, index, sub_index = decoder_can(msg)
     return CAN(
         header=Header() if clock is None else Header(stamp=clock),

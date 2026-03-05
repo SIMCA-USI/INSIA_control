@@ -18,7 +18,9 @@ from INSIA_control.utils.utils import decoder_can
 
 class CanNode(Node):
     def __init__(self):
-        super().__init__(node_name='CAN', start_parameter_services=True,
+        with open(os.getenv('ROS_WS') + '/vehicle.yaml') as f:
+            vehicle_parameters = yaml.load(f, Loader=SafeLoader)
+        super().__init__(node_name='CAN', namespace=vehicle_parameters['id_vehicle'], start_parameter_services=True,
                          allow_undeclared_parameters=False, automatically_declare_parameters_from_overrides=True)
 
         self.logger = self.get_logger()

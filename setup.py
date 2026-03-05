@@ -15,7 +15,7 @@ setup(
         ('share/conf/', glob('conf/*')),
         ('share/test/', glob('test/*'))
     ],
-    install_requires=['setuptools', 'PyYAML', 'numpy', 'networkx', 'simple_pid', 'python-can==4.3.1'],
+    install_requires=['setuptools', 'PyYAML', 'numpy', 'networkx==3.2', 'simple_pid', 'python-can==4.3.1'],
     zip_safe=True,
     maintainer='Alfredo Valle Barrio',
     maintainer_email='alfredo.valle@upm.es',
@@ -35,13 +35,6 @@ setup(
             'test_can = test.test_CAN_node:main',
             'can_ascod = INSIA_control.DriverNodes.CAN_NODE_ASCOD:main',
             'maxon_ascod = INSIA_control.DriverNodes.MAXON_NODE_ASCOD:main',
-
-            'canadac_mutt = INSIA_control.DriverNodes.CANADAC_MUTT:main',
-            'device_mutt = INSIA_control.DevicesControlNodes.MUTT.MUTT_Device_Node:main',
-            'control_mutt = INSIA_control.HLControl.MUTTControl:main',
-            'control_mutt_actuators = INSIA_control.HLControl.MUTTControl_actuators:main',
-            'telemetry_mutt = INSIA_control.DevicesControlNodes.MUTT.Telemetry_Basic:main',
-            'decision_mutt = INSIA_control.DevicesControlNodes.MUTT.decision_MUTT:main',
 
             'brake_imiev = INSIA_control.DevicesControlNodes.Imiev.BrakeNode:main',
             'throttle_imiev = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode:main',
@@ -78,6 +71,7 @@ setup(
             'gears_ascod = INSIA_control.DevicesControlNodes.ASCOD.GearsNode:main',
             'telemetry_ascod = INSIA_control.DevicesControlNodes.ASCOD.Telemetry_Basic:main',
 
+
             'joy_transformer = INSIA_control.DevicesControlNodes.JKU.JoyTransformerNode:main',
             'joy_transformer_pet = INSIA_control.DevicesControlNodes.JKU.JoyTransformerPetNode:main',
 
@@ -110,7 +104,6 @@ setup(
             'driverCANServicio = INSIA_control.DriverCAN.DriverCANServicio:main',
             'telemetry_imiev_srv = INSIA_control.DevicesControlNodes.Imiev.TelemetryNodeSRV:main',
 
-            'seta_emergencia = INSIA_control.Emergency.seta:main',
         ],
     },
 )

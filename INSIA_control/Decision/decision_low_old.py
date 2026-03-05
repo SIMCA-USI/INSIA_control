@@ -5,8 +5,8 @@ from traceback import format_exc
 
 import rclpy
 import yaml
-from example_interfaces.msg import Bool
-from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override, Telemetry
+from std_msgs.msg import Bool
+from insia_msg.msg import StringStamped, PetConduccion, MasterSwitch, ModoMision, Override, BoolStamped, Telemetry
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -22,8 +22,6 @@ class Decision(Node):
         for param in params:
             if param.name == "log_level":
                 self.logger.set_level(param.value)
-            elif param.name == "emergency_stop_mode":
-                self.emergency_stop_mode = param.value
         return SetParametersResult(successful=True)
 
     def __init__(self):
@@ -55,23 +53,13 @@ class Decision(Node):
         self.wp_msg = PetConduccion(b_brake=True)
         self.follow_msg = PetConduccion(b_brake=True)
         self.emergency_stop_msg = False
-        self.emergency_stop_lidar_msg = False
-        self.emergency_stop_camera_msg = False
-        self.emergency_stop_hmi_msg = False
-        self.override_emergency_stop_msg = False
         self.override = Override()
         self.telemetry = Telemetry()
-        default_mode = ModoMision.MANUAL
-        self.current_mode = default_mode
-        self.mode = default_mode
         # self.emergency_stop_msg = False
         # self.wp_ttl = self.get_parameter_or('wp_ttl', Parameter(name='wp_ttl', value=1))
 
         self.wp_ttl, self.wp_mode = self.get_p(self.get_parameters_by_prefix('wp'))
         self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
-        self.follow_ttl, self.follow_mode = self.get_p(self.get_parameters_by_prefix('follow_me'))
-        self.emergency_stop_mode: Parameter = self.get_parameter_or('emergency_stop_mode',
-                                                                    Parameter(name='emergency_stop_mode', value=1)).value
 
         # Manual mode by default, TODO: When everything will be working perfectly default teleoperation
         self.mode = ModoMision.MANUAL
@@ -82,23 +70,7 @@ class Decision(Node):
         self.pub_decision = self.create_publisher(msg_type=PetConduccion, topic='Decision/Output',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.pub_decision_status = self.create_publisher(msg_type=ModoMision, topic='Decision/Status',
-                                                         qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=Bool, topic='EmergencyStop', callback=self.emergency_stop_callback,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=Bool, topic='EmergencyStopCamera', callback=self.emergency_stop_camera_callback,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=Bool, topic='EmergencyStopLidar', callback=self.emergency_stop_lidar_callback,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=Bool, topic='EmergencyStopHMI', callback=self.emergency_stop_hmi_callback,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=Bool, topic='OverrideEmergencyStop',
-                                 callback=self.override_emergency_stop_callback,
+        self.create_subscription(msg_type=BoolStamped, topic='EmergencyStop', callback=self.emergency_stop_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=MasterSwitch, topic='MasterSwitch', callback=self.master_switch_callback,
@@ -113,12 +85,11 @@ class Decision(Node):
         self.create_subscription(msg_type=PetConduccion, topic='TeleOperacion',
                                  callback=self.teleoperation_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.create_subscription(msg_type=PetConduccion, topic='followme/result',
+        self.create_subscription(msg_type=PetConduccion, topic='follow_me',
                                  callback=self.follow_me_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.create_subscription(msg_type=ModoMision, topic='Mode',
                                  callback=self.modo_mision_callback, qos_profile=HistoryPolicy.KEEP_LAST)
-
         self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.callback_telemetry,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
 
@@ -152,20 +123,11 @@ class Decision(Node):
     def emergency_stop_callback(self, data):
         self.emergency_stop_msg = data.data
 
-    def emergency_stop_camera_callback(self, data):
-        self.emergency_stop_camera_msg = data.data
-
-    def emergency_stop_lidar_callback(self, data):
-        self.emergency_stop_lidar_msg = data.data
-
-    def emergency_stop_hmi_callback(self, data):
-        self.emergency_stop_hmi_msg = data.data
-
-    def override_emergency_stop_callback(self, data):
-        self.override_emergency_stop_msg = data.data
-
     def override_callback(self, data):
         self.override = data
+
+    def emergency_stop_callback(self, data: BoolStamped):
+        self.emergency_stop_msg = data.data
 
     def master_switch_callback(self, data: MasterSwitch):
         if self.master_switch.b_gear != data.b_gear or self.master_switch.b_brake != data.b_brake or \
@@ -177,11 +139,6 @@ class Decision(Node):
     def modo_mision_callback(self, data: ModoMision):
         self.logger.debug(f'Modo {data.modo_mision}')
         self.mode = data.modo_mision
-        self.current_mode = data.modo_mision
-        msg_status = ModoMision(
-            modo_mision=self.current_mode
-        )
-        self.pub_decision_status.publish(msg_status)
 
     def teleoperation_callback(self, data: PetConduccion):
         if self.tele_mode == 'wheels':
@@ -192,10 +149,10 @@ class Decision(Node):
             self.decision()
 
     def follow_me_callback(self, data: PetConduccion):
-        if self.follow_mode == 'wheels':
+        if self.tele_mode == 'wheels':
             data.steering *= self.steering_wheel_conversion
         self.follow_msg = data
-        if self.mode == ModoMision.FOLLOW_OPERADOR:
+        if self.mode == ModoMision.TELE_OPERADO:
             self.timer_control.reset()
             self.decision()
 
@@ -267,9 +224,9 @@ class Decision(Node):
                     self.logger.info(
                         f'Overriding steering from {msg.steering:.2f} to {self.override.steering:.2f}')
                     msg.steering = self.override.steering
-                """else:
+                else:
                     if self.telemetry.speed < 2:  # Limited steering stopped
-                        msg.steering = 0."""
+                        msg.steering = 0.
                 if self.override.b_speed and msg.speed > 5:
                     self.logger.info(f'Overriding speed from {msg.speed:.2f} to {self.override.speed:.2f}')
                     msg.speed = self.override.speed
@@ -285,13 +242,6 @@ class Decision(Node):
             else:
                 self.logger.debug(f'Msg tele is not valid, change to manual')
                 msg = self.manual()
-        elif self.mode == ModoMision.FOLLOW_OPERADOR:  # Teleoperado
-            self.logger.debug(f'Modo Follow_me')
-            if self.is_valid(self.follow_msg, self.follow_ttl):
-                msg = self.follow_msg
-            else:
-                self.logger.debug(f'Msg follow_me is not valid, change to manual')
-                msg = self.manual()
         else:
             self.logger.error(f'Error in mode: {self.mode}')
             msg = self.manual()
@@ -303,35 +253,9 @@ class Decision(Node):
         msg_final.b_throttle = msg_final.b_throttle and self.master_switch.b_throttle
         msg_final.b_steering = msg_final.b_steering and self.master_switch.b_steering
         msg_final.b_gear = msg_final.b_gear and self.master_switch.b_gear
-        try:
-            if self.emergency_stop_hmi_msg:
-                msg_final = self.create_emergency_stop_msg(msg_final)
-            elif self.emergency_stop_msg or self.emergency_stop_camera_msg or self.emergency_stop_lidar_msg:
-                self.logger.error(f'Emergency  general: {self.emergency_stop_msg} '
-                                  f'camera: {self.emergency_stop_camera_msg} '
-                                  f'lidar: {self.emergency_stop_lidar_msg} '
-                                  f'override {self.override_emergency_stop_msg = }')
-                if not self.override_emergency_stop_msg and not self.mode == ModoMision.TELE_OPERADO:
-                    msg_final = self.create_emergency_stop_msg(msg_final)
-        except Exception as e:
-            self.logger.error(f'{e}')
+        if self.emergency_stop_msg:
+            msg_final.speed = 0.
         self.pub_decision.publish(msg_final)
-
-    def create_emergency_stop_msg(self, current_msg):
-        
-            if self.emergency_stop_mode == 0:
-                # paso a modo manual
-                return self.manual()
-            elif self.emergency_stop_mode == 1:
-                # mantener frenado teniendo en cuenta el master switch
-                current_msg.speed = -99.
-                return current_msg
-            elif self.emergency_stop_mode == 2:
-                # Frenar incluso si esta en modo manual
-                return PetConduccion(b_brake=True, speed=0.0)
-            else:
-                self.logger.warn(f'Modo de frenada de emergencia no reconocido')
-                return PetConduccion()
 
     def publish_heartbeat(self):
         """
@@ -343,10 +267,6 @@ class Decision(Node):
         )
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
-        msg_status = ModoMision(
-            modo_mision=self.current_mode
-        )
-        self.pub_decision_status.publish(msg_status)
 
     def shutdown(self):
         self.timer_control.cancel()

@@ -14,6 +14,7 @@ from yaml.loader import SafeLoader
 
 from INSIA_control.utils.filtro import Decoder
 from INSIA_control.utils.utils import make_can_msg
+from traceback import format_exc
 
 
 class MaxonNode(Node):
@@ -287,7 +288,8 @@ def main(args=None):
     except KeyboardInterrupt:
         print(f'{manager.get_name()}: Keyboard interrupt')
     except Exception as e:
-        print(f'{e}')
+        print(format_exc())
+        print(f'Excepcion {e}')
     finally:
         manager.shutdown()
 
