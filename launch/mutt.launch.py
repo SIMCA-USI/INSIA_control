@@ -12,6 +12,8 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='INSIA_control',
+<<<<<<< HEAD
+=======
             executable='can',
             name='CAN_MUTT',
             parameters=[parameters_file_path],
@@ -21,6 +23,7 @@ def generate_launch_description():
         ),
         Node(
             package='INSIA_control',
+>>>>>>> aeddfabac52a3fcf21b43697be28e307d6cce082
             executable='telemetry_mutt',
             name='VehicleDecoderMUTT',
             parameters=[parameters_file_path],

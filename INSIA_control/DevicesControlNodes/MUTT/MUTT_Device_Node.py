@@ -13,7 +13,6 @@ from std_msgs.msg import Header
 class MUTT_Node(Node):
 
     def on_set_params_callback(self, params):
-
         for param in params:
             if param.name == 'log_level':
                 if param.value in [0, 10, 20, 30, 40, 50]:
@@ -53,11 +52,13 @@ class MUTT_Node(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
 
-        self.declare_parameter('throttle_range', 80.0)
+        # Ahora el rango por defecto es 100.0, ya que el nodo Control asume que Device
+        # expone el hardware al 100% absoluto y el Control recorta la petición.
+        self.declare_parameter('throttle_range', 100.0)
         self.throttle_range = 0
         self._set_range_throttle(self.get_parameter('throttle_range').value)
 
-        self.declare_parameter('steering_range', 30.0)
+        self.declare_parameter('steering_range', 100.0)
         self.steering_range = 0
         self._set_range_steering(self.get_parameter('steering_range').value)
 
@@ -122,10 +123,6 @@ class MUTT_Node(Node):
         self.steering_range = (-range, range)
 
     def publish_heartbeat(self):
-        """
-        Heartbeat publisher to keep tracking every node
-        :return: Publish on Heartbeat
-        """
         msg = StringStamped(
             data=self.get_name()
         )
@@ -136,16 +133,18 @@ class MUTT_Node(Node):
         try:
             self.shutdown_flag = True
             self.timer_heartbeat.cancel()
-            # Desactivar EPOS4
-            # Desactivar reles
             self.pub_enable.publish(BoolStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
                 data=False,
             ))
-            # Poner target de motor a 0 por si acaso
-            self.pub_target.publish(FloatStamped(
+            # Envía un cero seguro a ambos actuadores
+            self.pub_target_throttle.publish(FloatStamped(
                 header=Header(stamp=self.get_clock().now().to_msg()),
-                data=interp(0, (0, 1), self.device_range)
+                data=0.0
+            ))
+            self.pub_target_steering.publish(FloatStamped(
+                header=Header(stamp=self.get_clock().now().to_msg()),
+                data=0.0
             ))
         except Exception as e:
             self.logger.error(f'Exception in shutdown: {e}')
@@ -163,7 +162,8 @@ def main(args=None):
         format_exc()
         print(e)
     finally:
-        manager.shutdown()
+        if manager:
+            manager.shutdown()
 
 
 if __name__ == '__main__':

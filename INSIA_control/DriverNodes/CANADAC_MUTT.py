@@ -1,18 +1,11 @@
 from traceback import format_exc
-
+import struct
 import rclpy
-from insia_msg.msg import CANGroup, StringStamped, FloatStamped, BoolStamped, CAN
+from insia_msg.msg import StringStamped, FloatStamped, BoolStamped, Telemetry2
 from rclpy.node import Node
-from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from std_msgs.msg import Header
-from INSIA_control.utils.filtro import Decoder
-from INSIA_control.utils.utils import convert_types
-from yaml.loader import SafeLoader
-from numpy import interp
-
-from INSIA_control.utils.utils import make_can_msg
-
+from can_msgs.msg import Frame
 
 class CANADACNode(Node):
     def __init__(self):
@@ -20,151 +13,115 @@ class CANADACNode(Node):
                          allow_undeclared_parameters=False,
                          automatically_declare_parameters_from_overrides=True)
 
-        # Configuración inicial del logger
         self.logger = self.get_logger()
-        self._configure_logging()
-        self.enabled = False
-        self.decoder = Decoder(dictionary=self.get_parameter('dictionary').value)
-        self.vehicle_state = {}
-
+        self.logger.set_level(10)
+        
+        # --- Variables de estado ---
+        self.enabled_cmd = False    # Lo que pide ROS (Enable)
+        self.throttle_val = 0.0     # Rango [-100.0, 100.0]
+        self.steering_val = 0.0     # Rango [-100.0, 100.0]
         self.shutdown_flag = False
-        self.cobid = 0x100
+        self.telemetry = Telemetry2(vehicle_ready=False)
 
-        try:
-            self._init_parameters()
-            self._init_publishers()
-            self._init_subscriptions()
-            self._init_timers()
-            self.logger.info("Node initialized successfully")
-        except Exception as e:
-            self.logger.critical(f"Initialization failed: {str(e)}\n{format_exc()}")
-            raise
-        
-    def update_values(self, name, value):
-        if "rpm" in self.vehicle_state:
-            if self.vehicle_state["rpm"] != value:
-                self.pub_rpm.publish(FloatStamped(header=Header(stamp=self.get_clock().now().to_msg()), data=value))
-                self.vehicle_state["rpm"] = value
-            # Si el valor es igual, no se hace nada
-        else:
-            self.vehicle_state["rpm"] = value
-            self.pub_rpm.publish(FloatStamped(header=Header(stamp=self.get_clock().now().to_msg()), data=value))
-        
-    def msg_can(self, msg):
-        try:
-            name, value = self.decoder.decode(msg)
-            self.update_values(name, value)
-            # self.logger.debug(f'Decoded {name}: {value}')
-        except ValueError as e:
-            self.logger.debug(f'{e}')
-
-    def _configure_logging(self):
-        """Configura los niveles de log y formato"""
-        log_level = self.get_parameter(
-            'log_level'
-        ).value
-        self.logger.set_level(log_level)
-        self.logger.debug("Logger configured with level %d" % log_level)
-
-    def _init_parameters(self):
-        """Carga y valida parámetros"""
-        self.can_connected = self.get_parameter_or(
-            'can',
-            Parameter(name='can', value='can_output')
-        ).value
-        self.logger.info(f"Using CAN interface: {self.can_connected}")
+        self._init_publishers()
+        self._init_subscriptions()
+        self._init_timers()
+        self.logger.info("CANADAC_MUTT iniciado")
 
     def _init_publishers(self):
-        """Inicializa los publishers"""
-        self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
-                                                   qos_profile=HistoryPolicy.KEEP_LAST)
-        self.pub_rpm = self.create_publisher(msg_type=FloatStamped, topic='RPM',
-                                                   qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.pub_CAN = self.create_publisher(msg_type=CANGroup, topic=self.can_connected,
-                                             qos_profile=HistoryPolicy.KEEP_LAST)
-        self.logger.debug("Publishers initialized")
+        self.pub_heartbeat = self.create_publisher(StringStamped, 'Heartbeat', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_rpm = self.create_publisher(FloatStamped, 'RPM', qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_CAN = self.create_publisher(Frame, "CAN/can0/transmit", qos_profile=HistoryPolicy.KEEP_LAST)
+        self.pub_telemetry = self.create_publisher(msg_type=Telemetry2, topic='Telemetry2', qos_profile=HistoryPolicy.KEEP_LAST)
 
     def _init_subscriptions(self):
-        """Inicializa las suscripciones"""
-        self.create_subscription(msg_type=BoolStamped, topic=self.get_name() + '/Enable', callback=self.set_enable,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=FloatStamped, topic=self.get_name() + '/Steering', callback=self.set_steering,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
-        self.create_subscription(msg_type=FloatStamped, topic=self.get_name() + '/Throttle', callback=self.set_throttle,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-        self.create_subscription(msg_type=CAN, topic='CAN', callback=self.msg_can, qos_profile=HistoryPolicy.KEEP_LAST)
-        self.logger.debug("Subscriptions initialized")
+        self.create_subscription(BoolStamped, self.get_name() + '/Enable', self.cb_enable, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(FloatStamped, self.get_name() + '/Steering', self.cb_steering, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(FloatStamped, self.get_name() + '/Throttle', self.cb_throttle, qos_profile=HistoryPolicy.KEEP_LAST)
+        self.create_subscription(Frame, "CAN/can0/receive", self.msg_can_receive, qos_profile=HistoryPolicy.KEEP_LAST)
 
     def _init_timers(self):
-        """Configura los timers"""
-        self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
-        self.logger.debug("Timers initialized")
+        self.timer_heartbeat = self.create_timer(1.0, self.publish_heartbeat)
+        # Timer de control a 10Hz: envía ENABLE y CONTROL constantemente
+        self.timer_control = self.create_timer(0.05, self.send_can_updates)
 
-    def set_enable(self, data: BoolStamped):
-        """Maneja el estado de habilitación"""
-        try:
-            if self.enabled != data.data:
-                self.logger.debug(f"Received enable signal: {data.data}")
-                msg_data = 0x01 if data.data else 0x00
-                mode = "Drive" if data.data else "Stop"
-                msg = make_can_msg(
-                    node=self.cobid,
-                    index=0x0001,
-                    data=msg_data,
-                    clock=self.get_clock().now().to_msg()
-                )
-                self.pub_CAN.publish(CANGroup(
-                    header=Header(stamp=self.get_clock().now().to_msg()),
-                    can_frames=[msg]
-                ))
-                self.logger.debug(f"Sent {mode} mode command")
-            self.enabled = data.data
-        except Exception as e:
-            self.logger.error(f'{e}')
+        self.timer_control_enable = self.create_timer(0.05, self.send_can_enable)
+        self.timer_telemetry = self.create_timer(0.5, self.send_telemetry)
 
-    def set_steering(self, data: FloatStamped):
-        if self.enabled:
-            msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x02, data=-data.data, c_type='f',
-                               clock=self.get_clock().now().to_msg())
-            self.pub_CAN.publish(CANGroup(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=[
-                    msg
-                ]
-            ))
+    # --- Callbacks de actualización de estado (ROS -> Nodo) ---
+    def cb_enable(self, data: BoolStamped):
+        self.enabled_cmd = data.data
 
-    def set_throttle(self, data: FloatStamped):
-        if self.enabled:
-            msg = make_can_msg(node=self.cobid, index=0x0002, sub_index=0x01, data=data.data, c_type='f',
-                               clock=self.get_clock().now().to_msg())
-            self.pub_CAN.publish(CANGroup(
-                header=Header(stamp=self.get_clock().now().to_msg()),
-                can_frames=[
-                    msg
-                ]
-            ))
+    def cb_steering(self, data: FloatStamped):
+        self.steering_val = data.data
+
+    def cb_throttle(self, data: FloatStamped):
+        self.throttle_val =  data.data
+
+    # --- Recepción de datos del ESP32 (CAN -> ROS) ---
+    def msg_can_receive(self, msg: Frame):
+        if msg.id == 0x200:
+            try:
+                # Decodificamos RPM (4 bytes float) e Interlock (1 byte bool)
+                rpm = struct.unpack('<f', bytes(msg.data[0:4]))[0]
+                interlock_ok = bool(msg.data[4])
+                
+                now = self.get_clock().now().to_msg()
+                self.pub_rpm.publish(FloatStamped(header=Header(stamp=now), data=rpm))
+
+                self.telemetry.vehicle_ready = interlock_ok
+
+            except Exception as e:
+                self.logger.error(f'Error en decodificación 0x200: {e}')
+
+    # --- Lógica principal de envío (Nodo -> CAN) ---
+    def send_can_updates(self):
+        now = self.get_clock().now().to_msg()
+
+        # 1. DETERMINAR VALORES SEGÚN INTERLOCK
+        if not self.telemetry.vehicle_ready:
+            t_byte = 127
+            s_byte = 127
+        else:
+            t_byte = int(((self.throttle_val + 100.0) / 200.0) * 255.0)
+            s_byte = int(((-self.steering_val + 100.0) / 200.0) * 255.0)
+
+        # Asegurar límites de bytes por si acaso
+        t_byte = max(0, min(255, t_byte))
+        s_byte = max(0, min(255, s_byte))
+
+        # 3. ENVIAR MENSAJE CONTROL (0x150)
+        f_control = Frame()
+        f_control.header.stamp = now
+        f_control.id = 0x150
+        f_control.dlc = 2
+        f_control.data = [t_byte, s_byte, 0, 0, 0, 0, 0, 0]
+        self.pub_CAN.publish(f_control)
+
+    def send_can_enable(self):
+        now = self.get_clock().now().to_msg()
+
+        # 2. ENVIAR MENSAJE ENABLE (0x100)
+        f_enable = Frame()
+        f_enable.header.stamp = now
+        f_enable.id = 0x100
+        f_enable.dlc = 1
+        f_enable.data = [self.enabled_cmd, 0, 0, 0, 0, 0, 0, 0]
+
+        self.pub_CAN.publish(f_enable)
 
     def publish_heartbeat(self):
-        """
-        Heartbeat publisher to keep tracking every node
-        :return: Publish on Heartbeat
-        """
-        msg = StringStamped(
-            data=self.get_name()
-        )
+        msg = StringStamped(data=self.get_name())
         msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_heartbeat.publish(msg)
+    
+    def send_telemetry(self):
+        self.pub_telemetry.publish(msg=self.telemetry)
 
     def shutdown(self):
-        try:
-            self.shutdown_flag = True
-            self.timer_heartbeat.cancel()
-        except Exception as e:
-            self.logger.error(f'Exception in shutdown: {e}')
-
+        self.shutdown_flag = True
+        self.timer_control.cancel()
+        self.timer_heartbeat.cancel()
 
 def main(args=None):
     rclpy.init(args=args)
@@ -173,13 +130,12 @@ def main(args=None):
         manager = CANADACNode()
         rclpy.spin(manager)
     except KeyboardInterrupt:
-        print(f'{manager.get_name()}: Keyboard interrupt')
+        print(f'Interrupción por teclado en {manager.get_name()}')
     except Exception as e:
-        format_exc()
-        print(e)
+        print(f'Error: {e}\n{format_exc()}')
     finally:
-        manager.shutdown()
-
+        if manager:
+            manager.shutdown()
 
 if __name__ == '__main__':
     main()
