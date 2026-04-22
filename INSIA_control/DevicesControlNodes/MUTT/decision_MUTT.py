@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 import time
 from copy import deepcopy
@@ -51,6 +50,7 @@ class Decision(Node):
         self.master_switch = MasterSwitch(b_steering=True, b_throttle=True, b_brake=True, b_gear=True)
         self.tele_msg = PetConduccion(b_brake=True)
         self.follow_msg = PetConduccion(b_brake=True)
+        self.nav2_msg = PetConduccion(b_brake=True)
         self.wp_msg = None
         self.emergency_stop_msg = False
         self.emergency_stop_lidar_msg = False
@@ -70,6 +70,7 @@ class Decision(Node):
         self.tele_ttl, self.tele_mode = self.get_p(self.get_parameters_by_prefix('tele'))
         self.follow_ttl, self.follow_mode = self.get_p(self.get_parameters_by_prefix('follow_me'))
         self.radio_ttl, self.radio_mode = self.get_p(self.get_parameters_by_prefix('radio_control'))
+        self.nav2_ttl, self.nav2_mode = self.get_p(self.get_parameters_by_prefix('nav2'))
 
 
         # Manual mode by default, TODO: When everything will be working perfectly default teleoperation
@@ -124,6 +125,9 @@ class Decision(Node):
         
         self.create_subscription(msg_type=PetConduccion, topic='RadioControl',
                                  callback=self.radio_control_callback, qos_profile=HistoryPolicy.KEEP_LAST)
+        
+        self.create_subscription(msg_type=PetConduccion, topic='nav2/result',
+                                 callback=self.nav2_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
         self.timer_control = self.create_timer(1 / 10, self.decision)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
@@ -220,6 +224,14 @@ class Decision(Node):
         if self.mode == ModoMision.RADIO_CONTROL:
             self.timer_control.reset()
             self.decision()
+    
+    def nav2_callback(self, data: PetConduccion):
+        if self.nav2_mode == 'wheels':
+            data.steering *= self.steering_wheel_conversion
+        self.nav2_msg = data
+        if self.mode == ModoMision.NAV2:
+            self.timer_control.reset()
+            self.decision()
 
     def manual(self) -> PetConduccion:
         """
@@ -311,6 +323,13 @@ class Decision(Node):
             else:
                 self.logger.debug(f'Msg follow_me is not valid, change to manual')
                 msg = self.manual()
+        elif self.mode == ModoMision.NAV2:  # Nav2
+            self.logger.debug(f'Modo Nav2')
+            if self.is_valid(self.nav2_msg, self.nav2_ttl):
+                msg = self.nav2_msg
+            else:
+                self.logger.debug(f'Msg nav2 is not valid, change to manual')
+                msg = self.manual()   
         else:
             self.logger.error(f'Error in mode: {self.mode}')
             msg = self.manual()
@@ -714,4 +733,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
->>>>>>> aeddfabac52a3fcf21b43697be28e307d6cce082

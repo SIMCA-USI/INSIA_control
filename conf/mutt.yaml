@@ -40,3 +40,6 @@
       radio_control:
         mode: 'steering_wheel'
         ttl: 0
+      nav2:
+        mode: 'steering_wheel'
+        ttl: 1  
