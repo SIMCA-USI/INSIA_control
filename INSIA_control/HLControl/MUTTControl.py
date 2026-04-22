@@ -2,24 +2,11 @@ import rclpy
 from insia_msg.msg import Telemetry, Telemetry2, StringStamped, PetConduccion, ControladorFloat, ModoMision
 from numpy import interp
 from rcl_interfaces.msg import SetParametersResult
-from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
 from simple_pid import PID
-from simple_pid import PID
 from std_msgs.msg import Header
-
-
-class PID_params:
-    def __init__(self, params):
-        try:
-            self.kp = params['kp'].value
-            self.ti = params['ti'].value
-            self.td = params['td'].value
-        except:
-            print('Error en el pid')
-            exit(0)
 
 
 class PID_params:
@@ -97,9 +84,7 @@ class Control_MUTT(Node):
         self.pub_heartbeat = self.create_publisher(msg_type=StringStamped, topic='Heartbeat',
                                                    qos_profile=HistoryPolicy.KEEP_LAST)
         self.pub_steering = self.create_publisher(msg_type=ControladorFloat, topic='MUTT_Device/Steering',
-        self.pub_steering = self.create_publisher(msg_type=ControladorFloat, topic='MUTT_Device/Steering',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
-        self.pub_throttle = self.create_publisher(msg_type=ControladorFloat, topic='MUTT_Device/Throttle',
         self.pub_throttle = self.create_publisher(msg_type=ControladorFloat, topic='MUTT_Device/Throttle',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
@@ -212,7 +197,6 @@ class Control_MUTT(Node):
                     target=0.
                 )
             )
-            self.throttle_pid.reset()
             self.throttle_pid.reset()
 
     def decision_callback(self, decision: PetConduccion):

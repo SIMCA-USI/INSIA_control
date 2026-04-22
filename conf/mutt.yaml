@@ -14,7 +14,6 @@
   CANADAC_MUTT:
     ros__parameters:
       log_level: 0
-      log_level: 0
       cobid: 0x100
       can: CAN_MUTT
       dictionary: CANAMUTT_dictionary.yaml
@@ -42,4 +41,4 @@
         ttl: 0
       nav2:
         mode: 'steering_wheel'
-        ttl: 1  
+        ttl: 1
