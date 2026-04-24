@@ -61,7 +61,7 @@ class Control_MUTT(Node):
         self.throttle_limit = 40.0
         self.base_steering_limit = 25.0
 
-        self.declare_parameter('speed_range', 20.)
+        self.declare_parameter('speed_range', 30.)
         self.speed_range_val = self.get_parameter('speed_range').value
         self.speed_range = (-self.speed_range_val, self.speed_range_val)
         
