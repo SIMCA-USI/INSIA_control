@@ -38,6 +38,7 @@ def generate_launch_description():
         Node(
             package='INSIA_control',
             executable='control_mutt',
+            name='Control_MUTT',
             parameters=[parameters_file_path],
             namespace='MUTT',
             output='screen',
