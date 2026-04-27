@@ -1,22 +1,22 @@
 import rclpy
-from insia_msg.msg import Telemetry, Telemetry2, StringStamped, PetConduccion, ControladorFloat, ModoMision
-from numpy import interp
+import numpy as np
+from insia_msg.msg import Telemetry, StringStamped, PetConduccion, ControladorFloat, ModoMision
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import HistoryPolicy
-from simple_pid import PID
 from std_msgs.msg import Header
 
 
 class PID_params:
     def __init__(self, params):
         try:
-            self.kp = params['kp'].value
-            self.ti = params['ti'].value
-            self.td = params['td'].value
-        except:
-            print('Error en el pid')
+            self.kp = params.get('kp', Parameter('kp', value=0.0)).value
+            self.ki = params.get('ki', Parameter('ki', value=0.0)).value
+            self.kd = params.get('kd', Parameter('kd', value=0.0)).value
+            self.i_windup = params.get('i_windup', Parameter('i_windup', value=1.0)).value
+        except Exception as e:
+            print(f'Error al cargar los parámetros del PID: {e}')
             exit(0)
 
 
@@ -25,22 +25,19 @@ class Control_MUTT(Node):
         for param in params:
             if param.name == "log_level":
                 self.logger.set_level(param.value)
-            elif param.name in ['throttle.kp', 'throttle.ti', 'throttle.td']:
+            elif param.name in ['throttle.kp', 'throttle.ki', 'throttle.kd', 'throttle.i_windup']:
                 if param.name == 'throttle.kp':
                     self.th_params.kp = param.value
-                elif param.name == 'throttle.ti':
-                    self.th_params.ti = param.value
-                elif param.name == 'throttle.td':
-                    self.th_params.td = param.value
-                self.set_throttle_tunnings()
+                elif param.name == 'throttle.ki':
+                    self.th_params.ki = param.value
+                elif param.name == 'throttle.kd':
+                    self.th_params.kd = param.value
+                elif param.name == 'throttle.i_windup':
+                    self.th_params.i_windup = param.value
+                self.logger.debug(f'Accel tunnings modified: Kp={self.th_params.kp}, Ki={self.th_params.ki}, Kd={self.th_params.kd}, Windup={self.th_params.i_windup}')
             elif param.name == "speed_range":
-                self.speed_range_val = param.value
                 self.speed_range = (-param.value, param.value)
         return SetParametersResult(successful=True)
-
-    def set_throttle_tunnings(self):
-        self.logger.debug(f'Accel tunnings modified: {self.th_params =}')
-        self.throttle_pid.tunings = (self.th_params.kp, self.th_params.ti, self.th_params.td)
 
     def __init__(self):
         super().__init__(node_name='Control_MUTT',
@@ -50,34 +47,28 @@ class Control_MUTT(Node):
         self._log_level: Parameter = self.get_parameter_or('log_level', Parameter(name='log_level', value=10))
         self.logger.set_level(self._log_level.value)
         self.shutdown_flag = False
-        
         self.telemetry = Telemetry()
         self.pet_conduccion: PetConduccion = PetConduccion()
-        
-        self.vehicle_ready = False
-        
-        # Variables para los límites dinámicos
         self.current_status = ModoMision.MANUAL
-        self.throttle_limit = 40.0
-        self.base_steering_limit = 25.0
-
-        self.declare_parameter('speed_range', 30.)
-        self.speed_range_val = self.get_parameter('speed_range').value
-        self.speed_range = (-self.speed_range_val, self.speed_range_val)
         
+        self.declare_parameter('speed_range', 20.)
+        param_range_speed = self.get_parameter('speed_range').value
+        self.speed_range = (-param_range_speed, param_range_speed)
+        
+        # Cargar parámetros PID personalizados
         self.th_params = PID_params(self.get_parameters_by_prefix('throttle'))
-        self.throttle_pid = PID(self.th_params.kp, self.th_params.ti, self.th_params.td, setpoint=0,
-                                output_limits=(-1, 1))
+        
+        # Variables de estado del PID Manual
+        self.integral = 0.0
+        self.prev_error = 0.0
+        self.dt = 0.1  # 1/10 basado en el timer_control
+        
         self.add_on_set_parameters_callback(self.parameters_callback)
 
         self.create_subscription(msg_type=PetConduccion, topic='Decision/Output', callback=self.decision_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
         self.create_subscription(msg_type=Telemetry, topic='Telemetry', callback=self.telemetry_callback,
                                  qos_profile=HistoryPolicy.KEEP_LAST)
-        
-        self.create_subscription(msg_type=Telemetry2, topic='Telemetry2', callback=self.telemetry2_callback,
-                                 qos_profile=HistoryPolicy.KEEP_LAST)
-
         self.create_subscription(msg_type=ModoMision, topic='Decision/Status',
                                  callback=self.decision_status_callback, qos_profile=HistoryPolicy.KEEP_LAST)
 
@@ -88,51 +79,34 @@ class Control_MUTT(Node):
         self.pub_throttle = self.create_publisher(msg_type=ControladorFloat, topic='MUTT_Device/Throttle',
                                                   qos_profile=HistoryPolicy.KEEP_LAST)
 
-        self.timer_control = self.create_timer(1 / 10, self.control)
+        self.timer_control = self.create_timer(self.dt, self.control)
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
+
+    def _pid(self, error, min_speed, max_speed):
+        """Implementación manual del PID suministrada por tus compañeros"""
+        self.integral = np.clip(self.integral + error * self.dt, -self.th_params.i_windup, self.th_params.i_windup)
+        derivative = (error - self.prev_error) / self.dt
+        self.prev_error = error
+        
+        output = self.th_params.kp * error + self.th_params.ki * self.integral + self.th_params.kd * derivative
+        return np.clip(output, min_speed, max_speed)
+
+    def _reset_pid(self):
+        """Reinicia la memoria del PID"""
+        self.integral = 0.0
+        self.prev_error = 0.0
 
     def decision_status_callback(self, msg: ModoMision):
         self.current_status = msg.modo_mision
-        
-        # Lógica de límites trasladada desde el Device
-        match self.current_status:
-            case ModoMision.AUTONOMO:
-                self.throttle_limit = 60.0
-                self.base_steering_limit = 35.0
-            case ModoMision.TELE_OPERADO:
-                self.throttle_limit = 80.0
-                self.base_steering_limit = 50.0
-            case ModoMision.FOLLOW_ME:
-                self.throttle_limit = 40.0
-                self.base_steering_limit = 25.0
-            case ModoMision.RADIO_CONTROL:
-                self.throttle_limit = 100.0
-                self.base_steering_limit = 60.0
-            case _:
-                self.throttle_limit = 40.0
-                self.base_steering_limit = 25.0
 
     def control(self):
 
-        # --- LÓGICA DE GIRO DINÁMICO ---
         if self.pet_conduccion.b_steering:
-            # Calculamos el límite de giro basado en la velocidad actual
-            velocidad_actual = abs(self.telemetry.speed)
-            
-            # Interpolamos: a 0 vel -> base_steering_limit; a vel max -> 15.0
-            dynamic_steering_limit = interp(velocidad_actual, [0.0, self.speed_range_val], [self.base_steering_limit, 25.0])
-            
-            # Mapeamos la petición (-100, 100) a (-1, 1)
-            target_steering = interp(self.pet_conduccion.steering, (-100, 100), (-1, 1))
-            
-            # Aplicamos el multiplicador del límite (ej: si el límite es 35, multiplicamos por 0.35)
-            target_steering_limited = target_steering * (dynamic_steering_limit / 100.0)
-
             self.pub_steering.publish(
                 ControladorFloat(
                     header=Header(stamp=self.get_clock().now().to_msg()),
                     enable=True,
-                    target=target_steering_limited
+                    target=np.interp(self.pet_conduccion.steering, (-100, 100), (-1, 1))
                 )
             )
         else:
@@ -144,43 +118,34 @@ class Control_MUTT(Node):
                 )
             )
 
-        # --- LÓGICA DE ACELERADOR ---
         if self.pet_conduccion.b_throttle:
             if self.current_status == ModoMision.TELE_OPERADO or self.current_status == ModoMision.RADIO_CONTROL:
-                # Modos directos: Mapeamos y limitamos según el modo
-                target_throttle = interp(self.pet_conduccion.speed, (-100, 100), (-1, 1))
-                target_throttle_limited = target_throttle * (self.throttle_limit / 100.0)
-                
                 self.pub_throttle.publish(
                     ControladorFloat(
                         header=Header(stamp=self.get_clock().now().to_msg()),
                         enable=True,
-                        target=target_throttle_limited
+                        target=np.interp(self.pet_conduccion.speed, (-100, 100), (-1, 1))
                     )
                 )
-                self.throttle_pid.reset()
+                self._reset_pid()
             else:
                 # MODOS AUTÓNOMOS: Con PID y NUNCA hacia atrás
-                self.throttle_pid.output_limits = (0.0, self.throttle_limit / 100.0)
-
+                
                 # Interpolaciones para el cálculo del error
-                current_speed = interp(self.telemetry.speed, self.speed_range, [0, 1])
-                target_speed = interp(self.pet_conduccion.speed, self.speed_range, [0, 1])
+                current_speed = np.interp(self.telemetry.speed, self.speed_range, [0, 1])
+                target_speed = np.interp(self.pet_conduccion.speed, self.speed_range, [0, 1])
                 error_speed = target_speed - current_speed
                 
                 velocidad_objetivo = self.pet_conduccion.speed
                 velocidad_actual = self.telemetry.speed
 
-                # AÑADIDO: Lógica Anti-Windup usando vehicle_ready
-                if not self.vehicle_ready:
-                    # Si el vehículo no está listo, mandamos 0 y mantenemos el PID purgado
+                # Zona muerta de parada
+                if velocidad_objetivo <= 0.0 and abs(velocidad_actual) <= 1.5:
                     target_pid = 0.0
-                    self.throttle_pid.reset()
-                elif velocidad_objetivo <= 0.0 and abs(velocidad_actual) <= 1.5:
-                    target_pid = 0.0
-                    self.throttle_pid.reset()
+                    self._reset_pid() # Limpiamos el término integral y derivativo
                 else:
-                    target_pid = float(self.throttle_pid(-error_speed))
+                    # Aplicamos nuestro PID y limitamos la salida estrictamente entre 0.0 y 1.0
+                    target_pid = float(self._pid(error_speed, min_speed=0.0, max_speed=1.0))
 
                 self.pub_throttle.publish(
                     ControladorFloat(
@@ -197,16 +162,13 @@ class Control_MUTT(Node):
                     target=0.
                 )
             )
-            self.throttle_pid.reset()
+            self._reset_pid()
 
     def decision_callback(self, decision: PetConduccion):
         self.pet_conduccion = decision
 
     def telemetry_callback(self, telemetry: Telemetry):
         self.telemetry = telemetry
-
-    def telemetry2_callback(self, msg: Telemetry2):
-        self.vehicle_ready = msg.vehicle_ready
 
     def publish_heartbeat(self):
         msg = StringStamped(
