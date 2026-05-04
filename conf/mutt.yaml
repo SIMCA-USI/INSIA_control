@@ -25,6 +25,11 @@
         ki: 0.5
         kd: 0.0
         i_windup: 1.0
+        ff_0kmh: 0.0
+        ff_1kmh: 0.1
+        ff_2kmh: 0.14
+        ff_3kmh: 0.18
+        ff_4kmh: 0.2
   Decision:
     ros__parameters:
       log_level: 0
