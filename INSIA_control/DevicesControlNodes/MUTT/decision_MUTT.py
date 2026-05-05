@@ -346,10 +346,11 @@ class Decision(Node):
                 if self.emergency_stop_hmi_msg:
                     # Parada por HMI (botón físico): Parada ESTRICTA, se bloquea todo.
                     msg_final = self.create_emergency_stop_msg(msg_final, strict_stop=True)
-                elif self.emergency_stop_msg or self.emergency_stop_camera_msg or self.emergency_stop_lidar_msg:
+                elif self.emergency_stop_msg or self.emergency_stop_camera_msg or self.emergency_stop_lidar_msg or self.emergency_stop_lidar_rot_msg:
                     self.logger.error(f'Emergency general: {self.emergency_stop_msg} '
                                       f'camera: {self.emergency_stop_camera_msg} '
                                       f'lidar: {self.emergency_stop_lidar_msg} '
+                                      f'lidarRot: {self.emergency_stop_lidar_rot_msg} '
                                       f'override {self.override_emergency_stop_msg = }')
                     if not self.override_emergency_stop_msg:
                         # Parada por sensores: Evaluaremos si se puede girar.
@@ -359,20 +360,23 @@ class Decision(Node):
         self.pub_decision.publish(msg_final)
 
     def create_emergency_stop_msg(self, current_msg, strict_stop):
-        # 1. Cortamos siempre el avance y retroceso por seguridad
-        current_msg.b_throttle = False
-        current_msg.speed = 0.0
-        current_msg.b_brake = False
-        current_msg.b_gear = False
+        # 1. Evaluacion de acelerador
+        if strict_stop or self.emergency_stop_lidar_msg:
+            current_msg.b_throttle = False
+            current_msg.speed = 0.0
+            if not strict_stop:
+                self.logger.warning("Bloqueando acelerador: Obstáculo frontal detectado por Lidar.")
 
         # 2. Evaluación de giro (Steering)
-        # Si es una parada estricta (botón HMI) O el LidarRot detecta un obstáculo al girar:
         if strict_stop or self.emergency_stop_lidar_rot_msg:
             current_msg.b_steering = False
             current_msg.steering = 0.0
             if not strict_stop:
                 self.logger.warning("Bloqueando giro: Obstáculo lateral detectado por LidarRot.")
         
+        if strict_stop or (self.emergency_stop_lidar_msg and self emergency_stop_lidar_rot_msg):
+            current_msg.b_brake = False
+            current_msg.b_gear = False
         # Si no es estricta y LidarRot es False, el 'b_steering' y 'steering' 
         # originales de PathPlanning sobreviven, permitiendo al tanque rotar.
 
