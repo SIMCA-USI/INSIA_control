@@ -1,0 +1,15 @@
+<?xml version="1.0"?><EPOS-Studio File="EPOS Studio.exe" Version="3.3.1.0">
+	<Container>
+		<Project>
+			<Name>test digital output</Name>
+			<ProjectSettings>
+				<RefreshRate>100</RefreshRate>
+			</ProjectSettings>
+			<NetworkTopology>
+				<NetworkHost>
+					<Name>LocalHost</Name>
+				</NetworkHost>
+			</NetworkTopology>
+			<WindowInformation></WindowInformation>
+		</Project>
+	</Container></EPOS-Studio>
