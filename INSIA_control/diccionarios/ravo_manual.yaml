@@ -1,0 +1,33 @@
+0x600:
+  0x0001:
+    0xFF:
+      name: brake
+      inicio: 0
+      longitud: 32
+      factor: 1
+      offset: 0
+      signed: False
+      type: intel
+      can_open: True
+
+  0x0003:
+    0xFF:
+      name: steering
+      inicio: 0
+      longitud: 32
+      factor: 1
+      offset: 0
+      signed: False
+      type: intel
+      can_open: True
+
+  0x0005:
+    0xFF:
+      name: throttle
+      inicio: 0
+      longitud: 32
+      factor: 1
+      offset: 0
+      signed: False
+      type: intel
+      can_open: True

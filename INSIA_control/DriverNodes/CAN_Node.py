@@ -65,7 +65,6 @@ class CanNode(Node):
                                          ip=self.ip, port=self.port, deco_function=self.decode_can,
                                          log_level=self._log_level.value)
 
-
         self.timer_heartbeat = self.create_timer(1, self.publish_heartbeat)
 
         self.timer_write = threading.Thread(target=self.write_th, daemon=False, name=f'Writer {self.get_name()}')

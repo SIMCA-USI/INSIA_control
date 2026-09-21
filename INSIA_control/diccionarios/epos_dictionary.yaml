@@ -1,4 +1,4 @@
-0x580: # se suma automaticamente el cobid
+0x583: # se suma automaticamente el cobid
   0x6041:
     0x00:
       name: Statusword

@@ -75,7 +75,8 @@ mode_epos = {
     'HMM': 6,
     'CSP': 8,
     'CSV': 9,
-    'CST': 10
+    'CST': 10,
+    'PM': -1
 }
 
 mode_epos_reverse = {
@@ -85,6 +86,7 @@ mode_epos_reverse = {
     8: 'CSP',
     9: 'CSV',
     10: 'CST',
+    -1: 'PM',
 }
 
 transitions = {
@@ -218,6 +220,11 @@ def set_angle_value(node: int, angle: int, absolute: bool = False):
         set_angle += [make_can_msg(node=node, index=0x6040, data=0x007F)]
     return set_angle
 
+def set_angle_value_PM(node: int, angle: int):
+    set_angle = []
+    set_angle += [make_can_msg(node=node, index=0x2062, data=angle)]
+    return set_angle
+
 
 def set_torque(node: int, torque: int):
     return [make_can_msg(node=node, index=0x6071, sub_index=0, data=int(torque))]
@@ -235,7 +242,7 @@ def init_device(node: int, mode: str = 'PPM', rpm: int = 5000):
 
 def get_transitions(graph, start, end):
     edge_labels = nx.get_edge_attributes(graph, 'transition')
-    path = nx.shortest_path(graph)
+    path = dict(nx.shortest_path(graph))
     path_edges = [edge_labels.get(x, edge_labels.get((x[1], x[0]))) for x in
                   zip(path[start][end], path[start][end][1:])]
     return path_edges

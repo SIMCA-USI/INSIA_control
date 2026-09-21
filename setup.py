@@ -21,7 +21,7 @@ setup(
     maintainer_email='alfredo.valle@upm.es',
     description='Paquete de control universal INSIA en Ros2 Foxy',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'can = INSIA_control.DriverNodes.CAN_Node:main',
@@ -29,12 +29,17 @@ setup(
             'faulhaber = INSIA_control.DriverNodes.FAULHABER_Node:main',
             'gears_arduino = INSIA_control.DriverNodes.Gears_Arduino_Node:main',
             'canadac = INSIA_control.DriverNodes.CANADAC_Node:main',
+            'canadacv3 = INSIA_control.DriverNodes.CANADAC_V3_Node:main',
+            'canadac_fake_ack = INSIA_control.DriverNodes.fake_canadac_ack:main',
             'ascod_placa_azul = INSIA_control.DriverNodes.ASCOD_Placa_Azul:main',
             'vehicledecoder_base = INSIA_control.DriverNodes.Vehicle_Node_Base:main',
             'io_card = INSIA_control.DriverNodes.IO_Card:main',
             'test_can = test.test_CAN_node:main',
             'can_ascod = INSIA_control.DriverNodes.CAN_NODE_ASCOD:main',
             'maxon_ascod = INSIA_control.DriverNodes.MAXON_NODE_ASCOD:main',
+
+            'brakeCAN = INSIA_control.DriverNodes.BRAKE_CAN_Node:main',
+            'nimbus = INSIA_control.DriverNodes.NIMBUS_Node:main',
 
             'canadac_mutt = INSIA_control.DriverNodes.CANADAC_MUTT:main',
             'device_mutt = INSIA_control.DevicesControlNodes.MUTT.MUTT_Device_Node:main',
@@ -48,6 +53,14 @@ setup(
             'throttle_imiev_new = INSIA_control.DevicesControlNodes.Imiev.ThrottleNode_new:main',
             'steering_imiev = INSIA_control.DevicesControlNodes.Imiev.SteeringNode:main',
             'telemetry_imiev = INSIA_control.DevicesControlNodes.Imiev.TelemetryNode:main',
+
+            'brake_ravo = INSIA_control.DevicesControlNodes.RAVO.BrakeNode:main',
+            'throttle_ravo = INSIA_control.DevicesControlNodes.RAVO.ThrottleNode:main',
+            'steering_ravo = INSIA_control.DevicesControlNodes.RAVO.SteeringNode:main',
+            'telemetry_ravo = INSIA_control.DevicesControlNodes.RAVO.TelemetryNode:main',
+            'brushes_ravo = INSIA_control.DevicesControlNodes.RAVO.BrushesNode:main',
+            'decision_ravo = INSIA_control.DevicesControlNodes.RAVO.decision:main',
+            'manual_ravo = INSIA_control.DevicesControlNodes.RAVO.ManualModeNode:main',
 
             'brake_lagarto = INSIA_control.DevicesControlNodes.Lagarto.BrakeNode:main',
             'throttle_lagarto = INSIA_control.DevicesControlNodes.Lagarto.ThrottleNode:main',
@@ -92,7 +105,10 @@ setup(
             'longitudinal_control = INSIA_control.HLControl.LongitudinalControl:main',
             'longitudinal_control_PID = INSIA_control.HLControl.LongitudinalControlPID:main',
             'longitudinal_control_simple = INSIA_control.HLControl.LongitudinalControlSimple:main',
+            'longitudinal_control_simple_ravo = INSIA_control.HLControl.LongitudinalControlSimpleRavo:main',
+            'longitudinal_control_simpleP = INSIA_control.HLControl.LongitudinalControlSimpleP:main',
             'longitudinal_control_simple_ascod = INSIA_control.HLControl.LongitudinalControlSimpleAscod:main',
+            
 
             'longitudinal_control_IA = INSIA_control.HLControl.LongitudinalControlIA:main',
             'lateral_control_PID = INSIA_control.HLControl.LateralControlPID:main',
@@ -109,6 +125,7 @@ setup(
             'driverCAN = INSIA_control.DriverCAN.DriverCAN:main',
             'driverCANServicio = INSIA_control.DriverCAN.DriverCANServicio:main',
             'telemetry_imiev_srv = INSIA_control.DevicesControlNodes.Imiev.TelemetryNodeSRV:main',
+            'socketcan_driver = INSIA_control.DriverNodes.socketcan_driver:main',
 
             'seta_emergencia = INSIA_control.Emergency.seta:main',
         ],
